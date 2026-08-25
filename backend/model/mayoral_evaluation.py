@@ -17,6 +17,7 @@ import math
 from collections.abc import Callable, Mapping, Sequence
 from dataclasses import dataclass
 from datetime import datetime
+from itertools import pairwise
 from types import MappingProxyType
 from typing import Literal, Protocol
 
@@ -239,7 +240,7 @@ class ElectionCycle:
         )
         if any(
             earlier.analysis_cutoff >= later.analysis_cutoff
-            for earlier, later in zip(ordered, ordered[1:])
+            for earlier, later in pairwise(ordered)
         ):
             raise ValueError(
                 f"cycle {self.election_cycle_id!r} analysis cutoffs must move "
@@ -926,7 +927,9 @@ def _quantity_name(quantity: str) -> str:
 
 def _as_finite_float(value: object, label: str) -> float:
     if isinstance(value, bool):
-        raise ValueError(f"{label} must be a finite number")
+        # A bool is a not-a-finite-number *value* here; keep the uniform
+        # ValueError contract every caller relies on, not a lone TypeError.
+        raise ValueError(f"{label} must be a finite number")  # noqa: TRY004
     try:
         number = float(value)  # type: ignore[arg-type]
     except (TypeError, ValueError) as error:
