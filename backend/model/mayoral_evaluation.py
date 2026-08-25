@@ -20,6 +20,7 @@ from datetime import datetime
 from types import MappingProxyType
 from typing import Literal, Protocol
 
+import numpy as np
 
 ElectionType = Literal["general", "by_election"]
 EvaluationPopulation = Literal["all_elections", "regular_elections_only"]
@@ -127,16 +128,19 @@ class ElectionOutcome:
         return incumbent_share - strongest_challenger
 
 
-@dataclass(frozen=True, slots=True)
+@dataclass(frozen=True, slots=True, eq=False)
 class FullBallotShareDraws:
     """Validated, immutable election-day share draws for the full ballot.
 
-    An exact top-share tie divides that draw's winner weight equally among the
-    tied candidates; observed outcomes themselves must have a unique winner.
+    ``draws`` is stored as a read-only ``(n_draws, n_candidates)`` float ndarray so
+    the scoring reductions stay vectorized; construction accepts any nested sequence
+    (e.g. a tuple of rows) and validates the whole block at once. An exact top-share
+    tie divides that draw's winner weight equally among the tied candidates;
+    observed outcomes themselves must have a unique winner.
     """
 
     candidate_ids: tuple[str, ...]
-    draws: tuple[tuple[float, ...], ...]
+    draws: np.ndarray
 
     def __post_init__(self) -> None:
         candidate_ids = tuple(
@@ -147,37 +151,36 @@ class FullBallotShareDraws:
             raise ValueError("full ballot must contain at least two candidates")
         if len(candidate_ids) != len(set(candidate_ids)):
             raise ValueError("full ballot candidate_ids must be unique")
-        normalized_draws: list[tuple[float, ...]] = []
-        for draw_number, raw_draw in enumerate(self.draws, 1):
-            if len(raw_draw) != len(candidate_ids):
-                raise ValueError(
-                    f"full ballot draw {draw_number} has {len(raw_draw)} shares; "
-                    f"expected {len(candidate_ids)}"
-                )
-            draw = tuple(
-                _as_finite_float(
-                    share,
-                    f"full ballot draw {draw_number} share",
-                )
-                for share in raw_draw
-            )
-            if any(share < 0.0 for share in draw):
-                raise ValueError("full ballot draw shares must be non-negative")
-            total = sum(draw)
-            if not math.isclose(
-                total,
-                1.0,
-                rel_tol=0.0,
-                abs_tol=_PROBABILITY_TOLERANCE,
-            ):
-                raise ValueError(
-                    f"full ballot draw shares must sum to 1; received {total}"
-                )
-            normalized_draws.append(draw)
-        if not normalized_draws:
+        draws = np.asarray(self.draws, dtype=float)
+        if draws.ndim != 2 or draws.shape[0] == 0:
             raise ValueError("full ballot prediction must contain at least one draw")
+        if draws.shape[1] != len(candidate_ids):
+            raise ValueError(
+                f"full ballot draws have {draws.shape[1]} shares; "
+                f"expected {len(candidate_ids)}"
+            )
+        # Order matters so each malformed input hits its own message: finite first
+        # (a NaN would otherwise slip past the sign and sum checks), then sign, sum.
+        if not np.all(np.isfinite(draws)):
+            raise ValueError("full ballot draw shares must be finite")
+        if np.any(draws < 0.0):
+            raise ValueError("full ballot draw shares must be non-negative")
+        if not np.allclose(
+            draws.sum(axis=1), 1.0, rtol=0.0, atol=_PROBABILITY_TOLERANCE
+        ):
+            raise ValueError("full ballot draw shares must sum to 1")
+        draws.setflags(write=False)
         object.__setattr__(self, "candidate_ids", candidate_ids)
-        object.__setattr__(self, "draws", tuple(normalized_draws))
+        object.__setattr__(self, "draws", draws)
+
+    def __eq__(self, other: object) -> bool:
+        if not isinstance(other, FullBallotShareDraws):
+            return NotImplemented
+        return self.candidate_ids == other.candidate_ids and np.array_equal(
+            self.draws, other.draws
+        )
+
+    __hash__ = None
 
 
 @dataclass(frozen=True, slots=True)
@@ -188,9 +191,7 @@ class EvaluationPrediction:
 
     def __post_init__(self) -> None:
         if not isinstance(self.full_ballot_share_draws, FullBallotShareDraws):
-            raise TypeError(
-                "full_ballot_share_draws must be FullBallotShareDraws"
-            )
+            raise TypeError("full_ballot_share_draws must be FullBallotShareDraws")
 
 
 @dataclass(frozen=True, slots=True)
@@ -203,10 +204,7 @@ class LeadTimeSnapshot:
     evidence: object
 
     def __post_init__(self) -> None:
-        if (
-            type(self.days_before_election) is not int
-            or self.days_before_election < 0
-        ):
+        if type(self.days_before_election) is not int or self.days_before_election < 0:
             raise ValueError("days_before_election must be a non-negative integer")
         if (
             not isinstance(self.analysis_cutoff, datetime)
@@ -396,19 +394,17 @@ class ModelLadderDecision:
 
 def empirical_crps(draws: Sequence[float], observed: float) -> float:
     """Return exact CRPS for an equally weighted empirical scalar forecast."""
-    values = tuple(
-        _as_finite_float(value, "scalar forecast draw") for value in draws
-    )
-    if not values:
+    values = np.asarray(draws, dtype=float)
+    if values.size == 0:
         raise ValueError("scalar forecast draws must not be empty")
+    if not np.all(np.isfinite(values)):
+        raise ValueError("scalar forecast draw must be a finite number")
     truth = _as_finite_float(observed, "scalar outcome")
-    count = len(values)
-    absolute_error = sum(abs(value - truth) for value in values) / count
-    ordered = sorted(values)
-    pairwise_dispersion = sum(
-        (2 * index - count + 1) * value
-        for index, value in enumerate(ordered)
-    )
+    count = values.size
+    absolute_error = float(np.mean(np.abs(values - truth)))
+    ordered = np.sort(values)
+    index = np.arange(count)
+    pairwise_dispersion = float(np.sum((2 * index - count + 1) * ordered))
     score = absolute_error - pairwise_dispersion / (count * count)
     return max(0.0, score)
 
@@ -427,40 +423,33 @@ def score_prediction(
         candidate_id: index
         for index, candidate_id in enumerate(distribution.candidate_ids)
     }
-    draw_count = len(distribution.draws)
-    winner_probabilities = dict.fromkeys(distribution.candidate_ids, 0.0)
-    candidate_draws = {
-        candidate_id: [] for candidate_id in distribution.candidate_ids
+    draws = distribution.draws  # (n_draws, n_candidates) read-only ndarray
+    draw_count = draws.shape[0]
+
+    # Winner weight per candidate, splitting an exact top-share tie equally — the
+    # vectorized equivalent of the per-draw accumulation above.
+    row_max = draws.max(axis=1, keepdims=True)
+    winners_mask = draws == row_max
+    ties = winners_mask.sum(axis=1, keepdims=True)
+    winner_weight = (winners_mask / (draw_count * ties)).sum(axis=0)
+    winner_probabilities = {
+        candidate_id: float(winner_weight[index])
+        for candidate_id, index in index_by_candidate.items()
     }
-    winning_margin_draws: list[float] = []
-    incumbent_margin_draws: list[float] = []
-    close_draws = 0
+
+    ordered_rows = np.sort(draws, axis=1)
+    winning_margin_draws = ordered_rows[:, -1] - ordered_rows[:, -2]
+    close_draws = int(np.count_nonzero(winning_margin_draws <= outcome.close_threshold))
+
     incumbent_index = (
         None
         if outcome.incumbent_candidate_id is None
         else index_by_candidate[outcome.incumbent_candidate_id]
     )
-
-    for draw in distribution.draws:
-        maximum = max(draw)
-        tied_winners = [index for index, share in enumerate(draw) if share == maximum]
-        winner_weight = 1.0 / (draw_count * len(tied_winners))
-        for index in tied_winners:
-            candidate_id = distribution.candidate_ids[index]
-            winner_probabilities[candidate_id] += winner_weight
-        for candidate_id, index in index_by_candidate.items():
-            candidate_draws[candidate_id].append(draw[index])
-        leading = sorted(draw, reverse=True)[:2]
-        winning_margin = leading[0] - leading[1]
-        winning_margin_draws.append(winning_margin)
-        close_draws += winning_margin <= outcome.close_threshold
-        if incumbent_index is not None:
-            strongest_challenger = max(
-                share for index, share in enumerate(draw) if index != incumbent_index
-            )
-            incumbent_margin_draws.append(
-                draw[incumbent_index] - strongest_challenger
-            )
+    incumbent_margin_draws = None
+    if incumbent_index is not None:
+        strongest_challenger = np.delete(draws, incumbent_index, axis=1).max(axis=1)
+        incumbent_margin_draws = draws[:, incumbent_index] - strongest_challenger
 
     scores = {
         WINNER_LOG_SCORE: _negative_log_probability(
@@ -486,13 +475,13 @@ def score_prediction(
     candidate_share_scores: list[float] = []
     for candidate_id in outcome.candidate_ids:
         score = empirical_crps(
-            candidate_draws[candidate_id],
+            draws[:, index_by_candidate[candidate_id]],
             outcome.candidate_shares[candidate_id],
         )
         scores[scalar_crps_metric(candidate_share_quantity(candidate_id))] = score
         candidate_share_scores.append(score)
-    scores[MEAN_CANDIDATE_SHARE_CRPS] = (
-        sum(candidate_share_scores) / len(candidate_share_scores)
+    scores[MEAN_CANDIDATE_SHARE_CRPS] = sum(candidate_share_scores) / len(
+        candidate_share_scores
     )
     scores[scalar_crps_metric(WINNING_MARGIN)] = empirical_crps(
         winning_margin_draws,
@@ -510,9 +499,8 @@ def evaluate_mayoral_model(
     cycles: Sequence[ElectionCycle],
     *,
     lead_times: Sequence[int],
-    fit_predict: FitPredict | Callable[
-        [tuple[TrainingCycle, ...], HeldOutCycle], EvaluationPrediction
-    ],
+    fit_predict: FitPredict
+    | Callable[[tuple[TrainingCycle, ...], HeldOutCycle], EvaluationPrediction],
     model_name: str,
     population: EvaluationPopulation = "all_elections",
 ) -> EvaluationReport:
@@ -526,8 +514,7 @@ def evaluate_mayoral_model(
     )
     snapshots = {
         cycle.election_cycle_id: {
-            snapshot.days_before_election: snapshot
-            for snapshot in cycle.snapshots
+            snapshot.days_before_election: snapshot for snapshot in cycle.snapshots
         }
         for cycle in cycle_tuple
     }
@@ -544,12 +531,8 @@ def evaluate_mayoral_model(
                 snapshots=tuple(
                     (
                         lead_time,
-                        snapshots[cycle.election_cycle_id][
-                            lead_time
-                        ].analysis_cutoff,
-                        snapshots[cycle.election_cycle_id][
-                            lead_time
-                        ].evidence_revision,
+                        snapshots[cycle.election_cycle_id][lead_time].analysis_cutoff,
+                        snapshots[cycle.election_cycle_id][lead_time].evidence_revision,
                     )
                     for lead_time in lead_time_tuple
                 ),
@@ -574,8 +557,7 @@ def evaluate_mayoral_model(
                     outcome=training_cycle.outcome,
                 )
                 for training_cycle in cycle_tuple
-                if training_cycle.election_cycle_id
-                != target_cycle.election_cycle_id
+                if training_cycle.election_cycle_id != target_cycle.election_cycle_id
             )
             target = HeldOutCycle(
                 election_cycle_id=target_cycle.election_cycle_id,
@@ -637,9 +619,8 @@ def evaluate_with_regular_election_sensitivity(
     cycles: Sequence[ElectionCycle],
     *,
     lead_times: Sequence[int],
-    fit_predict: FitPredict | Callable[
-        [tuple[TrainingCycle, ...], HeldOutCycle], EvaluationPrediction
-    ],
+    fit_predict: FitPredict
+    | Callable[[tuple[TrainingCycle, ...], HeldOutCycle], EvaluationPrediction],
     model_name: str,
 ) -> EvaluationSensitivitySuite:
     """Evaluate all cycles, then refit and evaluate regular elections only."""
@@ -674,12 +655,8 @@ def compare_against_baseline(
     """Compare relative scores on one identical frozen evaluation manifest."""
     if candidate.manifest != baseline.manifest:
         raise ValueError("candidate and baseline evaluation manifests must match")
-    candidate_cycles = {
-        cycle.election_cycle_id: cycle for cycle in candidate.cycles
-    }
-    baseline_cycles = {
-        cycle.election_cycle_id: cycle for cycle in baseline.cycles
-    }
+    candidate_cycles = {cycle.election_cycle_id: cycle for cycle in candidate.cycles}
+    baseline_cycles = {cycle.election_cycle_id: cycle for cycle in baseline.cycles}
     for report in (candidate, baseline):
         if primary_metric not in report.metrics:
             raise ValueError(
@@ -730,8 +707,7 @@ def compare_against_baseline(
         math.isfinite(score) for score in (candidate_primary, baseline_primary)
     )
     log_loss_scores_finite = all(
-        math.isfinite(score)
-        for score in (candidate_log_loss, baseline_log_loss)
+        math.isfinite(score) for score in (candidate_log_loss, baseline_log_loss)
     )
     aggregate_scores_finite = primary_scores_finite and log_loss_scores_finite
     aggregate_primary_improved = (
@@ -886,13 +862,9 @@ def _validate_evaluation_inputs(
         if type(lead_time) is not int or lead_time < 0:
             raise ValueError("fixed lead times must be non-negative integers")
     for cycle in cycles:
-        available = {
-            snapshot.days_before_election for snapshot in cycle.snapshots
-        }
+        available = {snapshot.days_before_election for snapshot in cycle.snapshots}
         missing = [
-            lead_time
-            for lead_time in lead_time_tuple
-            if lead_time not in available
+            lead_time for lead_time in lead_time_tuple if lead_time not in available
         ]
         if missing:
             raise ValueError(
@@ -979,9 +951,7 @@ def _mean_metric_maps(metric_maps: tuple[Mapping[str, float], ...]) -> dict[str,
         raise ValueError("cannot aggregate an empty score collection")
     metric_names = sorted({name for metrics in metric_maps for name in metrics})
     return {
-        metric: sum(
-            metrics[metric] for metrics in metric_maps if metric in metrics
-        )
+        metric: sum(metrics[metric] for metrics in metric_maps if metric in metrics)
         / sum(metric in metrics for metrics in metric_maps)
         for metric in metric_names
     }

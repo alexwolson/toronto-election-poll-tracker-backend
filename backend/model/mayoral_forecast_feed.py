@@ -27,11 +27,14 @@ from decimal import Decimal
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
+import numpy as np
+
 from backend.model.historical_mayoral import load_historical_mayoral_corpus
 from backend.model.historical_mayoral_evaluation import (
     build_historical_mayoral_evaluation_cycles,
 )
 from backend.model.mayoral_endpoint import (
+    DRAW_COUNT,
     MAYORAL_ENDPOINT_ANALYSIS_TIME_LOCAL,
     MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES,
     MayoralEndpointDataError,
@@ -72,7 +75,6 @@ from backend.model.publication import (
 
 MAYORAL_FORECAST_FEED_SCHEMA_VERSION = 1
 _TORONTO = ZoneInfo("America/Toronto")
-_DRAW_COUNT = 4096
 _CLOSE_THRESHOLD = 0.05
 # Tail-mass sensitivity: halve and double the fitted candidate-tail mass (ADR 0018).
 _TAIL_MULTIPLIER_LOW = 0.5
@@ -132,18 +134,20 @@ def forecast_quantities(
 ) -> MayoralForecastQuantities:
     """Reduce full-ballot share draws to the published quantities + 95% intervals."""
     candidate_ids = draws.candidate_ids
-    draw_count = len(draws.draws)
-    win_weight = dict.fromkeys(candidate_ids, 0.0)
-    close_draws = 0
-    for draw in draws.draws:
-        maximum = max(draw)
-        tied = [index for index, share in enumerate(draw) if share == maximum]
-        weight = 1.0 / (draw_count * len(tied))
-        for index in tied:
-            win_weight[candidate_ids[index]] += weight
-        leading = sorted(draw, reverse=True)[:2]
-        if leading[0] - leading[1] <= close_threshold:
-            close_draws += 1
+    rows = draws.draws  # (n_draws, n_candidates) read-only ndarray
+    draw_count = rows.shape[0]
+    # Winner weight per candidate, splitting an exact top-share tie equally.
+    winners_mask = rows == rows.max(axis=1, keepdims=True)
+    ties = winners_mask.sum(axis=1, keepdims=True)
+    win_weight_arr = (winners_mask / (draw_count * ties)).sum(axis=0)
+    win_weight = {
+        candidate_id: float(win_weight_arr[index])
+        for index, candidate_id in enumerate(candidate_ids)
+    }
+    ordered_rows = np.sort(rows, axis=1)
+    close_draws = int(
+        np.count_nonzero((ordered_rows[:, -1] - ordered_rows[:, -2]) <= close_threshold)
+    )
 
     candidate_win = {
         candidate_id: _estimate(win_weight[candidate_id], draw_count)
@@ -329,18 +333,16 @@ def _variant_predictors(inputs: LiveForecastInputs, root: Path) -> list[tuple]:
     variant. A variant that cannot run fails the Band Stability Gate (ADR 0018)."""
     bridge = "firm-balanced-bridge"
     variants: list[tuple] = [
-        ("bridge-base", MayoralEndpointPredictor(bridge, draw_count=_DRAW_COUNT)),
+        ("bridge-base", MayoralEndpointPredictor(bridge, draw_count=DRAW_COUNT)),
         (
             "comparator-baseline",
-            MayoralEndpointPredictor(
-                "latest-sample-comparator", draw_count=_DRAW_COUNT
-            ),
+            MayoralEndpointPredictor("latest-sample-comparator", draw_count=DRAW_COUNT),
         ),
         (
             "tail-low",
             MayoralEndpointPredictor(
                 bridge,
-                draw_count=_DRAW_COUNT,
+                draw_count=DRAW_COUNT,
                 tail_mass_multiplier=_TAIL_MULTIPLIER_LOW,
             ),
         ),
@@ -348,7 +350,7 @@ def _variant_predictors(inputs: LiveForecastInputs, root: Path) -> list[tuple]:
             "tail-high",
             MayoralEndpointPredictor(
                 bridge,
-                draw_count=_DRAW_COUNT,
+                draw_count=DRAW_COUNT,
                 tail_mass_multiplier=_TAIL_MULTIPLIER_HIGH,
             ),
         ),
@@ -359,7 +361,7 @@ def _variant_predictors(inputs: LiveForecastInputs, root: Path) -> list[tuple]:
                 f"leave-out-sample:{sample_id}",
                 MayoralEndpointPredictor(
                     bridge,
-                    draw_count=_DRAW_COUNT,
+                    draw_count=DRAW_COUNT,
                     excluded_poll_sample_ids=frozenset({sample_id}),
                 ),
             )
@@ -374,7 +376,7 @@ def _variant_predictors(inputs: LiveForecastInputs, root: Path) -> list[tuple]:
                     f"leave-out-pollster:{pollster}",
                     MayoralEndpointPredictor(
                         bridge,
-                        draw_count=_DRAW_COUNT,
+                        draw_count=DRAW_COUNT,
                         excluded_pollsters=frozenset({pollster}),
                     ),
                 )
@@ -384,7 +386,7 @@ def _variant_predictors(inputs: LiveForecastInputs, root: Path) -> list[tuple]:
             "incumbency-prior",
             IncumbencyInformedPredictor(
                 population=load_mayoral_incumbency_population(root),
-                draw_count=_DRAW_COUNT,
+                draw_count=DRAW_COUNT,
             ),
         )
     )

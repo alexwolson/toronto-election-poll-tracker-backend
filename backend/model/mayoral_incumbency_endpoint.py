@@ -147,7 +147,7 @@ class IncumbencyInformedPredictor:
     """Fold-local incumbency-informed predictor accepted by the evaluation harness."""
 
     population: MayoralIncumbencyPopulation
-    draw_count: int = 2048
+    draw_count: int
     prior_pseudocount: float = DEFAULT_PRIOR_PSEUDOCOUNT
     base_variant: str = BASE_VARIANT
 

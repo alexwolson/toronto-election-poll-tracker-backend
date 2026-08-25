@@ -14,8 +14,8 @@ import pytest
 from backend.model.poll_sources import (
     POLL_READING_COLUMNS,
     POLL_RESPONSE_COLUMNS,
-    POLL_SAMPLE_DOCUMENT_COLUMNS,
     POLL_SAMPLE_COLUMNS,
+    POLL_SAMPLE_DOCUMENT_COLUMNS,
     SOURCE_DOCUMENT_COLUMNS,
     PollSourceContractError,
     load_poll_source_bundle,
@@ -315,7 +315,9 @@ def test_rejects_reading_base_larger_than_recruited_sample(tmp_path: Path) -> No
     tables["poll_readings.csv"][0]["unweighted_base"] = "801"
     _write_bundle(tmp_path, tables)
 
-    with pytest.raises(PollSourceContractError, match="larger than its recruited sample"):
+    with pytest.raises(
+        PollSourceContractError, match="larger than its recruited sample"
+    ):
         load_poll_source_bundle(tmp_path)
 
 
@@ -341,7 +343,9 @@ def test_accepts_offered_candidate_without_inventing_a_share(tmp_path: Path) -> 
     bundle = load_poll_source_bundle(tmp_path)
 
     loaded = next(
-        response for response in bundle.poll_responses if response.candidate_id == "layton"
+        response
+        for response in bundle.poll_responses
+        if response.candidate_id == "layton"
     )
     assert loaded.candidate_observation_status == "offered_not_individually_published"
     assert loaded.share is None
@@ -735,20 +739,17 @@ def test_tracked_current_poll_source_inventory() -> None:
     repository_root = Path(__file__).resolve().parents[2]
     bundle = load_poll_source_bundle(repository_root / "data/raw/polls")
 
-    assert len(bundle.source_documents) == 32
-    assert len(bundle.poll_sample_documents) == 32
-    assert len(bundle.poll_samples) == 26
-    assert len(bundle.poll_readings) == 59
-    assert len(bundle.poll_responses) == 260
+    assert len(bundle.source_documents) == 33
+    assert len(bundle.poll_sample_documents) == 33
+    assert len(bundle.poll_samples) == 27
+    assert len(bundle.poll_readings) == 62
+    assert len(bundle.poll_responses) == 274
 
     documents = {
-        document.source_document_id: document
-        for document in bundle.source_documents
+        document.source_document_id: document for document in bundle.source_documents
     }
     samples = {sample.poll_sample_id: sample for sample in bundle.poll_samples}
-    readings = {
-        reading.poll_reading_id: reading for reading in bundle.poll_readings
-    }
+    readings = {reading.poll_reading_id: reading for reading in bundle.poll_readings}
     readings_by_sample = {
         sample_id: [
             reading
@@ -770,8 +771,8 @@ def test_tracked_current_poll_source_inventory() -> None:
         if sample.geography_type == "citywide"
     }
     recovered_citywide_ids = set(citywide_samples) - {"abacus-2026-01-27"}
-    assert len(citywide_samples) == 20
-    assert len(recovered_citywide_ids) == 19
+    assert len(citywide_samples) == 21
+    assert len(recovered_citywide_ids) == 20
     assert all(
         citywide_samples[sample_id].extraction_status == "extracted"
         for sample_id in recovered_citywide_ids
@@ -788,14 +789,17 @@ def test_tracked_current_poll_source_inventory() -> None:
         if samples[readings[response.poll_reading_id].poll_sample_id].geography_type
         == "citywide"
     ]
-    assert len(citywide_readings) == 46
-    assert len(citywide_responses) == 211
-    assert sum(
-        reading.reading_purpose == "general_vote_intention"
-        for reading in citywide_readings
-    ) == 45
+    assert len(citywide_readings) == 49
+    assert len(citywide_responses) == 225
+    assert (
+        sum(
+            reading.reading_purpose == "general_vote_intention"
+            for reading in citywide_readings
+        )
+        == 48
+    )
     assert readings["canadapulse_20251006_mayor_all"].reading_purpose == "context_only"
-    assert len({reading.poll_sample_id for reading in bundle.poll_readings}) == 25
+    assert len({reading.poll_sample_id for reading in bundle.poll_readings}) == 26
     expected_citywide_order = [
         "pallas-2025-06-07",
         "liaison-2025-07-06",
@@ -816,6 +820,7 @@ def test_tracked_current_poll_source_inventory() -> None:
         "forum-2026-07-29",
         "liaison-2026-08-05",
         "liaison-2026-08-16",
+        "pallas-2026-08-21",
     ]
     ordered_reading_samples = list(
         dict.fromkeys(reading.poll_sample_id for reading in citywide_readings)
@@ -836,7 +841,7 @@ def test_tracked_current_poll_source_inventory() -> None:
     assert canada_pulse.publication_date.isoformat() == "2025-10-21"
     canada_reading = readings["canadapulse_20251006_mayor_all"]
     assert canada_reading.unweighted_base == 406
-    assert canada_reading.weighted_base == Decimal("406")
+    assert canada_reading.weighted_base == Decimal(406)
     assert canada_reading.denominator_type == "all_respondents"
     canada_responses = sorted(
         (
@@ -878,8 +883,7 @@ def test_tracked_current_poll_source_inventory() -> None:
     ]
     assert all(reading.unweighted_base == 1001 for reading in forum_head_to_heads)
     assert all(
-        reading.weighted_base == Decimal("1001")
-        for reading in forum_head_to_heads
+        reading.weighted_base == Decimal(1001) for reading in forum_head_to_heads
     )
 
     liaison_june_all = readings["liaison_20260628_30_mayor_all"]
@@ -889,7 +893,7 @@ def test_tracked_current_poll_source_inventory() -> None:
     assert liaison_june_decided.denominator_type == "decided_respondents"
     assert liaison_june_all.unweighted_base == 1000
     assert liaison_june_decided.unweighted_base == 805
-    assert liaison_june_decided.weighted_base == Decimal("801")
+    assert liaison_june_decided.weighted_base == Decimal(801)
     liaison_june_decided_shares = {
         response.candidate_id or response.response_option_id: response.share
         for response in bundle.poll_responses
@@ -900,12 +904,14 @@ def test_tracked_current_poll_source_inventory() -> None:
         "bradford": Decimal("0.40"),
         "someone-else": Decimal("0.10"),
     }
-    assert readings[
-        "liaison_20260724_26_mayor_decided_leaning"
-    ].denominator_type == "custom"
-    assert readings[
-        "liaison_20260804_05_mayor_decided_leaning"
-    ].denominator_type == "custom"
+    assert (
+        readings["liaison_20260724_26_mayor_decided_leaning"].denominator_type
+        == "custom"
+    )
+    assert (
+        readings["liaison_20260804_05_mayor_decided_leaning"].denominator_type
+        == "custom"
+    )
 
     candidate_ids = {
         response.candidate_id
@@ -919,9 +925,9 @@ def test_tracked_current_poll_source_inventory() -> None:
         if response.candidate_id == "michael-ford"
     ]
     assert len(michael_ford_rows) == 4
-    assert {
-        response.response_option_id for response in michael_ford_rows
-    } == {"candidate-michael-ford"}
+    assert {response.response_option_id for response in michael_ford_rows} == {
+        "candidate-michael-ford"
+    }
     assert {response.candidate_name for response in michael_ford_rows} == {
         "Michael Ford"
     }
@@ -931,9 +937,7 @@ def test_tracked_current_poll_source_inventory() -> None:
         if response.candidate_id == "bailao"
     ]
     assert {response.candidate_name for response in bailao_rows} == {"Ana Bailão"}
-    assert "Ana Bailao" in {
-        response.response_label for response in bailao_rows
-    }
+    assert "Ana Bailao" in {response.response_label for response in bailao_rows}
 
     ward_11_readings = [
         reading
@@ -944,7 +948,7 @@ def test_tracked_current_poll_source_inventory() -> None:
 
     layton_reading = readings["forum_w11_20260812_council_layton"]
     assert layton_reading.unweighted_base == 385
-    assert layton_reading.weighted_base == Decimal("386")
+    assert layton_reading.weighted_base == Decimal(386)
     assert layton_reading.denominator_type == "not_reported"
     assert layton_reading.denominator_text is None
     ward_mayor = readings["forum_w11_20260812_mayor"]

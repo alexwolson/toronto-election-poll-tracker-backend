@@ -17,6 +17,7 @@ from backend.model.historical_mayoral_evaluation import (
     build_historical_mayoral_evaluation_cycles,
 )
 from backend.model.mayoral_endpoint import (
+    DRAW_COUNT,
     MAYORAL_ENDPOINT_ANALYSIS_TIME_LOCAL,
     MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES,
     MayoralEndpointPredictor,
@@ -30,7 +31,6 @@ from backend.model.mayoral_evaluation import (
     qualify_model_ladder,
 )
 
-MAYORAL_ENDPOINT_EVALUATION_DRAW_COUNT: Final = 4096
 # ADR 0041: absolute reliability gate — comparator-anchored, noise-aware maxima
 # frozen on the six-cycle regular-elections corpus. For each broad-reliability
 # metric, maximum = comparator_regular_aggregate + t(0.95, df=5) * SE(paired
@@ -85,7 +85,7 @@ def evaluate_mayoral_endpoint_qualification(
         lead_times=MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES,
         fit_predict=MayoralEndpointPredictor(
             "latest-sample-comparator",
-            draw_count=MAYORAL_ENDPOINT_EVALUATION_DRAW_COUNT,
+            draw_count=DRAW_COUNT,
         ),
         model_name="latest-sample-comparator",
     )
@@ -94,7 +94,7 @@ def evaluate_mayoral_endpoint_qualification(
         lead_times=MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES,
         fit_predict=MayoralEndpointPredictor(
             "firm-balanced-bridge",
-            draw_count=MAYORAL_ENDPOINT_EVALUATION_DRAW_COUNT,
+            draw_count=DRAW_COUNT,
         ),
         model_name="firm-balanced-bridge",
     )

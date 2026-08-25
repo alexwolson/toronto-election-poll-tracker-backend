@@ -1,4 +1,5 @@
 poll_id,firm,date_conducted,date_published,sample_size,methodology,field_tested,alexander,bailao,bradford,chow,furey,ford,mendicino,tory,other,notes
+pallas-2026-08-21,Pallas Data,2026-08-21,2026-08-25,808,IVR,"alexander,bradford,chow,other",0.08,,0.39,0.5,,,,,0.03,Decided-and-leaning topline (Chow 50/Bradford 39/Alexander 8/other 3) from the Pallas Data tables PDF; all-voters first choice was Chow 38/Bradford 30/Alexander 6.
 liaison-2026-08-16,Liaison Strategies,2026-08-16,2026-08-16,1000,IVR,"alexander,bradford,chow,other",0.1089,,0.3762,0.4851,,,,,0.0297,
 liaison-2026-08-05,Liaison Strategies,2026-08-05,2026-08-05,1000,IVR,"alexander,bradford,chow,other",0.1,,0.4,0.47,,,,,0.03,
 forum-2026-07-29,Forum Research,2026-07-29,2026-07-29,1011,IVR,"alexander,bradford,chow,other",0.11,,0.32,0.47,,,,,0.1,

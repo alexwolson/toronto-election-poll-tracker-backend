@@ -22,12 +22,10 @@ from backend.model.historical_mayoral_evaluation import (
     build_historical_mayoral_evaluation_cycles,
 )
 from backend.model.mayoral_endpoint import (
+    DRAW_COUNT,
     MAYORAL_ENDPOINT_ANALYSIS_TIME_LOCAL,
     MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES,
     MayoralEndpointPredictor,
-)
-from backend.model.mayoral_endpoint_qualification import (
-    MAYORAL_ENDPOINT_EVALUATION_DRAW_COUNT,
 )
 from backend.model.mayoral_evaluation import (
     MAYORAL_MODEL_FAMILY_LOG_GUARD,
@@ -42,7 +40,7 @@ from backend.model.mayoral_incumbency_endpoint import (
 )
 
 LEAD_TIMES = MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES
-DRAWS = MAYORAL_ENDPOINT_EVALUATION_DRAW_COUNT
+DRAWS = DRAW_COUNT
 
 
 def _suite(cycles, fit_predict, name):
