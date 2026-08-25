@@ -7,7 +7,6 @@ dependencies = [
     "beautifulsoup4>=4.14.3",
     "lxml>=6.1.0",
     "numpy>=2.4.3",
-    "numpyro>=0.21.0",
     "openpyxl>=3.1.5",
     "pandas",
     "pydantic",
