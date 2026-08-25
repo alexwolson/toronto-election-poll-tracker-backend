@@ -4,11 +4,16 @@ from __future__ import annotations
 
 import csv
 from collections import Counter
+from dataclasses import replace
 from datetime import date, datetime
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
+
 from backend.model.historical_mayoral import (
+    HistoricalMayoralDataError,
+    _poll_candidate_ids_resolve_to_outcomes,
     audit_historical_mayoral_corpus,
     build_legacy_crosswalk_rows,
     build_mayoral_election_rows,
@@ -29,9 +34,7 @@ def test_committed_tables_equal_a_fresh_source_reconstruction() -> None:
         build_mayoral_election_rows()
     )
     assert _rows("data/raw/elections/mayoral_outcomes.csv") == (
-        build_mayoral_outcome_rows(
-            ROOT / "data/raw/canonical/election_results.csv"
-        )
+        build_mayoral_outcome_rows(ROOT / "data/raw/canonical/election_results.csv")
     )
     assert _rows("data/raw/polls/legacy_historical_poll_crosswalk.csv") == (
         build_legacy_crosswalk_rows(
@@ -88,9 +91,60 @@ def test_outcomes_are_complete_candidate_level_official_results() -> None:
         ).candidate_name_as_reported
         == "Chow Olivia"
     )
-    assert all(
-        row.candidate_id.startswith(("per_", "can_")) for row in corpus.outcomes
+    assert all(row.candidate_id.startswith(("per_", "can_")) for row in corpus.outcomes)
+
+
+def test_one_person_id_may_span_different_reported_names_across_cycles() -> None:
+    # ADR 0045: the canonical is the identity authority and links the same person
+    # across cycles even when their reported name differs. Chloe Brown ran for
+    # mayor as "Chloe-Marie Brown" (2022) and "Chloe Brown" (2023); both
+    # candidacies resolve to one ``person_id``. The corpus must load rather than
+    # reject a candidate_id that legitimately carries two reported names.
+    corpus = load_historical_mayoral_corpus(ROOT)
+    person_id = "per_3d3501723d055766800769f77751b3bf"
+
+    brown_2022 = next(
+        row
+        for row in corpus.outcome_universe("toronto_2022")
+        if row.candidate_id == person_id
     )
+    brown_2023 = next(
+        row
+        for row in corpus.outcome_universe("toronto_2023")
+        if row.candidate_id == person_id
+    )
+    assert brown_2022.candidate_name == "Chloe-Marie Brown"
+    assert brown_2023.candidate_name == "Chloe Brown"
+
+
+def test_poll_response_canonical_ids_all_resolve_to_the_cycle_outcome() -> None:
+    # The audited poll corpus pins canonical identifiers; the committed corpus
+    # must have none that dangle outside their cycle's official outcome.
+    corpus = load_historical_mayoral_corpus(ROOT)
+    _poll_candidate_ids_resolve_to_outcomes(corpus)  # does not raise
+
+
+def test_gate_rejects_a_stale_canonical_poll_id_absent_from_the_outcome() -> None:
+    # The canonical dataset can re-resolve a person across refreshes (ADR 0045).
+    # A poll response that still pins the pre-refresh id would be silently dropped
+    # by the endpoint selector (candidate_field <= final_ids), quietly starving a
+    # cycle of evidence. The corpus gate must fail loudly instead of drop.
+    corpus = load_historical_mayoral_corpus(ROOT)
+    index, victim = next(
+        (i, response)
+        for i, response in enumerate(corpus.poll_responses)
+        if response.response_kind == "candidate"
+        and response.candidate_id is not None
+        and response.candidate_id.startswith(("per_", "can_"))
+    )
+    stale = replace(victim, candidate_id="per_" + "0" * 32)
+    responses = (
+        corpus.poll_responses[:index] + (stale,) + corpus.poll_responses[index + 1 :]
+    )
+    stale_corpus = replace(corpus, poll_responses=responses)
+
+    with pytest.raises(HistoricalMayoralDataError, match="stale identity link"):
+        _poll_candidate_ids_resolve_to_outcomes(stale_corpus)
 
 
 def test_final_ballot_known_by_dates_are_conservative_replay_boundaries() -> None:
@@ -199,7 +253,11 @@ def test_only_audited_poll_sources_enter_the_canonical_seam() -> None:
         )
         for reading in nanos
     } == {
-        ("per_a4291ca7539b53e2acc1c4f108bc73e6", "per_15643a9d6a59549bb8e536af298a4b2c", "per_a9eb70da799659daaa285f92cfed1674"),
+        (
+            "per_a4291ca7539b53e2acc1c4f108bc73e6",
+            "per_15643a9d6a59549bb8e536af298a4b2c",
+            "per_a9eb70da799659daaa285f92cfed1674",
+        ),
     }
 
 
@@ -236,7 +294,9 @@ def test_viewpoints_may_sample_keeps_timing_conflict_and_reported_rounding() -> 
     assert sum((row.share or Decimal() for row in decided), Decimal()) == Decimal(
         "1.01"
     )
-    assert "per_27c46c62f83c5dbaae44b65d34a178c6" not in {row.candidate_id for row in raw}
+    assert "per_27c46c62f83c5dbaae44b65d34a178c6" not in {
+        row.candidate_id for row in raw
+    }
     assert "Not sure" in {row.response_label for row in raw}
 
 
@@ -282,7 +342,9 @@ def test_forum_and_liaison_waves_preserve_source_semantics() -> None:
     liaison_decided = corpus.responses_for_reading("liaison_2023_06_22_23_decided")
     assert [response.option_order for response in liaison_decided] == list(range(1, 10))
     bailao = next(
-        response for response in liaison_decided if response.candidate_id == "per_e42110d6d55c5145b6ff91e7169bffae"
+        response
+        for response in liaison_decided
+        if response.candidate_id == "per_e42110d6d55c5145b6ff91e7169bffae"
     )
     assert bailao.share == Decimal("0.17")
 

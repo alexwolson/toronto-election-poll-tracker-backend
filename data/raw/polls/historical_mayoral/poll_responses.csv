@@ -170,13 +170,13 @@ ipsos_2023_total_repercentaged,candidate-saunders,candidate,per_6df1a502d1b45036
 ipsos_2023_total_repercentaged,other,other,,,,Other,8,9.7%,0.097,Other remains a poll response and not an Unmeasured Candidate Tail estimate.
 forum_2022_oct08_decided_leaning,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,56%,0.56,Source-published percentage and label preserved exactly.
 forum_2022_oct08_decided_leaning,penalosa,candidate,per_77e692e7548a5e4e98e842b5bb38b8a9,Gil Peñalosa,individually_published,Gil Penalosa,2,20%,0.2,Source-published percentage and label preserved exactly.
-forum_2022_oct08_decided_leaning,brown,candidate,can_0a4ce7edba2e522ca838be9dddcdecee,Chloe Brown,individually_published,Chloe-Marie Brown,3,6%,0.06,Source-published percentage and label preserved exactly.
+forum_2022_oct08_decided_leaning,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe-Marie Brown,3,6%,0.06,Source-published percentage and label preserved exactly.
 forum_2022_oct08_decided_leaning,acton,candidate,per_830dd3152c6253f7b9bf701d1527612e,Blake Acton,individually_published,Blake Acton,4,6%,0.06,Source-published percentage and label preserved exactly.
 forum_2022_oct08_decided_leaning,other,other,,,,Other,5,12%,0.12,Source-published percentage and label preserved exactly.
 forum_2023_feb13_decided_leaning,layton,candidate,layton,Mike Layton,individually_published,Mike Layton,1,26%,0.26,Source-published percentage and label preserved exactly.
 forum_2023_feb13_decided_leaning,bailao,candidate,per_e42110d6d55c5145b6ff91e7169bffae,Ana Bailão,individually_published,Ana Bailao,2,11%,0.11,Source-published percentage and label preserved exactly.
 forum_2023_feb13_decided_leaning,penalosa,candidate,penalosa,Gil Peñalosa,individually_published,Gil Penalosa,3,17%,0.17,Source-published percentage and label preserved exactly.
-forum_2023_feb13_decided_leaning,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe-Marie Brown,4,13%,0.13,Source-published percentage and label preserved exactly.
+forum_2023_feb13_decided_leaning,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe-Marie Brown,4,13%,0.13,Source-published percentage and label preserved exactly.
 forum_2023_feb13_decided_leaning,bradford,candidate,per_d8dfddfb642358e299f4b428292666bf,Brad Bradford,individually_published,Brad Bradford,5,11%,0.11,Source-published percentage and label preserved exactly.
 forum_2023_feb13_decided_leaning,some_other_candidate,other,,,,Some other candidate,6,23%,0.23,Source-published percentage and label preserved exactly.
 forum_2023_mar23_all,matlow,candidate,per_69529146105a5d85ae577db19104ceed,Josh Matlow,individually_published,Josh Matlow,1,11%,0.11,Source-published percentage and label preserved exactly.
@@ -273,7 +273,7 @@ forum_2023_may26_all,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthon
 forum_2023_may26_all,bailao,candidate,per_e42110d6d55c5145b6ff91e7169bffae,Ana Bailão,individually_published,Ana Bailao,5,7,0.07,Source-published percentage and label preserved exactly.
 forum_2023_may26_all,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,6,0.06,Source-published percentage and label preserved exactly.
 forum_2023_may26_all,bradford,candidate,per_d8dfddfb642358e299f4b428292666bf,Brad Bradford,individually_published,Brad Bradford,7,4,0.04,Source-published percentage and label preserved exactly.
-forum_2023_may26_all,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,8,1,0.01,Source-published percentage and label preserved exactly.
+forum_2023_may26_all,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,8,1,0.01,Source-published percentage and label preserved exactly.
 forum_2023_may26_all,toronto_2023:rob-davis,candidate,per_2a0809ffec18563292e0e1363aff66f6,Rob Davis,individually_published,Rob Davis,9,0,0,Source-published percentage and label preserved exactly.
 forum_2023_may26_all,toronto_2023:anthony-perruzza,candidate,per_18786ecd2dc7506794ac10340a5f68f6,Anthony Perruzza,individually_published,Anthony Perruza,10,0,0,Source-published percentage and label preserved exactly.
 forum_2023_may26_all,toronto_2023:giorgio-mammoliti,candidate,per_3ec4e3ff861d57519f52e15b4a9449a7,Giorgio Mammoliti,individually_published,Giorgio Mammoliti,11,0,0,Source-published percentage and label preserved exactly.
@@ -288,7 +288,7 @@ forum_2023_may26_decided_leaning,furey,candidate,per_27c46c62f83c5dbaae44b65d34a
 forum_2023_may26_decided_leaning,bailao,candidate,per_e42110d6d55c5145b6ff91e7169bffae,Ana Bailão,individually_published,Ana Bailao,6,9,0.09,Source-published percentage and label preserved exactly.
 forum_2023_may26_decided_leaning,bradford,candidate,per_d8dfddfb642358e299f4b428292666bf,Brad Bradford,individually_published,Brad Bradford,7,5,0.05,Source-published percentage and label preserved exactly.
 forum_2023_may26_decided_leaning,some_other_candidate,other,,,,Some other candidate,8,8,0.08,Source-published percentage and label preserved exactly.
-forum_2023_may26_decided_leaning,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,offered_not_individually_published,Chloe Brown,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
+forum_2023_may26_decided_leaning,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,offered_not_individually_published,Chloe Brown,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_may26_decided_leaning,toronto_2023:rob-davis,candidate,per_2a0809ffec18563292e0e1363aff66f6,Rob Davis,offered_not_individually_published,Rob Davis,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_may26_decided_leaning,toronto_2023:anthony-perruzza,candidate,per_18786ecd2dc7506794ac10340a5f68f6,Anthony Perruzza,offered_not_individually_published,Anthony Perruza,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_may26_decided_leaning,toronto_2023:giorgio-mammoliti,candidate,per_3ec4e3ff861d57519f52e15b4a9449a7,Giorgio Mammoliti,offered_not_individually_published,Giorgio Mammoliti,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
@@ -300,7 +300,7 @@ forum_2023_jun02_all,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthon
 forum_2023_jun02_all,bailao,candidate,per_e42110d6d55c5145b6ff91e7169bffae,Ana Bailão,individually_published,Ana Bailao,5,7,0.07,Source-published percentage and label preserved exactly.
 forum_2023_jun02_all,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,6,0.06,Source-published percentage and label preserved exactly.
 forum_2023_jun02_all,bradford,candidate,per_d8dfddfb642358e299f4b428292666bf,Brad Bradford,individually_published,Brad Bradford,7,4,0.04,Source-published percentage and label preserved exactly.
-forum_2023_jun02_all,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,8,2,0.02,Source-published percentage and label preserved exactly.
+forum_2023_jun02_all,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,8,2,0.02,Source-published percentage and label preserved exactly.
 forum_2023_jun02_all,toronto_2023:rob-davis,candidate,per_2a0809ffec18563292e0e1363aff66f6,Rob Davis,individually_published,Rob Davis,9,0,0,Source-published percentage and label preserved exactly.
 forum_2023_jun02_all,toronto_2023:anthony-perruzza,candidate,per_18786ecd2dc7506794ac10340a5f68f6,Anthony Perruzza,individually_published,Anthony Perruza,10,0,0,Source-published percentage and label preserved exactly.
 forum_2023_jun02_all,toronto_2023:giorgio-mammoliti,candidate,per_3ec4e3ff861d57519f52e15b4a9449a7,Giorgio Mammoliti,individually_published,Giorgio Mammoliti,11,0,0,Source-published percentage and label preserved exactly.
@@ -315,7 +315,7 @@ forum_2023_jun02_decided_leaning,bailao,candidate,per_e42110d6d55c5145b6ff91e716
 forum_2023_jun02_decided_leaning,some_other_candidate,other,,,,Some other candidate,6,8,0.08,Source-published percentage and label preserved exactly.
 forum_2023_jun02_decided_leaning,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,7,7,0.07,Source-published percentage and label preserved exactly.
 forum_2023_jun02_decided_leaning,bradford,candidate,per_d8dfddfb642358e299f4b428292666bf,Brad Bradford,individually_published,Brad Bradford,8,5,0.05,Source-published percentage and label preserved exactly.
-forum_2023_jun02_decided_leaning,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,offered_not_individually_published,Chloe Brown,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
+forum_2023_jun02_decided_leaning,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,offered_not_individually_published,Chloe Brown,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_jun02_decided_leaning,toronto_2023:rob-davis,candidate,per_2a0809ffec18563292e0e1363aff66f6,Rob Davis,offered_not_individually_published,Rob Davis,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_jun02_decided_leaning,toronto_2023:anthony-perruzza,candidate,per_18786ecd2dc7506794ac10340a5f68f6,Anthony Perruzza,offered_not_individually_published,Anthony Perruza,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_jun02_decided_leaning,toronto_2023:giorgio-mammoliti,candidate,per_3ec4e3ff861d57519f52e15b4a9449a7,Giorgio Mammoliti,offered_not_individually_published,Giorgio Mammoliti,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
@@ -327,7 +327,7 @@ forum_2023_jun09_all,bailao,candidate,per_e42110d6d55c5145b6ff91e7169bffae,Ana B
 forum_2023_jun09_all,matlow,candidate,per_69529146105a5d85ae577db19104ceed,Josh Matlow,individually_published,Josh Matlow,5,7,0.07,Source-published percentage and label preserved exactly.
 forum_2023_jun09_all,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,5,0.05,Source-published percentage and label preserved exactly.
 forum_2023_jun09_all,bradford,candidate,per_d8dfddfb642358e299f4b428292666bf,Brad Bradford,individually_published,Brad Bradford,7,3,0.03,Source-published percentage and label preserved exactly.
-forum_2023_jun09_all,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,8,3,0.03,Source-published percentage and label preserved exactly.
+forum_2023_jun09_all,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,8,3,0.03,Source-published percentage and label preserved exactly.
 forum_2023_jun09_all,toronto_2023:giorgio-mammoliti,candidate,per_3ec4e3ff861d57519f52e15b4a9449a7,Giorgio Mammoliti,individually_published,Giorgio Mammoliti,9,1,0.01,Source-published percentage and label preserved exactly.
 forum_2023_jun09_all,toronto_2023:anthony-perruzza,candidate,per_18786ecd2dc7506794ac10340a5f68f6,Anthony Perruzza,individually_published,Anthony Perruza,10,0,0,Source-published percentage and label preserved exactly.
 forum_2023_jun09_all,toronto_2023:celina-caesar-chavannes,candidate,per_24f2faac6a7b5335856dc76026775ab7,Celina Caesar-Chavannes,individually_published,Celina Caesar-Chavannes,11,0,0,Source-published percentage and label preserved exactly.
@@ -342,7 +342,7 @@ forum_2023_jun09_decided_leaning,matlow,candidate,per_69529146105a5d85ae577db191
 forum_2023_jun09_decided_leaning,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,7,0.07,Source-published percentage and label preserved exactly.
 forum_2023_jun09_decided_leaning,bradford,candidate,per_d8dfddfb642358e299f4b428292666bf,Brad Bradford,individually_published,Brad Bradford,7,5,0.05,Source-published percentage and label preserved exactly.
 forum_2023_jun09_decided_leaning,some_other_candidate,other,,,,Some other candidate,8,10,0.1,Source-published percentage and label preserved exactly.
-forum_2023_jun09_decided_leaning,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,offered_not_individually_published,Chloe Brown,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
+forum_2023_jun09_decided_leaning,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,offered_not_individually_published,Chloe Brown,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_jun09_decided_leaning,toronto_2023:rob-davis,candidate,per_2a0809ffec18563292e0e1363aff66f6,Rob Davis,offered_not_individually_published,Rob Davis,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_jun09_decided_leaning,toronto_2023:anthony-perruzza,candidate,per_18786ecd2dc7506794ac10340a5f68f6,Anthony Perruzza,offered_not_individually_published,Anthony Perruza,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_jun09_decided_leaning,toronto_2023:giorgio-mammoliti,candidate,per_3ec4e3ff861d57519f52e15b4a9449a7,Giorgio Mammoliti,offered_not_individually_published,Giorgio Mammoliti,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
@@ -354,7 +354,7 @@ forum_2023_jun23_all,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthon
 forum_2023_jun23_all,matlow,candidate,per_69529146105a5d85ae577db19104ceed,Josh Matlow,individually_published,Josh Matlow,5,7,0.07,Source-published percentage and label preserved exactly.
 forum_2023_jun23_all,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,4,0.04,Source-published percentage and label preserved exactly.
 forum_2023_jun23_all,bradford,candidate,per_d8dfddfb642358e299f4b428292666bf,Brad Bradford,individually_published,Brad Bradford,7,2,0.02,Source-published percentage and label preserved exactly.
-forum_2023_jun23_all,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,8,2,0.02,Source-published percentage and label preserved exactly.
+forum_2023_jun23_all,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,8,2,0.02,Source-published percentage and label preserved exactly.
 forum_2023_jun23_all,toronto_2023:anthony-perruzza,candidate,per_18786ecd2dc7506794ac10340a5f68f6,Anthony Perruzza,individually_published,Anthony Perruza,9,0,0,Source-published percentage and label preserved exactly.
 forum_2023_jun23_all,toronto_2023:celina-caesar-chavannes,candidate,per_24f2faac6a7b5335856dc76026775ab7,Celina Caesar-Chavannes,individually_published,Celina Caesar-Chavannes,10,0,0,Source-published percentage and label preserved exactly.
 forum_2023_jun23_all,toronto_2023:rob-davis,candidate,per_2a0809ffec18563292e0e1363aff66f6,Rob Davis,individually_published,Rob Davis,11,0,0,Source-published percentage and label preserved exactly.
@@ -369,7 +369,7 @@ forum_2023_jun23_decided_leaning,matlow,candidate,per_69529146105a5d85ae577db191
 forum_2023_jun23_decided_leaning,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,5,0.05,Source-published percentage and label preserved exactly.
 forum_2023_jun23_decided_leaning,bradford,candidate,per_d8dfddfb642358e299f4b428292666bf,Brad Bradford,individually_published,Brad Bradford,7,3,0.03,Source-published percentage and label preserved exactly.
 forum_2023_jun23_decided_leaning,some_other_candidate,other,,,,Some other candidate,8,9,0.09,Source-published percentage and label preserved exactly.
-forum_2023_jun23_decided_leaning,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,offered_not_individually_published,Chloe Brown,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
+forum_2023_jun23_decided_leaning,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,offered_not_individually_published,Chloe Brown,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_jun23_decided_leaning,toronto_2023:rob-davis,candidate,per_2a0809ffec18563292e0e1363aff66f6,Rob Davis,offered_not_individually_published,Rob Davis,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_jun23_decided_leaning,toronto_2023:anthony-perruzza,candidate,per_18786ecd2dc7506794ac10340a5f68f6,Anthony Perruzza,offered_not_individually_published,Anthony Perruza,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
 forum_2023_jun23_decided_leaning,toronto_2023:giorgio-mammoliti,candidate,per_3ec4e3ff861d57519f52e15b4a9449a7,Giorgio Mammoliti,offered_not_individually_published,Giorgio Mammoliti,,,,Candidate is printed in the same sample's all-respondent ballot table but omitted from this decided/leaning table; no value or row order is inferred.
@@ -629,7 +629,7 @@ mainstreet_2023_apr13_all,candidate-chow,candidate,per_a4291ca7539b53e2acc1c4f10
 mainstreet_2023_apr13_all,candidate-mammoliti,candidate,per_3ec4e3ff861d57519f52e15b4a9449a7,Giorgio Mammoliti,individually_published,Georgio Mammolitti,7,3.4%,0.034,
 mainstreet_2023_apr13_all,candidate-davis,candidate,per_2a0809ffec18563292e0e1363aff66f6,Rob Davis,individually_published,Rob Davis,8,0.9%,0.009,
 mainstreet_2023_apr13_all,candidate-penalosa,candidate,penalosa,Gil Peñalosa,individually_published,Gil Penalosa,9,3.3%,0.033,
-mainstreet_2023_apr13_all,candidate-brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,10,3.1%,0.031,
+mainstreet_2023_apr13_all,candidate-brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,10,3.1%,0.031,
 mainstreet_2023_apr13_all,candidate-saccoccia,candidate,per_a6020eb075f450f2b743fbfc12a07170,Chris Saccoccia,individually_published,Chris Saccoccia,11,2%,0.02,
 mainstreet_2023_apr13_all,candidate-caesar-chavannes,candidate,per_24f2faac6a7b5335856dc76026775ab7,Celina Caesar-Chavannes,individually_published,Celina Caesar-Chavannes,12,0.7%,0.007,
 mainstreet_2023_apr13_all,candidate-furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,13,2.1%,0.021,
@@ -1340,7 +1340,7 @@ mainstreet_2023_cp24_c__r1,saunders,candidate,per_6df1a502d1b450369a2cc477946398
 mainstreet_2023_cp24_c__r1,matlow,candidate,per_69529146105a5d85ae577db19104ceed,Josh Matlow,individually_published,Josh Matlow,4,12,0.12,Source-published token preserved; agreed across two reads.
 mainstreet_2023_cp24_c__r1,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,5,11,0.11,Source-published token preserved; agreed across two reads.
 mainstreet_2023_cp24_c__r1,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,6,0.06,Source-published token preserved; agreed across two reads.
-mainstreet_2023_cp24_c__r1,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,7,5,0.05,Source-published token preserved; agreed across two reads.
+mainstreet_2023_cp24_c__r1,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,7,5,0.05,Source-published token preserved; agreed across two reads.
 mainstreet_2023_cp24_c__r1,bradford,candidate,per_d8dfddfb642358e299f4b428292666bf,Brad Bradford,individually_published,Brad Bradford,8,4,0.04,Source-published token preserved; agreed across two reads.
 mainstreet_2023_cp24_b__r1,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,1,30,0.3,Source-published token preserved; agreed across two reads.
 mainstreet_2023_cp24_b__r1,bailao,candidate,per_e42110d6d55c5145b6ff91e7169bffae,Ana Bailão,individually_published,Ana Bailão,2,22,0.22,Source-published token preserved; agreed across two reads.
@@ -1349,7 +1349,7 @@ mainstreet_2023_cp24_b__r1,saunders,candidate,per_6df1a502d1b450369a2cc477946398
 mainstreet_2023_cp24_b__r1,matlow,candidate,per_69529146105a5d85ae577db19104ceed,Josh Matlow,individually_published,Josh Matlow,5,9,0.09,Source-published token preserved; agreed across two reads.
 mainstreet_2023_cp24_b__r1,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,5,0.05,Source-published token preserved; agreed across two reads.
 mainstreet_2023_cp24_b__r1,bradford,candidate,per_d8dfddfb642358e299f4b428292666bf,Brad Bradford,individually_published,Brad Bradford,7,2,0.02,Source-published token preserved; agreed across two reads.
-mainstreet_2023_cp24_b__r1,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,8,2,0.02,Source-published token preserved; agreed across two reads.
+mainstreet_2023_cp24_b__r1,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,8,2,0.02,Source-published token preserved; agreed across two reads.
 mainstreet_2023_may03_report__r1,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,1,31,0.31,Source-published token preserved; agreed across two reads.
 mainstreet_2023_may03_report__r1,bailao,candidate,per_e42110d6d55c5145b6ff91e7169bffae,Ana Bailão,individually_published,Ana Bailao,2,17,0.17,Source-published token preserved; agreed across two reads.
 mainstreet_2023_may03_report__r1,matlow,candidate,per_69529146105a5d85ae577db19104ceed,Josh Matlow,individually_published,Josh Matlow,3,15,0.15,Source-published token preserved; agreed across two reads.
@@ -1441,7 +1441,7 @@ mainstreet_2023-05-11_report__r1,matlow,candidate,per_69529146105a5d85ae577db191
 mainstreet_2023-05-11_report__r1,saunders,candidate,per_6df1a502d1b450369a2cc47794639812,Mark Saunders,individually_published,Mark Saunders,4,6.8,0.068,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-11_report__r1,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,5,20.5,0.205,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-11_report__r1,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,6.1,0.061,Source-published token preserved; agreed across two reads.
-mainstreet_2023-05-11_report__r1,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,7,3.5,0.035,Source-published token preserved; agreed across two reads.
+mainstreet_2023-05-11_report__r1,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,7,3.5,0.035,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-11_report__r1,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,8,4.9,0.049,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-11_report__r1,another-candidate,other,,,,Another Candidate,9,2.9,0.029,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-11_report__r1,undecided,undecided,,,,Undecided,10,35.2,0.352,Source-published token preserved; agreed across two reads.
@@ -1451,7 +1451,7 @@ mainstreet_2023-05-11_report__r2,matlow,candidate,per_69529146105a5d85ae577db191
 mainstreet_2023-05-11_report__r2,saunders,candidate,per_6df1a502d1b450369a2cc47794639812,Mark Saunders,individually_published,Mark Saunders,4,12.3,0.123,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-11_report__r2,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,5,30.9,0.309,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-11_report__r2,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,8.6,0.086,Source-published token preserved; agreed across two reads.
-mainstreet_2023-05-11_report__r2,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,7,4.6,0.046,Source-published token preserved; agreed across two reads.
+mainstreet_2023-05-11_report__r2,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,7,4.6,0.046,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-11_report__r2,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,8,7.3,0.073,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-11_report__r2,another-candidate,other,,,,Another Candidate,9,4.9,0.049,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-25_report__r1,bailao,candidate,per_e42110d6d55c5145b6ff91e7169bffae,Ana Bailão,individually_published,Ana Bailao,1,12.7,0.127,Source-published token preserved; agreed across two reads.
@@ -1460,7 +1460,7 @@ mainstreet_2023-05-25_report__r1,matlow,candidate,per_69529146105a5d85ae577db191
 mainstreet_2023-05-25_report__r1,saunders,candidate,per_6df1a502d1b450369a2cc47794639812,Mark Saunders,individually_published,Mark Saunders,4,9,0.09,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-25_report__r1,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,5,28.3,0.283,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-25_report__r1,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,4.8,0.048,Source-published token preserved; agreed across two reads.
-mainstreet_2023-05-25_report__r1,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,7,1.7,0.017,Source-published token preserved; agreed across two reads.
+mainstreet_2023-05-25_report__r1,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,7,1.7,0.017,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-25_report__r1,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,8,7.7,0.077,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-25_report__r1,another-candidate,other,,,,Another Candidate,9,2.9,0.029,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-25_report__r1,undecided,undecided,,,,Undecided,10,20.8,0.208,Source-published token preserved; agreed across two reads.
@@ -1470,7 +1470,7 @@ mainstreet_2023-05-25_report__r2,matlow,candidate,per_69529146105a5d85ae577db191
 mainstreet_2023-05-25_report__r2,saunders,candidate,per_6df1a502d1b450369a2cc47794639812,Mark Saunders,individually_published,Mark Saunders,4,12.2,0.122,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-25_report__r2,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,5,34.7,0.347,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-25_report__r2,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,5.4,0.054,Source-published token preserved; agreed across two reads.
-mainstreet_2023-05-25_report__r2,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,7,2.1,0.021,Source-published token preserved; agreed across two reads.
+mainstreet_2023-05-25_report__r2,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,7,2.1,0.021,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-25_report__r2,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,8,9,0.09,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-25_report__r2,another-candidate,other,,,,Another Candidate,9,4.6,0.046,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-31_report__r1,bailao,candidate,per_e42110d6d55c5145b6ff91e7169bffae,Ana Bailão,individually_published,Ana Bailao,1,14,0.14,Source-published token preserved; agreed across two reads.
@@ -1479,7 +1479,7 @@ mainstreet_2023-05-31_report__r1,matlow,candidate,per_69529146105a5d85ae577db191
 mainstreet_2023-05-31_report__r1,saunders,candidate,per_6df1a502d1b450369a2cc47794639812,Mark Saunders,individually_published,Mark Saunders,4,10,0.1,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-31_report__r1,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,5,27,0.27,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-31_report__r1,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,6,0.06,Source-published token preserved; agreed across two reads.
-mainstreet_2023-05-31_report__r1,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,7,3,0.03,Source-published token preserved; agreed across two reads.
+mainstreet_2023-05-31_report__r1,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,7,3,0.03,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-31_report__r1,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,8,7,0.07,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-31_report__r1,another-candidate,other,,,,Another Candidate,9,4,0.04,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-31_report__r1,undecided,undecided,,,,Undecided,10,16,0.16,Source-published token preserved; agreed across two reads.
@@ -1489,7 +1489,7 @@ mainstreet_2023-05-31_report__r2,matlow,candidate,per_69529146105a5d85ae577db191
 mainstreet_2023-05-31_report__r2,saunders,candidate,per_6df1a502d1b450369a2cc47794639812,Mark Saunders,individually_published,Mark Saunders,4,12,0.12,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-31_report__r2,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,5,32,0.32,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-31_report__r2,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,7,0.07,Source-published token preserved; agreed across two reads.
-mainstreet_2023-05-31_report__r2,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,7,4,0.04,Source-published token preserved; agreed across two reads.
+mainstreet_2023-05-31_report__r2,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,7,4,0.04,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-31_report__r2,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,8,9,0.09,Source-published token preserved; agreed across two reads.
 mainstreet_2023-05-31_report__r2,another-candidate,other,,,,Another Candidate,9,5,0.05,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-08_report__r1,bailao,candidate,per_e42110d6d55c5145b6ff91e7169bffae,Ana Bailão,individually_published,Ana Bailao,1,15.3,0.153,Source-published token preserved; agreed across two reads.
@@ -1498,7 +1498,7 @@ mainstreet_2023-06-08_report__r1,matlow,candidate,per_69529146105a5d85ae577db191
 mainstreet_2023-06-08_report__r1,saunders,candidate,per_6df1a502d1b450369a2cc47794639812,Mark Saunders,individually_published,Mark Saunders,4,10.6,0.106,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-08_report__r1,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,5,24.3,0.243,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-08_report__r1,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,7.4,0.074,Source-published token preserved; agreed across two reads.
-mainstreet_2023-06-08_report__r1,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,7,2.4,0.024,Source-published token preserved; agreed across two reads.
+mainstreet_2023-06-08_report__r1,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,7,2.4,0.024,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-08_report__r1,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,8,7.3,0.073,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-08_report__r1,another-candidate,other,,,,Another Candidate,9,1.6,0.016,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-08_report__r1,undecided,undecided,,,,Undecided,10,19.7,0.197,Source-published token preserved; agreed across two reads.
@@ -1508,7 +1508,7 @@ mainstreet_2023-06-08_report__r2,matlow,candidate,per_69529146105a5d85ae577db191
 mainstreet_2023-06-08_report__r2,saunders,candidate,per_6df1a502d1b450369a2cc47794639812,Mark Saunders,individually_published,Mark Saunders,4,13.1,0.131,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-08_report__r2,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,5,28.6,0.286,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-08_report__r2,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,8.9,0.089,Source-published token preserved; agreed across two reads.
-mainstreet_2023-06-08_report__r2,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,7,2.8,0.028,Source-published token preserved; agreed across two reads.
+mainstreet_2023-06-08_report__r2,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,7,2.8,0.028,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-08_report__r2,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,8,8.6,0.086,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-08_report__r2,another-candidate,other,,,,Another Candidate,9,3.5,0.035,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-25_report__r1,bailao,candidate,per_e42110d6d55c5145b6ff91e7169bffae,Ana Bailão,individually_published,Ana Bailao,1,27.9,0.279,Source-published token preserved; agreed across two reads.
@@ -1517,7 +1517,7 @@ mainstreet_2023-06-25_report__r1,matlow,candidate,per_69529146105a5d85ae577db191
 mainstreet_2023-06-25_report__r1,saunders,candidate,per_6df1a502d1b450369a2cc47794639812,Mark Saunders,individually_published,Mark Saunders,4,8.2,0.082,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-25_report__r1,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,5,32.6,0.326,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-25_report__r1,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,3.9,0.039,Source-published token preserved; agreed across two reads.
-mainstreet_2023-06-25_report__r1,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,7,0.8,0.008,Source-published token preserved; agreed across two reads.
+mainstreet_2023-06-25_report__r1,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,7,0.8,0.008,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-25_report__r1,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,8,7.3,0.073,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-25_report__r1,another-candidate,other,,,,Another Candidate,9,2.6,0.026,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-25_report__r1,undecided,undecided,,,,Undecided,10,9.1,0.091,Source-published token preserved; agreed across two reads.
@@ -1527,6 +1527,6 @@ mainstreet_2023-06-25_report__r2,matlow,candidate,per_69529146105a5d85ae577db191
 mainstreet_2023-06-25_report__r2,saunders,candidate,per_6df1a502d1b450369a2cc47794639812,Mark Saunders,individually_published,Mark Saunders,4,9,0.09,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-25_report__r2,chow,candidate,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,individually_published,Olivia Chow,5,35.9,0.359,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-25_report__r2,hunter,candidate,per_6c4d13bdb048521e8decad122d81128a,Mitzie Hunter,individually_published,Mitzie Hunter,6,4.6,0.046,Source-published token preserved; agreed across two reads.
-mainstreet_2023-06-25_report__r2,brown,candidate,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,individually_published,Chloe Brown,7,0.9,0.009,Source-published token preserved; agreed across two reads.
+mainstreet_2023-06-25_report__r2,brown,candidate,per_3d3501723d055766800769f77751b3bf,Chloe Brown,individually_published,Chloe Brown,7,0.9,0.009,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-25_report__r2,furey,candidate,per_27c46c62f83c5dbaae44b65d34a178c6,Anthony Furey,individually_published,Anthony Furey,8,7.9,0.079,Source-published token preserved; agreed across two reads.
 mainstreet_2023-06-25_report__r2,another-candidate,other,,,,Another Candidate,9,2.8,0.028,Source-published token preserved; agreed across two reads.

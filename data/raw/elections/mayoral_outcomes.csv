@@ -221,7 +221,6 @@ toronto_2018,per_ca6dcba1d1715eab92254efbd75b26ff,Monowar Hossain,Hossain Monowa
 toronto_2018,per_f176253f1d0852e08962e3217283a812,Jakob Vardy,Vardy Jakob,757,755493,0.001001994723974941,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2018
 toronto_2018,per_fd5a41d5e2b950859ccf0598f5424530,Andrzej Kardys,Kardys Andrzej,1035,755493,0.001369966366332977,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2018
 toronto_2018,per_ffb263466b6251c1b280184bf3eedc7a,Christopher Humphrey,Humphrey Christopher,1428,755493,0.001890156493839122,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2018
-toronto_2022,can_0a4ce7edba2e522ca838be9dddcdecee,Chloe-Marie Brown,Brown Chloe-Marie,34821,551890,0.063094094837739405,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2022
 toronto_2022,can_10b7ae4c81cc5e1982c5e91eea050fa0,Knia Singh,Singh Knia,3030,551890,0.005490224501259309,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2022
 toronto_2022,can_1d782a80905b5c87b0af521fbaac88d9,Tony Luk,Luk Tony,6662,551890,0.012071246081646705,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2022
 toronto_2022,can_9d27262b83f25fb8a76d8ae72a18481c,Elvira Caputolan,Caputolan Elvira,1280,551890,0.002319302759607893,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2022
@@ -234,6 +233,7 @@ toronto_2022,per_1fb558ab3343524eb3d4a8e94e6e615b,Kris Langenfeld,Langenfeld Kri
 toronto_2022,per_24e4f4fc217c5db6849d74005b7bcfce,Reginald Tull,Tull Reginald,3935,551890,0.007130044030513327,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2022
 toronto_2022,per_2e09cc2131e850569ffcbc258da1e1e0,Stephen Punwasi,Punwasi Stephen,5236,551890,0.009487397851021037,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2022
 toronto_2022,per_3bcca97368575b6f819b1259f8c0327c,John Letonja,Letonja John,859,551890,0.001556469586330609,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2022
+toronto_2022,per_3d3501723d055766800769f77751b3bf,Chloe-Marie Brown,Brown Chloe-Marie,34821,551890,0.063094094837739405,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2022
 toronto_2022,per_44eeea26f85953059feb6f7142156801,Khadijah Jamal,Jamal Khadijah,3656,551890,0.006624508507130044,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2022
 toronto_2022,per_546a50310fbe5401a126a3864d97fbb3,Kevin Clarke,Clarke Kevin,4333,551890,0.007851202232328906,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2022
 toronto_2022,per_5542c2a9da75521a8c92b062a2f48b33,Peter Handjis,Handjis Peter,755,551890,0.001368026237112468,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2022
@@ -286,6 +286,7 @@ toronto_2023,per_3a2fd4dcc9125d67af5b628373f21fcd,Weizhen Tang,Tang Weizhen,125,
 toronto_2023,per_3bcca97368575b6f819b1259f8c0327c,John Letonja,Letonja John,45,724638,0.000062099972676012,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
 toronto_2023,per_3c4c47a1baa15013a01f794c9d2f9194,Frank D'Angelo,D'Angelo Frank,343,724638,0.000473339791730492,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
 toronto_2023,per_3d01257b04ee593ba687dedd5c0fcf0b,Atef Aly,Aly Atef,147,724638,0.000202859910741639,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
+toronto_2023,per_3d3501723d055766800769f77751b3bf,Chloe Brown,Brown Chloe,18831,724638,0.025986768565821831,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
 toronto_2023,per_3ec4e3ff861d57519f52e15b4a9449a7,Giorgio Mammoliti,Mammoliti Giorgio,1105,724638,0.001524899329044295,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
 toronto_2023,per_402fead433b15ff0a78397d8a82a45d1,James Guglielmin,Guglielmin James,101,724638,0.000139379938672827,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
 toronto_2023,per_424fd6af33ed5e0bae4177a42cde6c21,Xiao Hua Gong,Gong Xiao Hua,2983,724638,0.004116538188723197,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
@@ -332,7 +333,6 @@ toronto_2023,per_a4291ca7539b53e2acc1c4f108bc73e6,Olivia Chow,Chow Olivia,269372
 toronto_2023,per_a49b2b1d5390538b931d307bf5e340ce,Darren Atkinson,Atkinson Darren,192,724638,0.000264959883417651,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
 toronto_2023,per_a4fd4e25c3395cb0a5b8b6f82fa5ecad,Yuanqian Wei,Wei Yuanqian,78,724638,0.000107639952638421,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
 toronto_2023,per_a6020eb075f450f2b743fbfc12a07170,Chris Saccoccia,Saccoccia Chris,8001,724638,0.011041375141794938,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
-toronto_2023,per_abd4663f08cb5b11bbe72c502697a809,Chloe Brown,Brown Chloe,18831,724638,0.025986768565821831,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
 toronto_2023,per_af9b42612918591ca5bd5d03c1927be5,Lyall Sanders,Sanders Lyall,2775,724638,0.003829498315020741,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
 toronto_2023,per_b5ab3633dfdf5f78a4d1f7171b915c09,Michael Jensen,Jensen Michael,115,724638,0.000158699930172031,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023
 toronto_2023,per_bec5516fb8b55eb7a771e956b6fa6631,Monica Forrester,Forrester Monica,278,724638,0.000383639831198474,false,election_results,represented_body=toronto_city_council;office_type=mayor;year=2023

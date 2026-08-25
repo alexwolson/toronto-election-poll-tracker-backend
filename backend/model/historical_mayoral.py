@@ -1471,6 +1471,54 @@ def _load_crosswalk(path: Path) -> tuple[LegacyPollCrosswalk, ...]:
     return tuple(result)
 
 
+def _poll_candidate_ids_resolve_to_outcomes(
+    corpus: HistoricalMayoralCorpus,
+) -> None:
+    """Fail if a source-verified poll response pins a canonical candidate id that
+    is absent from its cycle's official outcome.
+
+    The audited poll corpus pins canonical identifiers (``person_id`` /
+    ``candidacy_id``, ADR 0045), and the canonical dataset can re-resolve a person
+    across refreshes — linking a candidacy to a different id than the one recorded
+    when the poll was ingested. A stale pin is silently tolerated by the endpoint
+    selector, which drops any reading whose ``candidate_field`` is not a subset of
+    the cycle's outcome ids, quietly starving the cycle of poll evidence. Catch it
+    here as a hard error instead. Non-canonical slug ids (polled candidates who
+    never reached the final ballot) are exempt by construction.
+    """
+    outcome_ids_by_cycle: dict[str, set[str]] = defaultdict(set)
+    for outcome in corpus.outcomes:
+        outcome_ids_by_cycle[outcome.election_cycle_id].add(outcome.candidate_id)
+    cycle_by_sample = {
+        sample.poll_sample_id: sample.election_cycle_id
+        for sample in corpus.poll_samples
+    }
+    cycle_by_reading = {
+        reading.poll_reading_id: cycle_by_sample.get(reading.poll_sample_id)
+        for reading in corpus.poll_readings
+    }
+    orphans: set[str] = set()
+    for response in corpus.poll_responses:
+        candidate_id = response.candidate_id
+        if (
+            response.response_kind != "candidate"
+            or candidate_id is None
+            or not candidate_id.startswith(("per_", "can_"))
+        ):
+            continue
+        cycle = cycle_by_reading.get(response.poll_reading_id)
+        if cycle is not None and candidate_id not in outcome_ids_by_cycle.get(
+            cycle, set()
+        ):
+            orphans.add(f"{cycle}:{candidate_id}")
+    if orphans:
+        raise HistoricalMayoralDataError(
+            "poll response pins a canonical candidate id absent from its cycle "
+            "outcome (stale identity link after a canonical refresh): "
+            + ", ".join(sorted(orphans))
+        )
+
+
 def _validate_corpus(corpus: HistoricalMayoralCorpus, legacy_poll_path: Path) -> None:
     election_by_id = {row.election_cycle_id: row for row in corpus.elections}
     if set(election_by_id) != {
@@ -1484,7 +1532,6 @@ def _validate_corpus(corpus: HistoricalMayoralCorpus, legacy_poll_path: Path) ->
     }:
         raise HistoricalMayoralDataError("canonical corpus must contain seven cycles")
     outcomes_by_cycle: dict[str, list[MayoralOutcome]] = defaultdict(list)
-    canonical_names_by_id: dict[str, set[str]] = defaultdict(set)
     for outcome in corpus.outcomes:
         if outcome.election_cycle_id not in election_by_id:
             raise HistoricalMayoralDataError("outcome references unknown election")
@@ -1492,11 +1539,12 @@ def _validate_corpus(corpus: HistoricalMayoralCorpus, legacy_poll_path: Path) ->
         # of the election manifest's ballot-timing provenance, so they are no
         # longer required to share a source_document_id.
         outcomes_by_cycle[outcome.election_cycle_id].append(outcome)
-        canonical_names_by_id[outcome.candidate_id].add(outcome.candidate_name)
-    if any(len(names) != 1 for names in canonical_names_by_id.values()):
-        raise HistoricalMayoralDataError(
-            "a candidate ID maps to conflicting canonical outcome names"
-        )
+    # A ``candidate_id`` (canonical ``person_id``, ADR 0045) may carry different
+    # reported names across cycles: the canonical is the identity authority and
+    # links the same person even when their name differs between candidacies
+    # (e.g. "Chloe-Marie Brown" in 2022, "Chloe Brown" in 2023). Per-cycle
+    # candidate_id uniqueness is enforced below; a single display name per person
+    # is not an invariant of the canonical identity model.
     expected_counts = {
         "toronto_2003": 44,
         "toronto_2006": 38,
@@ -1593,6 +1641,8 @@ def _validate_corpus(corpus: HistoricalMayoralCorpus, legacy_poll_path: Path) ->
         raise HistoricalMayoralDataError(
             "legacy crosswalk does not cover every poll ID"
         )
+
+    _poll_candidate_ids_resolve_to_outcomes(corpus)
 
 
 def _normalized_name(value: str) -> str:
