@@ -3,6 +3,7 @@ from datetime import time, timedelta
 from decimal import Decimal
 from pathlib import Path
 
+import numpy as np
 import pytest
 
 from backend.model.historical_mayoral import load_historical_mayoral_corpus
@@ -141,10 +142,17 @@ def test_selector_ignores_poll_residual_and_normalizes_only_numeric_candidates()
         if row.poll_reading_id == "forum_2018_oct10_decided_leaning"
     )
 
-    assert set(forum.candidate_shares) == {"per_a9eb70da799659daaa285f92cfed1674", "per_49a098eb192452f988a3a579ef7f9cca"}
+    assert set(forum.candidate_shares) == {
+        "per_a9eb70da799659daaa285f92cfed1674",
+        "per_49a098eb192452f988a3a579ef7f9cca",
+    }
     assert sum(forum.candidate_shares.values(), Decimal(0)) == Decimal(1)
-    assert forum.candidate_shares["per_a9eb70da799659daaa285f92cfed1674"] == Decimal(56) / Decimal(85)
-    assert forum.candidate_shares["per_49a098eb192452f988a3a579ef7f9cca"] == Decimal(29) / Decimal(85)
+    assert forum.candidate_shares["per_a9eb70da799659daaa285f92cfed1674"] == Decimal(
+        56
+    ) / Decimal(85)
+    assert forum.candidate_shares["per_49a098eb192452f988a3a579ef7f9cca"] == Decimal(
+        29
+    ) / Decimal(85)
 
 
 def test_partial_unknown_head_to_head_is_not_forecast_evidence() -> None:
@@ -436,16 +444,8 @@ def test_candidate_order_does_not_change_the_fitted_distribution() -> None:
     }
 
     assert original.candidate_ids == target.candidate_ids
-    assert (
-        tuple(
-            tuple(
-                row[permuted_index[candidate_id]]
-                for candidate_id in original.candidate_ids
-            )
-            for row in permuted.draws
-        )
-        == original.draws
-    )
+    columns = [permuted_index[candidate_id] for candidate_id in original.candidate_ids]
+    assert np.array_equal(permuted.draws[:, columns], original.draws)
 
 
 def test_cross_cycle_evidence_fails_closed() -> None:

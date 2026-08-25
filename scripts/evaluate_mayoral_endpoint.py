@@ -8,18 +8,17 @@ import sys
 from dataclasses import asdict
 from pathlib import Path
 
-
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from backend.model.historical_mayoral import load_historical_mayoral_corpus
 from backend.model.mayoral_endpoint import (
+    DRAW_COUNT,
     MAYORAL_ENDPOINT_ANALYSIS_TIME_LOCAL,
     MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES,
 )
 from backend.model.mayoral_endpoint_qualification import (
     MAYORAL_ENDPOINT_ABSOLUTE_MAXIMUM_SCORES,
-    MAYORAL_ENDPOINT_EVALUATION_DRAW_COUNT,
     evaluate_mayoral_endpoint_qualification,
 )
 from backend.model.mayoral_evaluation import (
@@ -32,7 +31,6 @@ from backend.model.mayoral_evaluation import (
     binary_brier_metric,
     binary_log_loss_metric,
 )
-
 
 _SUMMARY_METRICS = (
     MAYORAL_MODEL_FAMILY_PRIMARY,
@@ -84,7 +82,7 @@ def main() -> None:
         "configuration": {
             "lead_times": MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES,
             "analysis_time_local": str(MAYORAL_ENDPOINT_ANALYSIS_TIME_LOCAL),
-            "draw_count": MAYORAL_ENDPOINT_EVALUATION_DRAW_COUNT,
+            "draw_count": DRAW_COUNT,
             "primary_metric": MAYORAL_MODEL_FAMILY_PRIMARY,
             "log_loss_guard": MAYORAL_MODEL_FAMILY_LOG_GUARD,
             "absolute_maximum_scores": MAYORAL_ENDPOINT_ABSOLUTE_MAXIMUM_SCORES,

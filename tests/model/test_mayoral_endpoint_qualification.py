@@ -1,10 +1,12 @@
 from pathlib import Path
 
 from backend.model.historical_mayoral import load_historical_mayoral_corpus
-from backend.model.mayoral_endpoint import MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES
+from backend.model.mayoral_endpoint import (
+    DRAW_COUNT,
+    MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES,
+)
 from backend.model.mayoral_endpoint_qualification import (
     MAYORAL_ENDPOINT_ABSOLUTE_MAXIMUM_SCORES,
-    MAYORAL_ENDPOINT_EVALUATION_DRAW_COUNT,
     MayoralEndpointQualification,
     evaluate_mayoral_endpoint_qualification,
 )
@@ -21,7 +23,7 @@ def test_endpoint_reliability_gate_is_configured_and_the_bridge_qualifies() -> N
         load_historical_mayoral_corpus(ROOT)
     )
 
-    assert MAYORAL_ENDPOINT_EVALUATION_DRAW_COUNT == 4096
+    assert DRAW_COUNT == 65536
     # ADR 0041: the absolute reliability gate is configured with comparator-anchored,
     # noise-aware maxima on the broad-reliability metric set.
     assert set(MAYORAL_ENDPOINT_ABSOLUTE_MAXIMUM_SCORES) == {

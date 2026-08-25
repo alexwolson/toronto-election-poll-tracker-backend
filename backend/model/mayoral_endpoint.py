@@ -50,6 +50,20 @@ _POINT_FLOOR: Final = 1e-12
 MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES: Final = (12, 7, 3, 1)
 MAYORAL_ENDPOINT_ANALYSIS_TIME_LOCAL: Final = time(12)
 
+# The predictive Monte-Carlo draw count: the published forecast (the Band
+# Stability Gate runs on these) and the LOOCV qualification/evaluation *prediction*
+# draws. These are pure forward sampling from a closed-form Dirichlet, so the count
+# only sets estimation precision (MC error ∝ 1/√N), never bias. Chosen large enough
+# that the 95% MC error is negligible against the Probability Band grid (a graze of
+# ~0.4pp near a boundary at 4096 forced Forecast Unavailable; 65536 shrinks it 4×);
+# past that threshold its exact value does not matter. Powers of two keep
+# win-probability counts exactly representable (k/N dyadic). It is cheap here — a
+# one-shot for the build (~2s) and +0.9s for the whole LOOCV — because each of these
+# uses samples the distribution once. Calibration is deliberately NOT on this knob
+# (see _CALIBRATION_DRAW_COUNT). Raising it re-scores qualification (verdicts
+# re-verified), so it is validated, not tuned (ADR 0030).
+DRAW_COUNT: Final = 65536
+
 EndpointVariant = Literal["latest-sample-comparator", "firm-balanced-bridge"]
 
 
@@ -129,7 +143,7 @@ class MayoralEndpointPredictor:
     """Deterministic fold-local predictor accepted by the evaluation harness."""
 
     variant: EndpointVariant
-    draw_count: int = 2048
+    draw_count: int
     tail_mass_multiplier: float = 1.0
     excluded_poll_sample_ids: frozenset[str] = frozenset()
     excluded_pollsters: frozenset[str] = frozenset()
@@ -180,7 +194,7 @@ def draws_from_point(
     point_shares: tuple[float, ...],
     concentration: float,
     draw_count: int,
-) -> tuple[tuple[float, ...], ...]:
+) -> np.ndarray:
     """Deterministically draw full-ballot shares from a fitted point + concentration.
 
     The seed is derived only from the canonicalized point and concentration, so a
@@ -206,10 +220,8 @@ def draws_from_point(
     draw_index = {
         candidate_id: index for index, candidate_id in enumerate(draw_candidate_ids)
     }
-    return tuple(
-        tuple(float(row[draw_index[candidate_id]]) for candidate_id in candidate_ids)
-        for row in canonical_draws
-    )
+    columns = [draw_index[candidate_id] for candidate_id in candidate_ids]
+    return canonical_draws[:, columns]
 
 
 def fit_mayoral_endpoint(
@@ -502,6 +514,13 @@ def _fit_tail_mass(
 _ConcentrationPairs = tuple[
     tuple[tuple[tuple[float, ...], tuple[float, ...]], ...], ...
 ]
+# The κ-calibration draw count. Deliberately its OWN, smaller constant — NOT
+# DRAW_COUNT — because calibration re-samples inside a 24-step bisection × a CRPS
+# guard × every LOOCV fold, so its cost scales ~linearly with the count (a single
+# fit is 1.3s at 1500 vs 59s at 65536 — 98% in numpy dirichlet+sort, so already
+# vectorized and irreducible). κ is within ~1% of its converged value here
+# (72.87 at 1500 vs 73.81 at 65536), which is well inside the calibration's own
+# tolerance, so the extra precision buys nothing at ~44× the cost. Frozen (ADR 0042).
 _CALIBRATION_DRAW_COUNT: Final = 1500
 _CALIBRATION_TARGET_PIT_DISPERSION: Final = 0.25  # mean|PIT-0.5| of a Uniform(0,1)
 _CALIBRATION_SCALE_BOUNDS: Final = (0.5, 4.0)
