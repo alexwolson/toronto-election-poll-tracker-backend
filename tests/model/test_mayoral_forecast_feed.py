@@ -56,9 +56,7 @@ def test_margin_distribution_is_a_normalized_nonnegative_density() -> None:
 def test_incumbent_defeat_is_one_minus_incumbent_win() -> None:
     q = forecast_quantities(DRAWS, incumbent_candidate_id="chow")
     assert q.incumbent_defeat.probability == 0.25
-    assert (
-        forecast_quantities(DRAWS, incumbent_candidate_id=None).incumbent_defeat is None
-    )
+    assert forecast_quantities(DRAWS, incumbent_candidate_id=None).incumbent_defeat is None
 
 
 def test_error_intervals_contain_the_estimate_and_stay_in_unit_interval() -> None:
@@ -68,9 +66,7 @@ def test_error_intervals_contain_the_estimate_and_stay_in_unit_interval() -> Non
 
 
 def test_a_tied_top_share_splits_the_winner_weight() -> None:
-    tied = FullBallotShareDraws(
-        candidate_ids=("a", "b"), draws=((0.5, 0.5), (0.5, 0.5))
-    )
+    tied = FullBallotShareDraws(candidate_ids=("a", "b"), draws=((0.5, 0.5), (0.5, 0.5)))
     q = forecast_quantities(tied, incumbent_candidate_id=None)
     assert q.candidate_win["a"].probability == 0.5
     assert q.candidate_win["b"].probability == 0.5
@@ -98,10 +94,7 @@ def test_leave_one_pollster_out_is_not_applicable_below_three_pollsters() -> Non
     } <= two
 
     three = {
-        label
-        for label, _ in _variant_predictors(
-            _stub(("Forum", "Liaison", "Mainstreet")), ROOT
-        )
+        label for label, _ in _variant_predictors(_stub(("Forum", "Liaison", "Mainstreet")), ROOT)
     }
     assert sum(label.startswith("leave-out-pollster:") for label in three) == 3
 
@@ -112,13 +105,16 @@ def test_uncertified_forecast_is_unavailable_at_tier_m1() -> None:
     live_cycle = {
         **load_live_cycle(ROOT / "data/raw/elections/live_cycle.json"),
         "field_certified": False,
+        # This unit test runs against the repository's legacy poll fixture. The
+        # production refresh hydrates these as canonical Person IDs first.
+        "viable_field": ["chow", "bradford", "alexander"],
+        "incumbent_candidate_id": "chow",
     }
     feed = build_mayoral_forecast_feed(ROOT, live_cycle)
     assert feed["evidence_tier"] == "M1 — Pre-Final Polling"
     assert feed["close_result"]["availability"] == "Forecast Unavailable"
     assert all(
-        card["availability"] == "Forecast Unavailable"
-        for card in feed["candidate_win"].values()
+        card["availability"] == "Forecast Unavailable" for card in feed["candidate_win"].values()
     )
     # Respect the gate: when the close-result summary is withheld, we do not leak
     # the margin distribution's shape either.

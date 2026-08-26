@@ -3,7 +3,7 @@
   "election_date": "2026-10-26",
   "nomination_close_date": "2026-08-21",
   "field_certified": true,
-  "viable_field": ["chow", "bradford", "alexander"],
-  "incumbent_candidate_id": "chow",
-  "notes": "Statutory dates, Ontario Municipal Elections Act 1996: voting day is the 4th Monday of October and nomination day is the 3rd Friday of August. field_certified is an explicit editorial flag the maintainer sets to true once nominations close AND the field is confirmed -- NOT derived from the clock, so the field-consistency tier (ADR 0046) never treats the field as final while nominations are still open. viable_field is the endpoint's modelled distinct candidate set, used as the tier's certified field only when field_certified is true. Candidate ids follow the current-cycle poll bundle."
+  "viable_field": ["per_a4291ca7539b53e2acc1c4f108bc73e6", "per_d8dfddfb642358e299f4b428292666bf", "per_345dd6a9ee645c0bb5a8ade615f91579"],
+  "incumbent_candidate_id": "per_a4291ca7539b53e2acc1c4f108bc73e6",
+  "notes": "Statutory dates, Ontario Municipal Elections Act 1996: voting day is the 4th Monday of October and nomination day is the 3rd Friday of August. field_certified is an explicit editorial flag. viable_field contains canonical Results Person IDs used by the Polling release."
 }

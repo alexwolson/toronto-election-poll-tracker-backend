@@ -2,10 +2,8 @@
 """Build the frontend publication package (INT).
 
 Emits the typed data feeds the frontend ingests, into data/processed/:
-  - mayoral_candidates.json certified ballot + canonical election histories
-  - mayoral_polling.json   descriptive current-cycle polls + raw trend
   - mayoral_forecast.json  per-quantity evidence tier, availability, published band
-  - manifest.json          index + live-cycle Final-Ballot state + feed versions
+  - manifest.json          model index + live-cycle Final-Ballot state
 The council feed (council_race_cards.json) is produced by build_council_snapshot.py.
 
 Run: uv run scripts/build_publication_snapshot.py
@@ -22,20 +20,10 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from backend.model.council_hints import load_officeholding_history
 from backend.model.council_snapshot import COUNCIL_RACE_CARD_SCHEMA_VERSION
-from backend.model.mayoral_candidates_feed import (
-    MAYORAL_CANDIDATES_FEED_SCHEMA_VERSION,
-    build_mayoral_candidates_feed,
-    load_registered_mayoral_candidates,
-)
 from backend.model.mayoral_forecast_feed import (
     MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
     build_mayoral_forecast_feed,
-)
-from backend.model.mayoral_polling_feed import (
-    MAYORAL_POLLING_FEED_SCHEMA_VERSION,
-    build_mayoral_polling_feed,
 )
 from backend.model.publication_manifest import (
     build_publication_manifest,
@@ -70,17 +58,7 @@ def _write(name: str, payload: dict) -> None:
 def main() -> None:
     as_of = datetime.now(ZoneInfo("America/Toronto")).date().isoformat()
 
-    polling = build_mayoral_polling_feed(RAW / "polls" / "polls.csv")
-    _write("mayoral_polling.json", polling)
-
     live_cycle = load_live_cycle(RAW / "elections" / "live_cycle.json")
-    candidates = build_mayoral_candidates_feed(
-        load_registered_mayoral_candidates(RAW / "candidates" / "mayor_registered.csv"),
-        live_cycle,
-        load_officeholding_history(RAW / "canonical" / "election_results.csv"),
-    )
-    _write("mayoral_candidates.json", candidates)
-
     forecast = build_mayoral_forecast_feed(ROOT, live_cycle)
     _write("mayoral_forecast.json", forecast)
 
@@ -88,9 +66,7 @@ def main() -> None:
         as_of=as_of,
         live_cycle=live_cycle,
         feed_versions={
-            "mayoral_candidates": MAYORAL_CANDIDATES_FEED_SCHEMA_VERSION,
             "mayoral_forecast": MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
-            "mayoral_polling": MAYORAL_POLLING_FEED_SCHEMA_VERSION,
             "council_race_cards": COUNCIL_RACE_CARD_SCHEMA_VERSION,
         },
         mayoral_publication_summary=_publication_summary(forecast),

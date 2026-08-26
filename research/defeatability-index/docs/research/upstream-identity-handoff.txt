@@ -1,0 +1,161 @@
+RESOLVED UPSTREAM HANDOFF: 12 CONSEQUENTIAL COUNCIL IDENTITY CASES
+
+Resolution update
+-----------------
+All 12 links below are published in the upstream release generated
+2026-08-21T00:09:33.813600Z. Its election_results.csv SHA-256 is
+bafd8f99f98709e14343a26c094e24c8b5069bf2e1cba818feea886994caf569.
+The list below is retained as the handoff record and is no longer an open request.
+
+Source release: toronto-election-results schema 2.0.0
+Generated: 2026-08-20T23:41:31.329657Z
+election_results.csv SHA-256: 1fb95d9e0e5c8ef9c19721a1c6e639cf032c7789348097244111ddf214e350f4
+
+Why these 12 matter
+-------------------
+Each council Candidacy is still null-linked in election_results.csv, while its retained
+identity-review target has at least one certified win in another office before the council
+election. All 12 council Candidacies lost. Consequently, leaving them unresolved makes the
+observed Prior-officeholder group strongly outcome-selected and blocks the downstream
+predictive conclusion.
+
+A strict primary/first-party source audit supports confirming nine links. Three links still
+lack an admissible bridge and should remain unresolved. Exact-name matching alone is not the
+basis for any recommendation.
+
+CONFIRM: nine evidence-backed links
+-----------------------------------
+
+1. Matthew Kellway
+   Council Candidacy: can_8702c409b44c56869788d0fcb7ee8999
+   Election: 2018-10-22 council general election
+   Retained Person: per_b05bca5a3f225453b8484ce46c8b2bb8
+   Prior winning office: MP
+   Bridge: candidate-authored 2018 Ward 19 questionnaire identifies the council campaign
+   and his service as MP for Beaches-East York; House of Commons record corroborates service.
+   Sources:
+   https://deca.to/ward-19-candidate-qa-matthew-kellway/
+   https://www.ourcommons.ca/Members/en/matthew-kellway%2871585%29
+
+2. Jennifer Arp
+   Council Candidacy: can_246c0347d317593aa183f92681afb95e
+   Election: 2018-10-22 council general election
+   Retained Person: per_c264c8a222ea5baea6a15b1bfeac3ae0
+   Prior winning office: TDSB trustee
+   Bridge: archived first-party council campaign identifies her as the 2018 candidate and
+   says she was elected public-school trustee in 2014.
+   Sources:
+   https://web.archive.org/web/20181214222254/https://www.jenniferarp.ca/
+   https://web.archive.org/web/20181026215109/https://www.jenniferarp.ca/about
+
+3. Ken Lister
+   Council Candidacy: can_b07911ac186c5fedbb0acd5ccd8a2bd8
+   Election: 2018-10-22 council general election
+   Retained Person: per_fd89e2daa64b5513ba56eb9e1c8b51f7
+   Prior winning office: TDSB trustee
+   Bridge: archived first-party council campaign says he served four years as a TDSB
+   trustee; TDSB biography corroborates the institutional identity.
+   Sources:
+   https://web.archive.org/web/20181026215226/https://www.kenlister.ca/
+   https://www.tdsb.on.ca/ward17/Ward17/KenListerBio.aspx
+
+4. Pamela Gough
+   Council Candidacy: can_690689c4111c50918c06f6b446c95d0d
+   Election: 2018-10-22 council general election
+   Retained Person: per_b94977f840da534caf789477d036ee8c
+   Prior winning office: TDSB trustee
+   Bridge: archived first-party Etobicoke-Lakeshore council campaign biography describes
+   her tenure as the area's elected TDSB trustee.
+   Sources:
+   https://web.archive.org/web/20181106153055/https://www.votegough.ca/
+   https://web.archive.org/web/20181106152912/https://www.votegough.ca/about-pamela/
+
+5. Tiffany Ford
+   Council Candidacy: can_34fbfb27258159f1b05bf2d0cb8302ff
+   Election: 2018-10-22 council general election
+   Retained Person: per_d56a01f9891c5106ba8bf6281c6f713c
+   Prior winning office: TDSB trustee
+   Bridge: archived first-party Ward 7 council campaign says she had served the preceding
+   three years as the local public-school trustee.
+   Source:
+   https://web.archive.org/web/20181214230713/https://tiffanyford2018.ca/
+
+6. Manna Wong
+   Council Candidacy: can_f9f7d971b99c52cf9a48edf7b1dd38ba
+   Election: 2021-01-15 Ward 22 council by-election
+   Retained Person: per_cbad12eb2bc15f4fb7ba5a96bd68dec9
+   Prior winning office: TDSB trustee
+   Bridge: candidate-authored council questionnaire says she had served as
+   Scarborough-Agincourt school trustee since 2014; City compliance record identifies the
+   Ward 22 council candidate.
+   Sources:
+   https://static1.squarespace.com/static/5aae198d96e76f27dc9377ce/t/5fd90dea89ea717cb5d4a69a/1608060394760/Manna%2BWong%2B-%2BScarbrough-Agincourt%2BBy-election%2BProgressive%2BChampion%2BSurvey%2B.pdf
+   https://secure.toronto.ca/council/agenda-item.do?item=2021.EA8.5
+
+7. Norm Di Pasquale
+   Council Candidacy: can_cc7dfd8b06db51e592901dc4b159ca78
+   Election: 2022-10-24 council general election
+   Retained Person: per_9f569a842c9e527b88cda3fc73dbfacb
+   Prior winning office: TCDSB trustee
+   Bridge: contemporaneous first-party campaign newsletter explicitly calls him both the
+   outgoing Catholic trustee and University-Rosedale council candidate; an official City
+   Council filing corroborates his trustee identity.
+   Sources:
+   https://www.kristynwongtam.ca/newsletter_october_7_2022
+   https://www.toronto.ca/legdocs/mmis/2022/cc/comm/communicationfile-152340.pdf
+
+8. Malika Ghous
+   Council Candidacy: can_94c9f534cc225dbbb74ad1b9aa11a1d7
+   Election: 2023-11-30 Ward 20 council by-election
+   Retained Person: per_74212bbadc535bca8fa201bda63cee06
+   Prior winning office: TDSB trustee
+   Bridge: candidate-authored council questionnaire identifies her as the sitting TDSB
+   trustee for Scarborough Southwest; City campaign-filing record identifies the council
+   campaign.
+   Sources:
+   https://beachmetro.com/2023/11/15/scarborough-southwest-byelection-2023-candidate-malika-ghous-answers-our-questions/
+   https://secure.toronto.ca/EFD/jsf/candidate2018/candidate_campaign_status.xhtml?campaign=20
+
+9. Anu Sriskandarajah
+   Council Candidacy: can_77360db1d61055b1862abdad17f5e03c
+   Election: 2025-09-29 Ward 25 council by-election
+   Retained Person: per_3c246b205ffd55298633b81a804f8b82
+   Prior winning office: TDSB trustee
+   Bridge: first-party council campaign says she served as school-board trustee for seven
+   years; the City's official candidate list links that campaign to her council Candidacy.
+   Sources:
+   https://www.dranu.ca/
+   https://www.toronto.ca/city-government/elections/ward-25-scarborough-rouge-park-by-election-list-of-candidates-third-party-advertisers/
+
+KEEP UNRESOLVED: three links without a qualifying bridge
+--------------------------------------------------------
+
+10. David Caplan
+    Council Candidacy: can_3b00773d04365f64a37bf88fce264eaf
+    Election: 2018-10-22 council general election
+    Retained Person: per_656bf9ee8956529195719d111d5fe53d
+    Target's prior winning office: MPP
+    Reason: official sources establish the council Candidacy and the target's MPP service,
+    but no located primary or first-party source explicitly bridges the 2018 candidate to
+    that former MPP. Available explicit bridges are secondary reporting only.
+
+11. Avtar Minhas
+    Council Candidacy: can_d0b1cdfb35165fb0acbf31c7cd5ae8c2
+    Election: 2022-10-24 council general election
+    Retained Person: per_194efd592b915c2ca63859d3ebbef5e0
+    Target's prior winning office: TDSB trustee
+    Reason: the retained target connects to the 2014 council loss and 2016 trustee win,
+    but no qualifying source bridges that person to the 2022 council Candidacy across the
+    changed district regime.
+
+12. Christopher Mammoliti
+    Council Candidacy: can_910c3031a66e5d91978ea8cb4b25fd15
+    Election: 2022-10-24 council general election
+    Retained Person: per_2d23abe818995711b696fd8b8f2af4ed
+    Target's prior winning office: TDSB trustee
+    Reason: official results establish same-name 2018 trustee and 2022 council rows, and a
+    current first-party biography confirms the trustee service, but it does not mention the
+    2022 council Candidacy. Explicit bridges were found only in secondary reporting.
+
+Full audit with prior election dates, outcomes, vote shares, and official-result sources:
+/Users/alex/code/personal/toronto-election/defeatability-index/docs/research/candidate-career-audit.md

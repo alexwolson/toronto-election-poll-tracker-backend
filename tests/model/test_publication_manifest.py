@@ -14,8 +14,7 @@ def _manifest(live_cycle, summary=None):
         as_of="2026-08-20",
         live_cycle=live_cycle,
         feed_versions={
-            "mayoral_candidates": 1,
-            "mayoral_polling": 1,
+            "mayoral_forecast": 2,
             "council_race_cards": 2,
         },
         mayoral_publication_summary=summary,
@@ -33,16 +32,14 @@ def test_final_ballot_certification_follows_the_explicit_flag_not_the_clock() ->
     assert _manifest(LIVE_CYCLE)["election"]["final_ballot_certified"] is True
 
 
-def test_manifest_indexes_all_five_feeds() -> None:
+def test_manifest_indexes_only_backend_owned_feeds() -> None:
     m = _manifest(LIVE_CYCLE)
     assert set(m["feeds"]) == {
         "mayoral_forecast",
-        "mayoral_candidates",
-        "mayoral_polling",
         "council_race_cards",
         "manifest",
     }
     assert m["generated_at"] == "2026-08-20"
     assert m["election"]["nomination_close_date"] == "2026-08-21"
     assert m["feed_versions"]["council_race_cards"] == 2
-    assert m["feed_versions"]["mayoral_candidates"] == 1
+    assert m["feed_versions"]["mayoral_forecast"] == 2

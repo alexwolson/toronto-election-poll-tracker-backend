@@ -30,7 +30,7 @@ from backend.model.historical_mayoral import load_historical_mayoral_corpus
 from backend.model.historical_mayoral_evaluation import (
     build_historical_mayoral_evaluation_cycles,
 )
-from backend.model.mayoral_candidate_ids import load_mayoral_candidate_ids
+from backend.model.mayoral_candidate_ids import load_canonical_mayoral_candidate_ids
 from backend.model.mayoral_endpoint import (
     DRAW_COUNT,
     MAYORAL_ENDPOINT_ANALYSIS_TIME_LOCAL,
@@ -211,9 +211,7 @@ def forecast_quantities(
     if incumbent_candidate_id is not None:
         if incumbent_candidate_id not in win_weight:
             raise ValueError("incumbent_candidate_id is not on the ballot")
-        incumbent_defeat = _estimate(
-            1.0 - win_weight[incumbent_candidate_id], draw_count
-        )
+        incumbent_defeat = _estimate(1.0 - win_weight[incumbent_candidate_id], draw_count)
     return MayoralForecastQuantities(
         candidate_win=candidate_win,
         close_result=close_result,
@@ -255,9 +253,7 @@ def load_live_forecast_inputs(root: str | Path, live_cycle: dict) -> LiveForecas
     incumbent = live_cycle["incumbent_candidate_id"]
     final_field = viable if bool(live_cycle["field_certified"]) else None
 
-    bundle = load_poll_source_bundle(
-        str(root / "data/raw/polls"), require_audited_sources=False
-    )
+    bundle = load_poll_source_bundle(str(root / "data/raw/polls"), require_audited_sources=False)
     measured = _measured_named_candidates(bundle)
     citywide = [
         sample
@@ -297,17 +293,16 @@ def load_live_forecast_inputs(root: str | Path, live_cycle: dict) -> LiveForecas
             sample.evidence_available_at for sample in final_field_samples
         ),
         poll_samples=tuple(
-            replace(sample, election_cycle_id=endpoint_cycle)
-            for sample in final_field_samples
+            replace(sample, election_cycle_id=endpoint_cycle) for sample in final_field_samples
         ),
         poll_readings=tuple(readings),
         poll_responses=tuple(responses),
     )
     snapshot = LeadTimeSnapshot(
         days_before_election=0,
-        analysis_cutoff=datetime.fromisoformat(
-            f"{live_cycle['election_date']}T12:00:00"
-        ).replace(tzinfo=_TORONTO),
+        analysis_cutoff=datetime.fromisoformat(f"{live_cycle['election_date']}T12:00:00").replace(
+            tzinfo=_TORONTO
+        ),
         evidence_revision=f"live-{cycle_id}",
         evidence=evidence,
     )
@@ -315,8 +310,8 @@ def load_live_forecast_inputs(root: str | Path, live_cycle: dict) -> LiveForecas
         election_cycle_id=endpoint_cycle,
         election_type="general",
         snapshot=snapshot,
-        candidate_ids=load_mayoral_candidate_ids(
-            root / "data/raw/candidates/mayor_registered.csv"
+        candidate_ids=load_canonical_mayoral_candidate_ids(
+            root / "data/upstream/results/mayoral_candidates.json"
         ),
         incumbent_candidate_id=incumbent,
     )
@@ -344,9 +339,7 @@ def load_live_forecast_inputs(root: str | Path, live_cycle: dict) -> LiveForecas
         incumbent_candidate_id=incumbent,
         viable_field=tuple(sorted(viable)),
         final_field_sample_ids=tuple(sorted(sample_ids)),
-        final_field_pollsters=tuple(
-            sorted({sample.pollster for sample in final_field_samples})
-        ),
+        final_field_pollsters=tuple(sorted({sample.pollster for sample in final_field_samples})),
     )
 
 
@@ -429,7 +422,7 @@ def _run_variants(
     for label, predictor in _variant_predictors(inputs, root):
         try:
             prediction = predictor(inputs.training, inputs.target)
-        except (MayoralEndpointDataError, IncumbencyEndpointError):
+        except MayoralEndpointDataError, IncumbencyEndpointError:
             per_variant[label] = None
             continue
         per_variant[label] = forecast_quantities(
@@ -522,8 +515,7 @@ def build_mayoral_forecast_feed(root: str | Path, live_cycle: dict) -> dict:
     bridge_base = per_variant.get("bridge-base")
     margin_distribution = (
         bridge_base.margin_distribution.to_feed(_CLOSE_THRESHOLD)
-        if close_result["availability"] == "Forecast Available"
-        and bridge_base is not None
+        if close_result["availability"] == "Forecast Available" and bridge_base is not None
         else None
     )
 

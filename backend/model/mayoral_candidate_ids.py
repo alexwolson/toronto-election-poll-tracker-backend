@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import csv
+import json
 import re
 import unicodedata
 from pathlib import Path
@@ -22,10 +23,7 @@ def mayoral_candidate_id(first_name: str, last_name: str) -> str:
     if known:
         return known
     ascii_name = (
-        unicodedata.normalize("NFKD", f"{first} {last}")
-        .encode("ascii", "ignore")
-        .decode()
-        .lower()
+        unicodedata.normalize("NFKD", f"{first} {last}").encode("ascii", "ignore").decode().lower()
     )
     candidate_id = re.sub(r"[^a-z0-9]+", "-", ascii_name).strip("-")
     if not candidate_id:
@@ -43,3 +41,18 @@ def load_mayoral_candidate_ids(path: str | Path) -> tuple[str, ...]:
                 raise ValueError(f"duplicate mayoral candidate id: {candidate_id}")
             ids.append(candidate_id)
     return tuple(ids)
+
+
+def load_canonical_mayoral_candidate_ids(path: str | Path) -> tuple[str, ...]:
+    """Load the certified field using Results-owned Person/Candidacy keys."""
+
+    with Path(path).open(encoding="utf-8") as handle:
+        feed = json.load(handle)
+    if not feed.get("ballot_certified"):
+        raise ValueError("Results mayoral field is not certified")
+    ids = tuple(
+        candidate.get("person_id") or candidate["candidacy_id"] for candidate in feed["candidates"]
+    )
+    if len(ids) != len(set(ids)):
+        raise ValueError("Results mayoral field contains duplicate canonical candidate IDs")
+    return ids
