@@ -14,6 +14,7 @@ PUBLICATION_MANIFEST_SCHEMA_VERSION = 1
 
 _FEEDS = {
     "mayoral_forecast": "mayoral_forecast.json",
+    "mayoral_candidates": "mayoral_candidates.json",
     "mayoral_polling": "mayoral_polling.json",
     "council_race_cards": "council_race_cards.json",
     "manifest": "manifest.json",

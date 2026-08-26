@@ -17,10 +17,7 @@ Forecast Unavailable, correctly.
 from __future__ import annotations
 
 import collections
-import csv
 import math
-import re
-import unicodedata
 from dataclasses import dataclass, replace
 from datetime import datetime
 from decimal import Decimal
@@ -33,6 +30,7 @@ from backend.model.historical_mayoral import load_historical_mayoral_corpus
 from backend.model.historical_mayoral_evaluation import (
     build_historical_mayoral_evaluation_cycles,
 )
+from backend.model.mayoral_candidate_ids import load_mayoral_candidate_ids
 from backend.model.mayoral_endpoint import (
     DRAW_COUNT,
     MAYORAL_ENDPOINT_ANALYSIS_TIME_LOCAL,
@@ -226,37 +224,8 @@ def forecast_quantities(
 
 # --- live target + evidence from the current-cycle bundle -------------------
 
+
 # The registered field carries names; the poll bundle keys the modelled
-# candidates by slug. Map the viable majors to the poll slugs so the target's
-# candidate universe contains the poll field; minor registrants get a name slug.
-_MAJOR_IDS = {
-    ("olivia", "chow"): "chow",
-    ("brad", "bradford"): "bradford",
-    ("chris", "alexander"): "alexander",
-}
-
-
-def _slug(first: str, last: str) -> str:
-    ascii_name = (
-        unicodedata.normalize("NFKD", f"{first} {last}")
-        .encode("ascii", "ignore")
-        .decode()
-        .lower()
-    )
-    return re.sub(r"[^a-z0-9]+", "-", ascii_name).strip("-")
-
-
-def _full_field_ids(root: Path) -> tuple[str, ...]:
-    ids: list[str] = []
-    with (root / "data/raw/candidates/mayor_registered.csv").open(
-        encoding="utf-8"
-    ) as handle:
-        for row in csv.DictReader(handle):
-            key = (row["first_name"].strip().lower(), row["last_name"].strip().lower())
-            ids.append(_MAJOR_IDS.get(key, _slug(row["first_name"], row["last_name"])))
-    return tuple(dict.fromkeys(ids))
-
-
 def _measured_named_candidates(bundle: object) -> dict[str, frozenset[str]]:
     read_sample = {r.poll_reading_id: r.poll_sample_id for r in bundle.poll_readings}
     measured: dict[str, set[str]] = collections.defaultdict(set)
@@ -346,7 +315,9 @@ def load_live_forecast_inputs(root: str | Path, live_cycle: dict) -> LiveForecas
         election_cycle_id=endpoint_cycle,
         election_type="general",
         snapshot=snapshot,
-        candidate_ids=_full_field_ids(root),
+        candidate_ids=load_mayoral_candidate_ids(
+            root / "data/raw/candidates/mayor_registered.csv"
+        ),
         incumbent_candidate_id=incumbent,
     )
 

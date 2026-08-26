@@ -4,7 +4,7 @@
 Runs every data-refresh step in dependency order with per-step feedback and
 fail-fast, then a forecast checkpoint and a "what to do next" summary. It
 rebuilds the sibling source repos, refreshes every upstream input, runs the
-gates, and rebuilds the four published feeds.
+gates, and rebuilds the five published feeds.
 
 It deliberately DOES NOT:
   - commit or push (you review `git diff`, then commit) ; and
@@ -187,6 +187,12 @@ def forecast_checkpoint(dry: bool) -> None:
     print(f"    open seats: {open_seats}")
     if disagree:
         print(f"    {yellow(f'incumbency flag disagrees (review): {disagree}')}")
+    mayoral_candidates = _load("mayoral_candidates.json")
+    candidates = mayoral_candidates.get("candidates", [])
+    matched = sum(bool(candidate.get("is_matched")) for candidate in candidates)
+    print(
+        f"  certified mayoral field: {len(candidates)} candidates ({matched} matched)"
+    )
     man = _load("manifest.json")
     print(f"  manifest feed_versions: {man.get('feed_versions')}")
 
@@ -318,7 +324,7 @@ def main() -> None:
                 "Gate: full test suite", [PY, "-m", "pytest", "-q"], cwd=ROOT, dry=dry
             )
 
-        # 5) Build the four published feeds.
+        # 5) Build the five published feeds.
         run_cmd(
             "Build mayoral + polling + manifest feeds",
             [PY, "scripts/build_publication_snapshot.py"],

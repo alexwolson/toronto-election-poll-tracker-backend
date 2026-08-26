@@ -25,6 +25,7 @@ from backend.model.council_hints import (
     candidate_features,
     fire_candidate_hints,
     past_election_history,
+    past_election_to_dict,
     resolve_person_id,
 )
 from backend.model.council_race import (
@@ -200,21 +201,6 @@ def _hint_card(hint: FiredHint) -> dict:
     }
 
 
-def _past_election_card(election: PastElection) -> dict:
-    return {
-        "year": election.year,
-        "election_date": election.election_date,
-        "office_type": election.office_type,
-        "represented_body": election.represented_body,
-        "district_name": election.district_name,
-        "party_name": election.party_name,
-        "result": election.result,
-        "vote_share": election.vote_share,
-        "rank": election.rank,
-        "field_size": election.field_size,
-    }
-
-
 def _candidate_card(
     candidate: RaceCandidate,
     hints: tuple[FiredHint, ...] = (),
@@ -230,7 +216,7 @@ def _candidate_card(
         "council_wins": bio.council_wins if bio else 0,
         "biography": _biography_card(bio),
         "historical_hints": [_hint_card(h) for h in hints],
-        "past_elections": [_past_election_card(e) for e in past_elections],
+        "past_elections": [past_election_to_dict(e) for e in past_elections],
     }
 
 

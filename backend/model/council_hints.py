@@ -261,6 +261,22 @@ class PastElection:
     field_size: int | None  # candidates in the contest
 
 
+def past_election_to_dict(election: PastElection) -> dict:
+    """Serialize the shared public past-election contract."""
+    return {
+        "year": election.year,
+        "election_date": election.election_date,
+        "office_type": election.office_type,
+        "represented_body": election.represented_body,
+        "district_name": election.district_name,
+        "party_name": election.party_name,
+        "result": election.result,
+        "vote_share": election.vote_share,
+        "rank": election.rank,
+        "field_size": election.field_size,
+    }
+
+
 def past_election_history(records: list[CandidacyRecord]) -> tuple[PastElection, ...]:
     """Every past candidacy (won and lost), most recent first, one row per contest.
 
