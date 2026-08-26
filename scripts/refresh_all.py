@@ -35,6 +35,7 @@ def main() -> None:
     parser.add_argument("--skip-tests", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
+    input_manifest = ROOT / "data" / "upstream" / "input_manifest.json"
 
     hydrate_code = (
         "from backend.release_inputs import hydrate_release_inputs; "
@@ -50,12 +51,22 @@ def main() -> None:
         _run("Run backend test suite", [PYTHON, "-m", "pytest", "-q"], dry_run=args.dry_run)
     _run(
         "Build mayoral forecast",
-        [PYTHON, "scripts/build_publication_snapshot.py"],
+        [
+            PYTHON,
+            "scripts/build_publication_snapshot.py",
+            "--input-manifest",
+            str(input_manifest),
+        ],
         dry_run=args.dry_run,
     )
     _run(
         "Build council race cards",
-        [PYTHON, "scripts/build_council_snapshot.py"],
+        [
+            PYTHON,
+            "scripts/build_council_snapshot.py",
+            "--input-manifest",
+            str(input_manifest),
+        ],
         dry_run=args.dry_run,
     )
     _run(

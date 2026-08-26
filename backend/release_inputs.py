@@ -7,10 +7,49 @@ import hashlib
 import json
 import shutil
 import tempfile
+from dataclasses import dataclass
 from pathlib import Path
 
 RESULTS_REPOSITORY = "alexwolson/toronto-election-results"
 POLLING_REPOSITORY = "alexwolson/toronto-election-poll-tracker-data"
+INPUT_MANIFEST_SCHEMA_VERSION = 1
+
+
+@dataclass(frozen=True, slots=True)
+class ReleaseInputPaths:
+    """Validated, explicit paths used by one backend model run."""
+
+    manifest: Path
+    results_dir: Path
+    polling_dir: Path
+    election_results: Path
+    model_polls: Path
+
+
+def load_release_input_paths(path: str | Path) -> ReleaseInputPaths:
+    """Load and validate a hydrated input manifest without path discovery."""
+
+    manifest_path = Path(path).resolve()
+    payload = json.loads(manifest_path.read_text(encoding="utf-8"))
+    if payload.get("schema_version") != INPUT_MANIFEST_SCHEMA_VERSION:
+        raise ValueError("unsupported backend input manifest schema")
+    root = manifest_path.parent
+
+    def resolve(key: str) -> Path:
+        candidate = (root / payload["paths"][key]).resolve()
+        if not candidate.is_relative_to(root):
+            raise ValueError(f"backend input path escapes the hydrated root: {key}")
+        if not candidate.exists():
+            raise FileNotFoundError(candidate)
+        return candidate
+
+    return ReleaseInputPaths(
+        manifest=manifest_path,
+        results_dir=resolve("results_dir"),
+        polling_dir=resolve("polling_dir"),
+        election_results=resolve("election_results"),
+        model_polls=resolve("model_polls"),
+    )
 
 
 def sha256_file(path: Path) -> str:
@@ -83,7 +122,7 @@ def hydrate_release_inputs(
     polling_bundle: str | Path,
     *,
     results_release: str,
-) -> tuple[dict, dict]:
+) -> tuple[ReleaseInputPaths, tuple[dict, dict]]:
     """Atomically vendor validated release assets into the backend workspace."""
 
     project = Path(root)
@@ -96,6 +135,38 @@ def hydrate_release_inputs(
         stage = Path(tmp)
         shutil.copytree(results, stage / "results")
         shutil.copytree(polling, stage / "polling")
+        model_polls = stage / "model" / "polls"
+        model_polls.mkdir(parents=True)
+        for name in (
+            "source_documents.csv",
+            "poll_sample_documents.csv",
+            "poll_samples.csv",
+            "historical_mayoral_polls.csv",
+            "historical_mayoral_outcomes.csv",
+            "legacy_historical_poll_crosswalk.csv",
+        ):
+            if (polling / name).is_file():
+                shutil.copy2(polling / name, model_polls / name)
+        _write_model_readings(polling / "poll_readings.csv", model_polls / "poll_readings.csv")
+        _write_legacy_model_responses(
+            polling / "poll_responses.csv", model_polls / "poll_responses.csv"
+        )
+        (stage / "input_manifest.json").write_text(
+            json.dumps(
+                {
+                    "schema_version": INPUT_MANIFEST_SCHEMA_VERSION,
+                    "paths": {
+                        "results_dir": "results",
+                        "polling_dir": "polling",
+                        "election_results": "results/election_results.csv",
+                        "model_polls": "model/polls",
+                    },
+                },
+                indent=2,
+            )
+            + "\n",
+            encoding="utf-8",
+        )
         backup = upstream.with_name(".upstream-backup")
         if backup.exists():
             shutil.rmtree(backup)
@@ -111,23 +182,5 @@ def hydrate_release_inputs(
             if backup.exists():
                 shutil.rmtree(backup)
 
-    canonical = project / "data" / "raw" / "canonical"
-    canonical.mkdir(parents=True, exist_ok=True)
-    shutil.copy2(results / "election_results.csv", canonical / "election_results.csv")
-    poll_target = project / "data" / "raw" / "polls"
-    poll_target.mkdir(parents=True, exist_ok=True)
-    for name in (
-        "source_documents.csv",
-        "poll_sample_documents.csv",
-        "poll_samples.csv",
-        "historical_mayoral_polls.csv",
-        "historical_mayoral_outcomes.csv",
-        "legacy_historical_poll_crosswalk.csv",
-    ):
-        if (polling / name).is_file():
-            shutil.copy2(polling / name, poll_target / name)
-    _write_model_readings(polling / "poll_readings.csv", poll_target / "poll_readings.csv")
-    _write_legacy_model_responses(
-        polling / "poll_responses.csv", poll_target / "poll_responses.csv"
-    )
-    return manifests
+    paths = load_release_input_paths(upstream / "input_manifest.json")
+    return paths, manifests

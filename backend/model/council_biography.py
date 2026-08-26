@@ -20,6 +20,8 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Final
 
+from backend.model.canonical_results import is_completed_result
+
 # Canonical boundary_regime -> the biography's boundary_era label.
 _BOUNDARY_ERA: Final = {
     "toronto_council_44_wards": "44-ward",
@@ -105,7 +107,8 @@ def load_council_results(path: str | Path) -> tuple[CouncilElectionResult, ...]:
     with open(path, newline="", encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
             if (
-                row["represented_body"] != "toronto_city_council"
+                not is_completed_result(row)
+                or row["represented_body"] != "toronto_city_council"
                 or row["office_type"] != "councillor"
             ):
                 continue
