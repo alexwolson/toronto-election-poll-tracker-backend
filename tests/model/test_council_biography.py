@@ -1,3 +1,4 @@
+import csv
 from pathlib import Path
 
 from backend.model.council_biography import (
@@ -50,6 +51,45 @@ def test_single_term_incumbent_record() -> None:
     assert len(bio.appearances) == 1
     assert bio.most_recent_win.year == 2022
     assert bio.most_recent_win.ward == "11"
+
+
+def test_pending_certified_candidacy_is_not_election_history(tmp_path: Path) -> None:
+    path = tmp_path / "results.csv"
+    columns = (
+        "represented_body",
+        "office_type",
+        "result_status",
+        "boundary_regime",
+        "election_year",
+        "official_district_id",
+        "person_id",
+        "candidate_name",
+        "votes",
+        "vote_share",
+        "elected",
+        "acclaimed",
+    )
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns)
+        writer.writeheader()
+        writer.writerow(
+            {
+                "represented_body": "toronto_city_council",
+                "office_type": "councillor",
+                "result_status": "pending",
+                "boundary_regime": "toronto_council_25_wards",
+                "election_year": "2026",
+                "official_district_id": "ward-14",
+                "person_id": "person-saxe",
+                "candidate_name": "Dianne Saxe",
+                "votes": "",
+                "vote_share": "",
+                "elected": "False",
+                "acclaimed": "False",
+            }
+        )
+
+    assert load_council_results(path) == ()
 
 
 def test_unknown_candidate_has_an_empty_biography() -> None:

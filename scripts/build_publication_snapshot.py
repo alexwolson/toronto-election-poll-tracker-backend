@@ -11,6 +11,7 @@ Run: uv run scripts/build_publication_snapshot.py
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from datetime import datetime
@@ -29,6 +30,7 @@ from backend.model.publication_manifest import (
     build_publication_manifest,
     load_live_cycle,
 )
+from backend.release_inputs import load_release_input_paths
 
 
 def _publication_summary(forecast: dict) -> dict:
@@ -56,10 +58,14 @@ def _write(name: str, payload: dict) -> None:
 
 
 def main() -> None:
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input-manifest", type=Path, required=True)
+    args = parser.parse_args()
+    inputs = load_release_input_paths(args.input_manifest)
     as_of = datetime.now(ZoneInfo("America/Toronto")).date().isoformat()
 
     live_cycle = load_live_cycle(RAW / "elections" / "live_cycle.json")
-    forecast = build_mayoral_forecast_feed(ROOT, live_cycle)
+    forecast = build_mayoral_forecast_feed(ROOT, live_cycle, polls_dir=inputs.model_polls)
     _write("mayoral_forecast.json", forecast)
 
     manifest = build_publication_manifest(

@@ -244,7 +244,9 @@ class LiveForecastInputs:
     final_field_pollsters: tuple[str, ...]
 
 
-def load_live_forecast_inputs(root: str | Path, live_cycle: dict) -> LiveForecastInputs:
+def load_live_forecast_inputs(
+    root: str | Path, live_cycle: dict, *, polls_dir: str | Path
+) -> LiveForecastInputs:
     """Build the training corpus, the live target, and the evidence tier from the
     current-cycle bundle, restricted to the field-consistency selection (ADR 0046)."""
     root = Path(root)
@@ -253,7 +255,7 @@ def load_live_forecast_inputs(root: str | Path, live_cycle: dict) -> LiveForecas
     incumbent = live_cycle["incumbent_candidate_id"]
     final_field = viable if bool(live_cycle["field_certified"]) else None
 
-    bundle = load_poll_source_bundle(str(root / "data/raw/polls"), require_audited_sources=False)
+    bundle = load_poll_source_bundle(str(polls_dir), require_audited_sources=False)
     measured = _measured_named_candidates(bundle)
     citywide = [
         sample
@@ -449,11 +451,13 @@ def _variant_row(label: str, estimate: QuantityEstimate) -> SensitivityVariant:
 # --- feed assembly ----------------------------------------------------------
 
 
-def build_mayoral_forecast_feed(root: str | Path, live_cycle: dict) -> dict:
+def build_mayoral_forecast_feed(
+    root: str | Path, live_cycle: dict, *, polls_dir: str | Path
+) -> dict:
     """Assemble the per-candidate forecast feed: each quantity's evidence tier,
     availability, published band, and (when Available) point estimate."""
     root = Path(root)
-    inputs = load_live_forecast_inputs(root, live_cycle)
+    inputs = load_live_forecast_inputs(root, live_cycle, polls_dir=polls_dir)
     tier = inputs.tier_result
     has_incumbent = inputs.incumbent_candidate_id is not None
     # The variant suite is only needed when the tier could unlock a quantity;

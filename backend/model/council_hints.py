@@ -31,6 +31,8 @@ from collections import defaultdict
 from dataclasses import dataclass, replace
 from pathlib import Path
 
+from backend.model.canonical_results import is_completed_result
+
 _COUNCIL_OFFICE = "councillor"
 
 
@@ -107,7 +109,7 @@ def load_officeholding_history(
     person's set of name token-sets (for the generous 2026 name resolver).
     Rows upstream left ``person_id``-blank are unattributable and skipped."""
     with Path(path).open(encoding="utf-8") as handle:
-        rows = list(csv.DictReader(handle))
+        rows = [row for row in csv.DictReader(handle) if is_completed_result(row)]
 
     # Per-contest winner / runner-up vote shares, for signed margins.
     by_contest: dict[str, list[dict[str, str]]] = defaultdict(list)

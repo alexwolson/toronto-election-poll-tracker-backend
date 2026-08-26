@@ -10,6 +10,7 @@ Run: uv run scripts/build_council_snapshot.py
 
 from __future__ import annotations
 
+import argparse
 import json
 import sys
 from pathlib import Path
@@ -25,13 +26,18 @@ from backend.model.council_hints import (
 from backend.model.council_race import load_registered_field, load_ward_incumbency
 from backend.model.council_race_card import load_ward_poll_readings
 from backend.model.council_snapshot import build_council_snapshot, load_ward_names
+from backend.release_inputs import load_release_input_paths
 
 RAW = ROOT / "data" / "raw"
 OUT = ROOT / "data" / "processed" / "council_race_cards.json"
 
 
 def main() -> None:
-    canonical = RAW / "canonical" / "election_results.csv"
+    parser = argparse.ArgumentParser(description=__doc__)
+    parser.add_argument("--input-manifest", type=Path, required=True)
+    args = parser.parse_args()
+    inputs = load_release_input_paths(args.input_manifest)
+    canonical = inputs.election_results
     snapshot = build_council_snapshot(
         load_ward_incumbency(RAW / "defeatability" / "ward_defeatability.csv"),
         load_registered_field(RAW / "candidates" / "councillor_registered.csv"),
@@ -39,9 +45,7 @@ def main() -> None:
         load_ward_poll_readings(RAW / "polls" / "ward_poll_readings.csv"),
         ward_names=load_ward_names(RAW / "defeatability" / "data-qT4Kx.csv"),
         officeholding=load_officeholding_history(canonical),
-        supported_hints=load_supported_hints(
-            RAW / "hints" / "supported_historical_hints.csv"
-        ),
+        supported_hints=load_supported_hints(RAW / "hints" / "supported_historical_hints.csv"),
     )
     OUT.parent.mkdir(parents=True, exist_ok=True)
     with OUT.open("w", encoding="utf-8") as handle:
