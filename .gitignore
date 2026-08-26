@@ -17,3 +17,5 @@ data/source_documents/
 # Local scratch: downloaded PDFs and one-off builders kept out of history.
 tmp/
 .vercel
+dist/
+data/upstream/

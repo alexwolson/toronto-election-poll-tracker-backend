@@ -3,11 +3,12 @@ from __future__ import annotations
 from decimal import Decimal
 from pathlib import Path
 
+import pytest
+
 from backend.model.mayoral_incumbency import (
     load_mayoral_incumbency_population,
     verify_mayoral_incumbency_artifacts,
 )
-
 
 ROOT = Path(__file__).resolve().parents[2]
 
@@ -22,9 +23,13 @@ def test_frozen_v1_population_is_thirteen_wins_in_nineteen_trials() -> None:
     assert summary.wins == 13
     assert summary.losses == 6
     assert summary.empirical_win_rate == Decimal(13) / Decimal(19)
-    assert {
-        trial.city_id for trial in population.v1_trials
-    } == {"toronto", "ottawa", "hamilton", "mississauga", "brampton"}
+    assert {trial.city_id for trial in population.v1_trials} == {
+        "toronto",
+        "ottawa",
+        "hamilton",
+        "mississauga",
+        "brampton",
+    }
 
 
 def test_toronto_2000_is_only_a_three_year_term_sensitivity() -> None:
@@ -62,12 +67,8 @@ def test_leave_one_city_out_partitions_hold_out_complete_city_histories() -> Non
     assert sum(len(fold.held_out_trials) for fold in folds) == 19
     for fold in folds:
         assert len(fold.training_trials) + len(fold.held_out_trials) == 19
-        assert {trial.city_id for trial in fold.held_out_trials} == {
-            fold.held_out_city_id
-        }
-        assert fold.held_out_city_id not in {
-            trial.city_id for trial in fold.training_trials
-        }
+        assert {trial.city_id for trial in fold.held_out_trials} == {fold.held_out_city_id}
+        assert fold.held_out_city_id not in {trial.city_id for trial in fold.training_trials}
 
 
 def test_hamilton_2006_is_admitted_with_an_explicit_secondary_grade() -> None:
@@ -75,9 +76,9 @@ def test_hamilton_2006_is_admitted_with_an_explicit_secondary_grade() -> None:
 
     assert population.is_v1_ready
     assert population.source_gaps == ()
-    assert {
-        trial.trial_id for trial in population.corroborated_secondary_trials
-    } == {"hamilton_2006"}
+    assert {trial.trial_id for trial in population.corroborated_secondary_trials} == {
+        "hamilton_2006"
+    }
     assert all(
         source.sha256 and source.local_path and source.byte_size
         for source in population.source_documents
@@ -87,5 +88,12 @@ def test_hamilton_2006_is_admitted_with_an_explicit_secondary_grade() -> None:
 
 def test_all_recovered_comparison_artifacts_match_the_tracked_manifest() -> None:
     population = load_mayoral_incumbency_population(ROOT)
+    local_artifacts = [
+        ROOT / source.local_path
+        for source in population.source_documents
+        if source.local_path is not None
+    ]
+    if local_artifacts and not all(path.is_file() for path in local_artifacts):
+        pytest.skip("licensed audit copies are optional and not distributed with backend")
 
     verify_mayoral_incumbency_artifacts(population, ROOT)
