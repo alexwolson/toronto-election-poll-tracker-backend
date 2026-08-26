@@ -1,12 +1,12 @@
 #!/usr/bin/env python3
 """Build the frontend publication package (INT).
 
-Emits the typed data feeds the frontend ingests, into data/processed/:
+Emits the typed data feeds the frontend ingests into an explicit output directory:
   - mayoral_forecast.json  per-quantity evidence tier, availability, published band
   - manifest.json          model index + live-cycle Final-Ballot state
 The council feed (council_race_cards.json) is produced by build_council_snapshot.py.
 
-Run: uv run scripts/build_publication_snapshot.py
+Run with ``--input-manifest`` and ``--output-dir``.
 """
 
 from __future__ import annotations
@@ -46,11 +46,10 @@ def _publication_summary(forecast: dict) -> dict:
 
 
 RAW = ROOT / "data" / "raw"
-OUT = ROOT / "data" / "processed"
 
 
-def _write(name: str, payload: dict) -> None:
-    path = OUT / name
+def _write(output_dir: Path, name: str, payload: dict) -> None:
+    path = output_dir / name
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, allow_nan=False, indent=None)
@@ -60,13 +59,14 @@ def _write(name: str, payload: dict) -> None:
 def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-manifest", type=Path, required=True)
+    parser.add_argument("--output-dir", type=Path, required=True)
     args = parser.parse_args()
     inputs = load_release_input_paths(args.input_manifest)
     as_of = datetime.now(ZoneInfo("America/Toronto")).date().isoformat()
 
     live_cycle = load_live_cycle(RAW / "elections" / "live_cycle.json")
     forecast = build_mayoral_forecast_feed(ROOT, live_cycle, polls_dir=inputs.model_polls)
-    _write("mayoral_forecast.json", forecast)
+    _write(args.output_dir, "mayoral_forecast.json", forecast)
 
     manifest = build_publication_manifest(
         as_of=as_of,
@@ -77,7 +77,7 @@ def main() -> None:
         },
         mayoral_publication_summary=_publication_summary(forecast),
     )
-    _write("manifest.json", manifest)
+    _write(args.output_dir, "manifest.json", manifest)
 
     print(
         f"Publication package built (as of {as_of}); "

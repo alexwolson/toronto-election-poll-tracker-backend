@@ -36,6 +36,7 @@ def main() -> None:
     parser.add_argument("--dry-run", action="store_true")
     args = parser.parse_args()
     input_manifest = ROOT / "data" / "upstream" / "input_manifest.json"
+    generated = ROOT / "data" / "upstream" / "generated"
 
     hydrate_code = (
         "from backend.release_inputs import hydrate_release_inputs; "
@@ -56,6 +57,8 @@ def main() -> None:
             "scripts/build_publication_snapshot.py",
             "--input-manifest",
             str(input_manifest),
+            "--output-dir",
+            str(generated),
         ],
         dry_run=args.dry_run,
     )
@@ -66,6 +69,8 @@ def main() -> None:
             "scripts/build_council_snapshot.py",
             "--input-manifest",
             str(input_manifest),
+            "--output",
+            str(generated / "council_race_cards.json"),
         ],
         dry_run=args.dry_run,
     )
@@ -76,6 +81,8 @@ def main() -> None:
             "-m",
             "backend.release_bundle",
             "build",
+            "--processed",
+            str(generated),
             "--results-bundle",
             str(args.results_bundle),
             "--polling-bundle",
