@@ -1,6 +1,8 @@
 from pathlib import Path
 from types import SimpleNamespace
 
+import numpy as np
+
 from backend.model.mayoral_evaluation import FullBallotShareDraws
 from backend.model.mayoral_forecast_feed import (
     _variant_predictors,
@@ -35,6 +37,20 @@ def test_candidate_win_probabilities_are_draw_fractions_summing_to_one() -> None
 def test_close_result_probability_counts_within_threshold_margins() -> None:
     q = forecast_quantities(DRAWS, incumbent_candidate_id="chow")
     assert q.close_result.probability == 0.5  # two of four draws within 0.05
+
+
+def test_margin_distribution_is_a_normalized_nonnegative_density() -> None:
+    # The winning-margin distribution feeds the homepage density panel: a smoothed
+    # (reflected-KDE) curve over the winner-minus-runner-up share gap.
+    dist = forecast_quantities(DRAWS, incumbent_candidate_id="chow").margin_distribution
+    xs = np.asarray(dist.x, dtype=float)
+    dens = np.asarray(dist.density, dtype=float)
+    assert len(xs) == len(dens) >= 50  # a smooth curve, not a handful of points
+    assert xs[0] == 0.0  # margins are bounded below at 0
+    assert np.all(np.diff(xs) > 0)  # strictly increasing grid
+    assert np.all(dens >= 0.0)  # a density is non-negative everywhere
+    # Reflected at the 0 boundary, so no mass leaks negative and it integrates ~1.
+    assert abs(float(np.trapezoid(dens, xs)) - 1.0) < 0.05
 
 
 def test_incumbent_defeat_is_one_minus_incumbent_win() -> None:
@@ -104,3 +120,6 @@ def test_uncertified_forecast_is_unavailable_at_tier_m1() -> None:
         card["availability"] == "Forecast Unavailable"
         for card in feed["candidate_win"].values()
     )
+    # Respect the gate: when the close-result summary is withheld, we do not leak
+    # the margin distribution's shape either.
+    assert feed["margin_distribution"] is None

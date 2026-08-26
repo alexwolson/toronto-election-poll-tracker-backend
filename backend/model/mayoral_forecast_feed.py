@@ -73,7 +73,7 @@ from backend.model.publication import (
     unavailable_variant,
 )
 
-MAYORAL_FORECAST_FEED_SCHEMA_VERSION = 1
+MAYORAL_FORECAST_FEED_SCHEMA_VERSION = 2
 _TORONTO = ZoneInfo("America/Toronto")
 _CLOSE_THRESHOLD = 0.05
 # Tail-mass sensitivity: halve and double the fitted candidate-tail mass (ADR 0018).
@@ -117,6 +117,61 @@ def _estimate(p: float, n: int) -> QuantityEstimate:
     return QuantityEstimate(probability=p, interval_lower=lower, interval_upper=upper)
 
 
+_MARGIN_GRID_SIZE = 120
+
+
+@dataclass(frozen=True, slots=True)
+class MarginDistribution:
+    """Smoothed density of the winning margin (winner share minus runner-up
+    share) across the share draws. `x` is a grid in share units on [0, x_max];
+    `density` is a reflected-boundary Gaussian KDE evaluated there. It integrates
+    to ~1 over the grid and is the shape behind the homepage close-result panel."""
+
+    x: tuple[float, ...]
+    density: tuple[float, ...]
+
+    def to_feed(self, close_threshold: float) -> dict:
+        return {
+            "unit": "share_gap",  # winner minus runner-up, a fraction in [0, 1]
+            "x": list(self.x),
+            "density": list(self.density),
+            "close_threshold": close_threshold,
+        }
+
+
+def _margin_distribution(
+    margins: np.ndarray, *, grid_size: int = _MARGIN_GRID_SIZE
+) -> MarginDistribution:
+    """Reflected-boundary Gaussian KDE of the winning margins.
+
+    The margin is a top-two gap, bounded below at 0, so a naive KDE would leak
+    probability mass to negative values. We reflect the sample across 0 (fold in
+    the mirror points -d) and evaluate on [0, x_max]; the density then keeps its
+    support on [0, ∞) and stays ~normalized on the grid.
+    """
+    data = np.asarray(margins, dtype=float)
+    n = data.size
+    # Silverman's rule of thumb, robustified with the IQR and floored so a
+    # near-constant sample still yields a finite, smooth curve rather than a spike.
+    std = float(np.std(data))
+    q75, q25 = (float(v) for v in np.percentile(data, [75, 25]))
+    spread = min(std, (q75 - q25) / 1.349) if std > 0 else 0.0
+    if spread <= 0:
+        spread = std if std > 0 else 1e-3
+    bandwidth = max(0.9 * spread * n ** (-1 / 5), 1e-3)
+
+    x_max = max(0.5, float(data.max()) * 1.05)
+    xs = np.linspace(0.0, x_max, grid_size)
+    diffs = (xs[:, None] - data[None, :]) / bandwidth
+    reflected = (xs[:, None] + data[None, :]) / bandwidth
+    kernel = np.exp(-0.5 * diffs**2) + np.exp(-0.5 * reflected**2)
+    density = kernel.sum(axis=1) / (n * bandwidth * math.sqrt(2.0 * math.pi))
+    return MarginDistribution(
+        x=tuple(float(v) for v in xs),
+        density=tuple(float(v) for v in density),
+    )
+
+
 @dataclass(frozen=True, slots=True)
 class MayoralForecastQuantities:
     """Every public quantity for one fitted set of share draws."""
@@ -124,6 +179,7 @@ class MayoralForecastQuantities:
     candidate_win: dict[str, QuantityEstimate]
     close_result: QuantityEstimate
     incumbent_defeat: QuantityEstimate | None  # None in an open race
+    margin_distribution: MarginDistribution
 
 
 def forecast_quantities(
@@ -145,9 +201,8 @@ def forecast_quantities(
         for index, candidate_id in enumerate(candidate_ids)
     }
     ordered_rows = np.sort(rows, axis=1)
-    close_draws = int(
-        np.count_nonzero((ordered_rows[:, -1] - ordered_rows[:, -2]) <= close_threshold)
-    )
+    margins = ordered_rows[:, -1] - ordered_rows[:, -2]
+    close_draws = int(np.count_nonzero(margins <= close_threshold))
 
     candidate_win = {
         candidate_id: _estimate(win_weight[candidate_id], draw_count)
@@ -165,6 +220,7 @@ def forecast_quantities(
         candidate_win=candidate_win,
         close_result=close_result,
         incumbent_defeat=incumbent_defeat,
+        margin_distribution=_margin_distribution(margins),
     )
 
 
@@ -489,6 +545,17 @@ def build_mayoral_forecast_feed(root: str | Path, live_cycle: dict) -> dict:
     close_result = quantity_card(CLOSE_RESULT, lambda q: q.close_result)
     incumbent_defeat = quantity_card(INCUMBENT_DEFEAT, lambda q: q.incumbent_defeat)
 
+    # The margin distribution rides on the close-result gate: we only surface its
+    # shape when the close-result summary itself publishes (else the raw shape
+    # would leak an estimate the Band Stability Gate judged too unstable to show).
+    bridge_base = per_variant.get("bridge-base")
+    margin_distribution = (
+        bridge_base.margin_distribution.to_feed(_CLOSE_THRESHOLD)
+        if close_result["availability"] == "Forecast Available"
+        and bridge_base is not None
+        else None
+    )
+
     return {
         "schema_version": MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
         "election_cycle_id": inputs.target.election_cycle_id,
@@ -498,4 +565,5 @@ def build_mayoral_forecast_feed(root: str | Path, live_cycle: dict) -> dict:
         "candidate_win": candidate_win,
         "close_result": close_result,
         "incumbent_defeat": incumbent_defeat,
+        "margin_distribution": margin_distribution,
     }
