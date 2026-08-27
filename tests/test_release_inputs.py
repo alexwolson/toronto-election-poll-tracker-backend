@@ -4,7 +4,9 @@ import hashlib
 import json
 from pathlib import Path
 
+import geopandas as gpd
 import pytest
+from shapely.geometry import Polygon
 
 from backend.release_inputs import hydrate_release_inputs, load_release_input_paths
 
@@ -29,6 +31,11 @@ def test_hydration_is_isolated_and_returns_explicit_model_paths(tmp_path: Path) 
         "district_id,district_display_name\ndst_1,Ward 1 — Etobicoke North\n",
         encoding="utf-8",
     )
+    gpd.GeoDataFrame(
+        {"district_id": ["dst_1"]},
+        geometry=[Polygon([(0, 0), (1, 0), (1, 1), (0, 1)])],
+        crs="EPSG:4326",
+    ).to_parquet(results / "electoral_districts.parquet")
     _write_json(results / "trustee_races.json", {"schema_version": 1, "boards": []})
     results_manifest = {
         "repository": "alexwolson/toronto-election-results",
@@ -65,6 +72,9 @@ def test_hydration_is_isolated_and_returns_explicit_model_paths(tmp_path: Path) 
     assert paths == load_release_input_paths(project / "data/upstream/input_manifest.json")
     assert paths.election_results == project / "data/upstream/results/election_results.csv"
     assert paths.electoral_districts == project / "data/upstream/results/electoral_districts.csv"
+    assert paths.electoral_districts_parquet == (
+        project / "data/upstream/results/electoral_districts.parquet"
+    )
     assert paths.trustee_races == project / "data/upstream/results/trustee_races.json"
     assert paths.model_polls == project / "data/upstream/model/polls"
     responses = (paths.model_polls / "poll_responses.csv").read_text(encoding="utf-8")
