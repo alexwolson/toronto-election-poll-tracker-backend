@@ -46,6 +46,7 @@ def main() -> None:
         ward_names=load_ward_names(inputs.electoral_districts),
         officeholding=load_officeholding_history(canonical, inputs.electoral_districts),
         supported_hints=load_supported_hints(RAW / "hints" / "supported_historical_hints.csv"),
+        geometry_path=inputs.electoral_districts_parquet,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as handle:

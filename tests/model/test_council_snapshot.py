@@ -1,6 +1,9 @@
 import json
 from pathlib import Path
 
+import geopandas as gpd
+from shapely.geometry import box
+
 from backend.model.council_biography import load_council_results
 from backend.model.council_hints import (
     load_officeholding_history,
@@ -10,6 +13,7 @@ from backend.model.council_race import load_registered_field, load_ward_incumben
 from backend.model.council_race_card import load_ward_poll_readings
 from backend.model.council_snapshot import (
     COUNCIL_RACE_CARD_SCHEMA_VERSION,
+    _attention_score,
     build_council_snapshot,
     load_ward_names,
 )
@@ -23,7 +27,7 @@ WARD_NAMES = ROOT / "tests/fixtures/electoral_districts.csv"
 HINTS = ROOT / "data/raw/hints/supported_historical_hints.csv"
 
 
-def _snapshot():
+def _snapshot(geometry_path: Path | None = None):
     return build_council_snapshot(
         load_ward_incumbency(INCUMBENCY),
         load_registered_field(FIELD),
@@ -32,6 +36,7 @@ def _snapshot():
         ward_names=load_ward_names(WARD_NAMES),
         officeholding=load_officeholding_history(RESULTS),
         supported_hints=load_supported_hints(HINTS),
+        geometry_path=geometry_path,
     )
 
 
@@ -43,17 +48,51 @@ def test_snapshot_covers_all_wards_and_serializes_cleanly() -> None:
     json.dumps(snap, allow_nan=False)  # no Decimal / NaN leaks
 
 
-def test_schema_bumped_to_v7_for_results_owned_ward_names() -> None:
-    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 7
+def test_schema_bumped_to_v8_for_presentation_ready_map() -> None:
+    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 8
+
+
+def test_map_matches_attention_order_and_ward_facts(tmp_path: Path) -> None:
+    path = tmp_path / "districts.parquet"
+    rows = [
+        {
+            "represented_body": "toronto_city_council",
+            "boundary_regime": "toronto_council_25_wards",
+            "official_district_id": f"ward-{ward}",
+            "district_display_name": f"Ward {ward}",
+            "geographic_name": f"Area {ward}",
+            "geometry_status": "available",
+            "geometry": box(
+                (ward - 1) % 5, (ward - 1) // 5, (ward - 1) % 5 + 1, (ward - 1) // 5 + 1
+            ),
+        }
+        for ward in range(1, 26)
+    ]
+    gpd.GeoDataFrame(rows, geometry="geometry", crs="EPSG:26917").to_parquet(path)
+
+    snapshot = _snapshot(path)
+    race_map = snapshot["map"]
+
+    assert race_map is not None
+    assert len(race_map["features"]) == 25
+    assert [feature["ward_id"] for feature in race_map["features"]] == [
+        ward
+        for ward, _ in sorted(
+            snapshot["wards"].items(),
+            key=lambda item: (-_attention_score(item[1]), int(item[0])),
+        )
+    ]
+    ward_11 = next(feature for feature in race_map["features"] if feature["ward_id"] == "11")
+    assert ward_11["signal_key"] == "open"
+    assert ward_11["panel"]["candidate_count"] == len(snapshot["wards"]["11"]["candidates"])
+    assert ward_11["panel"]["href"] == "/wards/11"
 
 
 def test_ward_23_han_dong_surfaces_prior_mp_and_mpp_offices() -> None:
     # Han Dong has no council history, so the council-only biography match stays
     # empty — but his all-offices past elections must still surface (ADR 0050).
     dong = next(
-        c
-        for c in _snapshot()["wards"]["23"]["candidates"]
-        if c["display_name"] == "Han Dong"
+        c for c in _snapshot()["wards"]["23"]["candidates"] if c["display_name"] == "Han Dong"
     )
     assert dong["is_matched"] is False
     assert dong["candidate_id"] is None
@@ -89,17 +128,14 @@ def test_ward_11_card_carries_the_full_picture() -> None:
     assert layton["candidates"][0]["share"] == 0.44
     # Layton appears in the field as a former councillor
     assert any(
-        c["display_name"] == "Mike Layton" and c["is_former_councillor"]
-        for c in w["candidates"]
+        c["display_name"] == "Mike Layton" and c["is_former_councillor"] for c in w["candidates"]
     )
 
 
 def test_ward_11_saxe_history_orders_same_year_by_full_date() -> None:
     # Saxe re-registered in ward 14; her all-offices history is unchanged.
     saxe = next(
-        c
-        for c in _snapshot()["wards"]["14"]["candidates"]
-        if c["display_name"] == "Dianne Saxe"
+        c for c in _snapshot()["wards"]["14"]["candidates"] if c["display_name"] == "Dianne Saxe"
     )
     dates = [e["election_date"] for e in saxe["past_elections"]]
     assert dates == sorted(dates, reverse=True)  # full-date descending
@@ -155,17 +191,13 @@ def test_candidate_history_contract_2_1_named_ward_cases() -> None:
         ids = {hint["hint_id"] for hint in candidate["historical_hints"]}
         assert "own_any_all_past_race__non_incumbent_non_returning" in ids
         assert "own_multiple_all_past_races__non_incumbent_non_returning" in ids
-        assert (
-            "own_most_recent_all_past_race_margin__non_incumbent_non_returning" in ids
-        )
+        assert "own_most_recent_all_past_race_margin__non_incumbent_non_returning" in ids
         assert {
             "own_prior_council_run_without_victory_vs_no_history__non_incumbent_non_returning",
             "own_prior_council_run_without_victory_vs_other_history__non_incumbent_non_returning",
         } <= ids
 
-    huy = next(
-        c for c in snap["wards"]["11"]["candidates"] if c["display_name"] == "Huy Lieu"
-    )
+    huy = next(c for c in snap["wards"]["11"]["candidates"] if c["display_name"] == "Huy Lieu")
     assert len(huy["past_elections"]) == 2
     assert {race["office_type"] for race in huy["past_elections"]} == {
         "councillor",
@@ -174,15 +206,9 @@ def test_candidate_history_contract_2_1_named_ward_cases() -> None:
     assert all(race["result"] == "lost" for race in huy["past_elections"])
     huy_ids = {hint["hint_id"] for hint in huy["historical_hints"]}
     assert "own_multiple_all_past_races__non_incumbent_non_returning" in huy_ids
-    assert (
-        "own_most_recent_all_past_race_margin__non_incumbent_non_returning" in huy_ids
-    )
+    assert "own_most_recent_all_past_race_margin__non_incumbent_non_returning" in huy_ids
 
-    zakir = next(
-        c
-        for c in snap["wards"]["25"]["candidates"]
-        if c["display_name"] == "Zakir Patel"
-    )
+    zakir = next(c for c in snap["wards"]["25"]["candidates"] if c["display_name"] == "Zakir Patel")
     hints = {hint["hint_id"]: hint for hint in zakir["historical_hints"]}
     assert {
         "own_prior_win_type__trustee",
@@ -212,6 +238,5 @@ def test_open_seat_with_a_ward_poll_still_lists_it() -> None:
     assert w["is_open_seat"] is True
     assert len(w["ward_polls"]) == 2
     assert all(
-        p["candidates"][0]["candidate_name"] == "Nate Erskine-Smith"
-        for p in w["ward_polls"]
+        p["candidates"][0]["candidate_name"] == "Nate Erskine-Smith" for p in w["ward_polls"]
     )

@@ -44,8 +44,17 @@ from backend.model.council_race_card import (
     parse_new_voter_margin,
     race_exposure_triggers,
 )
+from backend.model.race_map import build_race_map
 
-COUNCIL_RACE_CARD_SCHEMA_VERSION = 7
+COUNCIL_RACE_CARD_SCHEMA_VERSION = 8
+
+_ATTENTION_LABELS = {
+    "open": "Open seat",
+    "high": "High attention",
+    "elevated": "Elevated attention",
+    "quiet": "Lower attention",
+}
+_ATTENTION_BASE = {"open": 4000, "high": 3000, "elevated": 2000, "quiet": 1000}
 
 
 def _race_candidate_hints(
@@ -80,8 +89,7 @@ def _race_candidate_hints(
         features[candidate.display_name] = candidate_features(
             history_by_person[person_id],
             name=candidate.display_name,
-            is_sitting_incumbent=incumbent_pid is not None
-            and person_id == incumbent_pid,
+            is_sitting_incumbent=incumbent_pid is not None and person_id == incumbent_pid,
         )
     fired: dict[str, tuple[FiredHint, ...]] = {}
     for candidate in race.candidates:
@@ -114,9 +122,7 @@ def _race_candidate_offices(
         if person_id is None or person_id not in history_by_person:
             offices[candidate.display_name] = ()
             continue
-        offices[candidate.display_name] = past_election_history(
-            history_by_person[person_id]
-        )
+        offices[candidate.display_name] = past_election_history(history_by_person[person_id])
     return offices
 
 
@@ -165,9 +171,7 @@ def _biography_card(bio: CandidateBiography | None) -> dict | None:
     }
 
 
-def _incumbent_card(
-    incumbent: WardIncumbent, triggers: tuple[ExposureTrigger, ...]
-) -> dict:
+def _incumbent_card(incumbent: WardIncumbent, triggers: tuple[ExposureTrigger, ...]) -> dict:
     bio = incumbent.biography
     win = bio.most_recent_win if bio else None
     return {
@@ -315,17 +319,84 @@ def _race_card(
     }
 
 
+def _attention_level(card: dict) -> str:
+    if card["is_open_seat"]:
+        return "open"
+    trigger_count = len(card["incumbent"]["exposure_triggers"])
+    score = card["incumbent"]["defeatability_score"] or 0
+    if trigger_count >= 2 or score >= 60:
+        return "high"
+    if trigger_count >= 1 or score >= 45:
+        return "elevated"
+    return "quiet"
+
+
+def _attention_score(card: dict) -> int:
+    level = _attention_level(card)
+    if level == "open":
+        return _ATTENTION_BASE[level]
+    trigger_count = len(card["incumbent"]["exposure_triggers"])
+    score = card["incumbent"]["defeatability_score"] or 0
+    return _ATTENTION_BASE[level] + min(trigger_count * 100 + score, 999)
+
+
+def _council_map(wards: dict[str, dict], geometry_path: str | Path | None) -> dict | None:
+    if geometry_path is None:
+        return None
+    ordered = sorted(
+        wards,
+        key=lambda ward: (-_attention_score(wards[ward]), int(ward)),
+    )
+    facts: dict[str, dict] = {}
+    for ward in ordered:
+        card = wards[ward]
+        name = card["ward_name"] or f"Ward {ward}"
+        level = _attention_level(card)
+        facts[ward] = {
+            "accessible_name": f"Ward {ward}, {name}",
+            "label_text": ward,
+            "signal_key": level,
+            "signal_value": None,
+            "panel": {
+                "heading": f"Ward {ward} — {name}",
+                "status": _ATTENTION_LABELS[level],
+                "candidate_count": len(card["candidates"]),
+                "incumbent_summary": (
+                    "No incumbent is running"
+                    if card["is_open_seat"]
+                    else f"Incumbent: {card['incumbent']['name']}"
+                ),
+                "href": f"/wards/{ward}",
+            },
+        }
+    return build_race_map(
+        geometry_path,
+        represented_body="toronto_city_council",
+        boundary_regime="toronto_council_25_wards",
+        ordered_ward_ids=ordered,
+        feature_facts=facts,
+        aria_label="Map of Toronto's 25 council races",
+        palette="council_attention",
+        legend=[
+            {"key": "open", "label": "Open seat"},
+            {"key": "high", "label": "High attention"},
+            {"key": "elevated", "label": "Elevated attention"},
+            {"key": "quiet", "label": "Lower attention"},
+        ],
+        supported_signal_keys=set(_ATTENTION_LABELS),
+    )
+
+
 def build_council_snapshot(
     incumbency: dict[str, dict[str, str]],
     field: dict[str, list[dict[str, str]]],
     results: tuple[CouncilElectionResult, ...],
     ward_poll_readings: dict[str, tuple[WardPollReading, ...]],
     ward_names: dict[str, str] | None = None,
-    officeholding: tuple[
-        dict[str, list[CandidacyRecord]], dict[str, set[frozenset[str]]]
-    ]
+    officeholding: tuple[dict[str, list[CandidacyRecord]], dict[str, set[frozenset[str]]]]
     | None = None,
     supported_hints: tuple[SupportedHint, ...] = (),
+    geometry_path: str | Path | None = None,
 ) -> dict:
     biographies = build_all_biographies(results)
     races = build_council_races(incumbency, field, biographies)
@@ -336,9 +407,7 @@ def build_council_snapshot(
     def ward_hints(race: CouncilRace) -> dict[str, tuple[FiredHint, ...]]:
         if not supported_hints or not history_by_person:
             return {}
-        return _race_candidate_hints(
-            race, history_by_person, name_variants, supported_hints
-        )
+        return _race_candidate_hints(race, history_by_person, name_variants, supported_hints)
 
     def ward_offices(race: CouncilRace) -> dict[str, tuple[PastElection, ...]]:
         # Independent of supported_hints: past elections need only the canonical.
@@ -361,4 +430,5 @@ def build_council_snapshot(
         "schema_version": COUNCIL_RACE_CARD_SCHEMA_VERSION,
         "base_rate_note": COUNCIL_INCUMBENT_BASE_RATE_COPY,
         "wards": wards,
+        "map": _council_map(wards, geometry_path),
     }
