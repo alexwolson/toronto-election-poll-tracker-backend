@@ -22,7 +22,10 @@ def main() -> None:
     args = parser.parse_args()
 
     inputs = load_release_input_paths(args.input_manifest)
-    snapshot = build_trustee_race_cards(load_trustee_races(inputs.trustee_races))
+    snapshot = build_trustee_race_cards(
+        load_trustee_races(inputs.trustee_races),
+        geometry_path=inputs.electoral_districts_parquet,
+    )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as handle:
         json.dump(snapshot, handle, allow_nan=False, separators=(",", ":"))

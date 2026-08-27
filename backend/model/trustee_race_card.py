@@ -12,7 +12,9 @@ import math
 import re
 from pathlib import Path
 
-TRUSTEE_RACE_CARD_SCHEMA_VERSION = 2
+from backend.model.race_map import build_race_map
+
+TRUSTEE_RACE_CARD_SCHEMA_VERSION = 3
 
 TDSB_METHOD = "tdsb_field_structure"
 CONTINUOUS_METHOD = "continuous_ward_vote_share"
@@ -33,13 +35,22 @@ CONTINUOUS_PRIORITIES = {
 _WARD_NAME = re.compile(r"Ward\s+(\d+)\Z")
 _SHARE_TOLERANCE = 1e-12
 
+_TDSB_LABELS = {
+    "open": "Open race",
+    "two_incumbents": "Two incumbents",
+    "one_incumbent": "One incumbent",
+    "acclaimed": "Acclaimed",
+}
+
 
 def load_trustee_races(path: str | Path) -> dict:
     """Read the Results-owned trustee feed without adapting its identities."""
 
     with Path(path).open(encoding="utf-8") as handle:
         payload = json.load(handle)
-    if payload.get("schema_version") not in {1, 2, 3} or not isinstance(payload.get("boards"), list):
+    if payload.get("schema_version") not in {1, 2, 3} or not isinstance(
+        payload.get("boards"), list
+    ):
         raise ValueError("unsupported trustee races input")
     return payload
 
@@ -188,7 +199,86 @@ def validate_trustee_race_cards(payload: dict) -> None:
             raise ValueError(f"trustee board {board_id} wards are not in context order")
 
 
-def build_trustee_race_cards(source: dict) -> dict:
+def _incumbent_summary(ward: dict) -> str:
+    names = [candidate["display_name"] for candidate in _incumbents(ward)]
+    if not names:
+        return "No incumbent is running"
+    if len(names) == 1:
+        return f"Incumbent: {names[0]}"
+    return f"Incumbents: {' and '.join(names)}"
+
+
+def _board_map(board: dict, geometry_path: str | Path | None) -> dict | None:
+    if geometry_path is None:
+        return None
+    board_id = board["board_id"]
+    ordered = [str(ward["ward_id"]) for ward in board["wards"]]
+    facts: dict[str, dict] = {}
+    for ward in board["wards"]:
+        ward_id = str(ward["ward_id"])
+        if board_id == "tdsb":
+            signal_key = ward["race_context"]["category"]
+            signal_value = None
+            status = _TDSB_LABELS[signal_key]
+        else:
+            prior = ward.get("comparable_prior_result")
+            share = prior.get("winner_share") if isinstance(prior, dict) else None
+            signal_key = (
+                "prior_winner_share" if isinstance(share, int | float) else "no_comparable_result"
+            )
+            signal_value = share if isinstance(share, int | float) else None
+            status = "Acclaimed" if ward.get("acclaimed") else "Contested race"
+        facts[ward_id] = {
+            "accessible_name": f"{board['short_name']} {ward['district_name']}",
+            "label_text": ward_id,
+            "signal_key": signal_key,
+            "signal_value": signal_value,
+            "panel": {
+                "heading": ward["district_name"],
+                "status": status,
+                "candidate_count": len(ward["candidates"]),
+                "incumbent_summary": _incumbent_summary(ward),
+                "href": f"/trustees/{board_id}/{ward_id}",
+            },
+        }
+    if board_id == "tdsb":
+        return build_race_map(
+            geometry_path,
+            represented_body=board["represented_body"],
+            boundary_regime=board["boundary_regime"],
+            ordered_ward_ids=ordered,
+            feature_facts=facts,
+            aria_label=f"Map of {board['short_name']} trustee races",
+            palette="tdsb_race_structure",
+            legend=[
+                {"key": "open", "label": "Open race"},
+                {"key": "two_incumbents", "label": "Two incumbents"},
+                {"key": "one_incumbent", "label": "One incumbent"},
+                {"key": "acclaimed", "label": "Acclaimed"},
+            ],
+            supported_signal_keys=set(_TDSB_LABELS),
+        )
+    return build_race_map(
+        geometry_path,
+        represented_body=board["represented_body"],
+        boundary_regime=board["boundary_regime"],
+        ordered_ward_ids=ordered,
+        feature_facts=facts,
+        aria_label=f"Map of {board['short_name']} trustee races",
+        palette="prior_winner_share",
+        legend=[
+            {
+                "key": "prior_winner_share",
+                "label": "Prior winner's vote share",
+                "description": "Darker shading means a larger share in the comparable prior result.",
+            },
+            {"key": "no_comparable_result", "label": "No comparable result"},
+        ],
+        supported_signal_keys={"prior_winner_share", "no_comparable_result"},
+    )
+
+
+def build_trustee_race_cards(source: dict, geometry_path: str | Path | None = None) -> dict:
     """Carry through Results facts and add one backend-owned context per ward."""
 
     payload = copy.deepcopy(source)
@@ -203,5 +293,6 @@ def build_trustee_race_cards(source: dict) -> dict:
         board["wards"].sort(
             key=lambda ward: (ward["race_context"]["sort_priority"], int(ward["ward_id"]))
         )
+        board["map"] = _board_map(board, geometry_path)
     validate_trustee_race_cards(payload)
     return payload

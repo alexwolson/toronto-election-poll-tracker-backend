@@ -4,7 +4,9 @@ import copy
 import json
 from pathlib import Path
 
+import geopandas as gpd
 import pytest
+from shapely.geometry import box
 
 from backend.model.trustee_race_card import (
     CONTINUOUS_METHOD,
@@ -53,6 +55,55 @@ def test_current_fixture_builds_all_wards_and_serializes_cleanly() -> None:
     assert sum(len(board["wards"]) for board in cards["boards"]) == 29
     assert all("race_context" in ward for board in cards["boards"] for ward in board["wards"])
     json.dumps(cards, allow_nan=False)
+
+
+def test_maps_match_ranked_wards_and_factual_signals(tmp_path: Path) -> None:
+    source = _source()
+    rows = []
+    offset = 0
+    for board in source["boards"]:
+        for index, ward in enumerate(board["wards"]):
+            rows.append(
+                {
+                    "represented_body": board["represented_body"],
+                    "boundary_regime": board["boundary_regime"],
+                    "official_district_id": ward["ward_id"],
+                    "district_display_name": ward["district_name"],
+                    "geographic_name": f"Area {ward['ward_id']}",
+                    "geometry_status": "available",
+                    "geometry": box(offset + index, 0, offset + index + 1, 1),
+                }
+            )
+        offset += len(board["wards"]) + 1
+    path = tmp_path / "districts.parquet"
+    gpd.GeoDataFrame(rows, geometry="geometry", crs="EPSG:26917").to_parquet(path)
+
+    cards = build_trustee_race_cards(source, path)
+
+    assert {board["board_id"]: len(board["map"]["features"]) for board in cards["boards"]} == {
+        "tdsb": 12,
+        "tcdsb": 12,
+        "viamonde": 3,
+        "monavenir": 2,
+    }
+    for board in cards["boards"]:
+        assert [feature["ward_id"] for feature in board["map"]["features"]] == [
+            ward["ward_id"] for ward in board["wards"]
+        ]
+    tdsb = _board(cards, "tdsb")
+    assert [feature["signal_key"] for feature in tdsb["map"]["features"]] == [
+        ward["race_context"]["category"] for ward in tdsb["wards"]
+    ]
+    tcdsb = _board(cards, "tcdsb")
+    ward_4 = next(feature for feature in tcdsb["map"]["features"] if feature["ward_id"] == "4")
+    assert ward_4["signal_key"] == "prior_winner_share"
+    assert ward_4["signal_value"] == pytest.approx(
+        _ward(cards, "tcdsb", "4")["comparable_prior_result"]["winner_share"]
+    )
+    viamonde = _board(cards, "viamonde")
+    no_prior = next(feature for feature in viamonde["map"]["features"] if feature["ward_id"] == "2")
+    assert no_prior["signal_key"] == "no_comparable_result"
+    assert no_prior["signal_value"] is None
 
 
 def test_tdsb_uses_field_structure_and_approved_order() -> None:
