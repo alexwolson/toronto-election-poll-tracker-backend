@@ -48,8 +48,19 @@ def load_canonical_mayoral_candidate_ids(path: str | Path) -> tuple[str, ...]:
 
     with Path(path).open(encoding="utf-8") as handle:
         feed = json.load(handle)
+    schema_version = feed.get("schema_version")
+    if schema_version not in {2, 3}:
+        raise ValueError("unsupported Results mayoral candidate feed schema")
     if not feed.get("ballot_certified"):
         raise ValueError("Results mayoral field is not certified")
+    if schema_version == 3:
+        coverage = feed.get("coverage", {})
+        if (
+            coverage.get("policy") != "full_verified_canadian_electoral_career"
+            or coverage.get("jurisdiction") != "Canada"
+            or coverage.get("year_cutoff") is not None
+        ):
+            raise ValueError("Results mayoral field has unsupported career coverage")
     ids = tuple(
         candidate.get("person_id") or candidate["candidacy_id"] for candidate in feed["candidates"]
     )
