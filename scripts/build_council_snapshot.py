@@ -40,7 +40,7 @@ def main() -> None:
     canonical = inputs.election_results
     snapshot = build_council_snapshot(
         load_ward_incumbency(RAW / "defeatability" / "ward_defeatability.csv"),
-        load_registered_field(RAW / "candidates" / "councillor_registered.csv"),
+        load_registered_field(canonical),
         load_council_results(canonical),
         load_ward_poll_readings(RAW / "polls" / "ward_poll_readings.csv"),
         ward_names=load_ward_names(RAW / "defeatability" / "data-qT4Kx.csv"),

@@ -45,7 +45,7 @@ from backend.model.council_race_card import (
     race_exposure_triggers,
 )
 
-COUNCIL_RACE_CARD_SCHEMA_VERSION = 5
+COUNCIL_RACE_CARD_SCHEMA_VERSION = 6
 
 
 def _race_candidate_hints(
@@ -63,7 +63,9 @@ def _race_candidate_hints(
     incumbent_pid = resolve_person_id(race.incumbent.name, "", name_variants)
     features: dict[str, CandidateFeatures] = {}
     for candidate in race.candidates:
-        person_id = resolve_person_id(candidate.display_name, "", name_variants)
+        person_id = candidate.candidate_id or resolve_person_id(
+            candidate.display_name, "", name_variants
+        )
         if person_id is None or person_id not in history_by_person:
             # An unresolved candidate has unknown history, not a measured zero.
             # Keep a placeholder so opponent-derived Open-contest signals can be
@@ -106,7 +108,9 @@ def _race_candidate_offices(
     history still gets a history."""
     offices: dict[str, tuple[PastElection, ...]] = {}
     for candidate in race.candidates:
-        person_id = resolve_person_id(candidate.display_name, "", name_variants)
+        person_id = candidate.candidate_id or resolve_person_id(
+            candidate.display_name, "", name_variants
+        )
         if person_id is None or person_id not in history_by_person:
             offices[candidate.display_name] = ()
             continue
@@ -208,9 +212,11 @@ def _candidate_card(
 ) -> dict:
     bio = candidate.biography
     return {
+        "candidacy_id": candidate.candidacy_id,
         "display_name": candidate.display_name,
         "status": candidate.status,
         "candidate_id": candidate.candidate_id,
+        "campaign_url": candidate.campaign_url,
         "is_matched": candidate.is_matched,
         "is_former_councillor": bool(bio and bio.is_former_councillor),
         "council_wins": bio.council_wins if bio else 0,

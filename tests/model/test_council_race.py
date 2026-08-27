@@ -97,3 +97,31 @@ def test_fuzzy_match_is_order_insensitive() -> None:
     assert bio.council_wins == 3
     # a genuine non-candidate returns nothing
     assert match_biography("Nobody", "Atall", biographies) is None
+
+
+def test_canonical_current_field_preserves_ids_and_campaign_urls(tmp_path) -> None:
+    header = (
+        "candidacy_id,person_id,election_year,represented_body,office_type,"
+        "official_district_id,candidate_name,coverage_status,campaign_url\n"
+    )
+    rows = [
+        f"can_{ward},per_{ward},2026,toronto_city_council,councillor,ward-{ward},"
+        f"Candidate {ward},complete,https://candidate{ward}.example\n"
+        for ward in range(1, 26)
+    ]
+    path = tmp_path / "election_results.csv"
+    path.write_text(header + "".join(rows), encoding="utf-8")
+
+    field = load_registered_field(path)
+
+    assert set(field) == {str(ward) for ward in range(1, 26)}
+    assert field["1"] == [
+        {
+            "ward": "1",
+            "display_name": "Candidate 1",
+            "status": "Active",
+            "person_id": "per_1",
+            "candidacy_id": "can_1",
+            "campaign_url": "https://candidate1.example",
+        }
+    ]

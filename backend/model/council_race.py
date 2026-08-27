@@ -1,9 +1,9 @@
 """Per-ward Council race assembly (C1 increment 2, ADR 0043).
 
 Joins three sources into one `CouncilRace` per ward: the current incumbent from
-`ward_defeatability.csv` (the canonical, by-election-aware incumbency source), the
-2026 candidate field from `councillor_registered.csv`, and each candidate's
-electoral biography (council_biography.py).
+`ward_defeatability.csv` (the by-election-aware incumbency source), the canonical
+2026 Candidacies from Results, and each candidate's electoral biography
+(`council_biography.py`).
 
 Open-seat status is **derived from the fresh registered field**, not the incumbency
 file's `is_running` flag: the incumbent seeks re-election iff they appear in the
@@ -12,13 +12,11 @@ withdraws after the flag was last set). The `is_running` flag is kept only as a
 cross-check — `incumbency_flag_disagrees` marks wards where the two disagree, for
 editorial review (a real withdrawal the flag missed, or a name-match miss).
 
-Matching a current-cycle registration name to a historical `candidate_id` is a
-fuzzy join: the registration gives "First Last" and no id, so we index the
-canonical people by the **token set** of their (normalized) name and match
-exactly. A token set that maps to more than one candidate_id is treated as
-unmatched rather than guessed — a missing biography degrades to "newcomer", never
-to a wrong record. Middle names / nicknames that break exact token-set equality
-are a known, safe-direction limitation (they show as newcomers).
+Current candidates use the persistent `person_id` assigned by Results; Backend does
+not independently match registration names. The only remaining name bridge is from
+the separate incumbency sheet to a canonical biography, with ambiguous token sets
+left unmatched rather than guessed. The legacy registration loader shape remains
+accepted solely for historical unit fixtures.
 """
 
 from __future__ import annotations
@@ -46,9 +44,11 @@ class WardIncumbent:
 
 @dataclass(frozen=True, slots=True)
 class RaceCandidate:
+    candidacy_id: str | None
     display_name: str
     status: str
     candidate_id: str | None
+    campaign_url: str | None
     biography: CandidateBiography | None
 
     @property
@@ -133,10 +133,40 @@ def load_ward_incumbency(path: str | Path) -> dict[str, dict[str, str]]:
 
 
 def load_registered_field(path: str | Path) -> dict[str, list[dict[str, str]]]:
+    """Load the current council field from canonical Results.
+
+    The legacy registration CSV remains accepted by unit fixtures, but production
+    consumes the Results-owned 2026 candidacies and their confirmed Person links.
+    """
+
     field: dict[str, list[dict[str, str]]] = {}
     with open(path, newline="", encoding="utf-8") as handle:
-        for row in csv.DictReader(handle):
-            field.setdefault(row["ward"], []).append(row)
+        reader = csv.DictReader(handle)
+        canonical = "office_type" in (reader.fieldnames or [])
+        for row in reader:
+            if canonical:
+                if not (
+                    row["election_year"] == "2026"
+                    and row["represented_body"] == "toronto_city_council"
+                    and row["office_type"] == "councillor"
+                    and row["coverage_status"] == "complete"
+                ):
+                    continue
+                ward = row["official_district_id"].removeprefix("ward-")
+                entry = {
+                    "ward": ward,
+                    "display_name": row["candidate_name"],
+                    "status": "Active",
+                    "person_id": row["person_id"],
+                    "candidacy_id": row["candidacy_id"],
+                    "campaign_url": row.get("campaign_url", ""),
+                }
+            else:
+                ward = row["ward"]
+                entry = row
+            field.setdefault(ward, []).append(entry)
+    if canonical and set(field) != {str(ward) for ward in range(1, 26)}:
+        raise ValueError("canonical Results does not contain a complete 2026 council field")
     return field
 
 
@@ -170,22 +200,32 @@ def build_council_races(
         candidates = []
         field_token_sets = []
         for entry in field.get(ward, []):
-            tokens = _name_tokens(f"{entry['first_name']} {entry['last_name']}")
+            display_name = entry.get("display_name") or (
+                f"{entry['first_name']} {entry['last_name']}"
+            )
+            tokens = _name_tokens(display_name)
             field_token_sets.append(tokens)
-            bio = match(tokens)
+            canonical_person_id = entry.get("person_id", "").strip()
+            bio = biographies.get(canonical_person_id) if canonical_person_id else match(tokens)
             candidates.append(
                 RaceCandidate(
-                    display_name=f"{entry['first_name']} {entry['last_name']}",
+                    candidacy_id=entry.get("candidacy_id") or None,
+                    display_name=display_name,
                     status=entry.get("status", ""),
-                    candidate_id=bio.candidate_id if bio else None,
+                    candidate_id=canonical_person_id or (bio.candidate_id if bio else None),
+                    campaign_url=entry.get("campaign_url") or None,
                     biography=bio,
                 )
             )
         # Open-seat is derived from the fresh registered field, not the (staler)
         # is_running flag: the incumbent seeks re-election iff they appear in it.
-        incumbent_tokens = _name_tokens(incumbent.name)
-        incumbent_in_field = any(
-            len(incumbent_tokens & tokens) >= 2 for tokens in field_token_sets
+        incumbent_id = incumbent.biography.candidate_id if incumbent.biography else None
+        incumbent_in_field = (
+            any(candidate.candidate_id == incumbent_id for candidate in candidates)
+            if incumbent_id is not None and any(candidate.candidacy_id for candidate in candidates)
+            else any(
+                len(_name_tokens(incumbent.name) & tokens) >= 2 for tokens in field_token_sets
+            )
         )
         races[ward] = CouncilRace(
             ward=ward,

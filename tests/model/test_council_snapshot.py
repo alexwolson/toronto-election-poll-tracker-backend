@@ -43,8 +43,8 @@ def test_snapshot_covers_all_wards_and_serializes_cleanly() -> None:
     json.dumps(snap, allow_nan=False)  # no Decimal / NaN leaks
 
 
-def test_schema_bumped_to_v5_for_candidate_history_contract_2_1() -> None:
-    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 5
+def test_schema_bumped_to_v6_for_candidate_campaign_links() -> None:
+    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 6
 
 
 def test_ward_23_han_dong_surfaces_prior_mp_and_mpp_offices() -> None:

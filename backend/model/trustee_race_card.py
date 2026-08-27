@@ -39,7 +39,7 @@ def load_trustee_races(path: str | Path) -> dict:
 
     with Path(path).open(encoding="utf-8") as handle:
         payload = json.load(handle)
-    if payload.get("schema_version") != 1 or not isinstance(payload.get("boards"), list):
+    if payload.get("schema_version") not in {1, 2} or not isinstance(payload.get("boards"), list):
         raise ValueError("unsupported trustee races input")
     return payload
 
