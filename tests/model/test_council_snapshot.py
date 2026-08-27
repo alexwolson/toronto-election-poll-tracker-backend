@@ -13,6 +13,7 @@ from backend.model.council_race import load_registered_field, load_ward_incumben
 from backend.model.council_race_card import load_ward_poll_readings
 from backend.model.council_snapshot import (
     COUNCIL_RACE_CARD_SCHEMA_VERSION,
+    _attention_level,
     _attention_score,
     build_council_snapshot,
     load_ward_names,
@@ -86,6 +87,14 @@ def test_map_matches_attention_order_and_ward_facts(tmp_path: Path) -> None:
     assert ward_11["signal_key"] == "open"
     assert ward_11["panel"]["candidate_count"] == len(snapshot["wards"]["11"]["candidates"])
     assert ward_11["panel"]["href"] == "/wards/11"
+    assert all(
+        card["attention"]
+        == {
+            "level": _attention_level(card),
+            "score": _attention_score(card),
+        }
+        for card in snapshot["wards"].values()
+    )
 
 
 def test_ward_23_han_dong_surfaces_prior_mp_and_mpp_offices() -> None:

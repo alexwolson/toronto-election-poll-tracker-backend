@@ -426,6 +426,11 @@ def build_council_snapshot(
         )
         for ward, race in races.items()
     }
+    for card in wards.values():
+        card["attention"] = {
+            "level": _attention_level(card),
+            "score": _attention_score(card),
+        }
     return {
         "schema_version": COUNCIL_RACE_CARD_SCHEMA_VERSION,
         "base_rate_note": COUNCIL_INCUMBENT_BASE_RATE_COPY,
