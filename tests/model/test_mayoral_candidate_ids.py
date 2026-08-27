@@ -19,12 +19,15 @@ def test_minor_candidate_ids_are_normalized_name_slugs() -> None:
     assert mayoral_candidate_id("  Odessa Paloma ", " Parker ") == "odessa-paloma-parker"
 
 
-def test_canonical_ids_accept_results_owned_full_career_feed(tmp_path) -> None:
+@pytest.mark.parametrize("schema_version", [3, 4])
+def test_canonical_ids_accept_results_owned_full_career_feed(
+    tmp_path, schema_version: int
+) -> None:
     path = tmp_path / "mayoral_candidates.json"
     path.write_text(
         json.dumps(
             {
-                "schema_version": 3,
+                "schema_version": schema_version,
                 "ballot_certified": True,
                 "coverage": {
                     "policy": "full_verified_canadian_electoral_career",
