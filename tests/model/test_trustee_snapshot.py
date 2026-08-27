@@ -21,7 +21,12 @@ def test_snapshot_command_reads_only_the_hydrated_trustee_input(tmp_path: Path) 
     model_polls.mkdir(parents=True)
     (results / "election_results.csv").write_text("result_status\n", encoding="utf-8")
     (results / "electoral_districts.csv").write_text(
-        "district_id,district_display_name\n", encoding="utf-8"
+        "represented_body,boundary_regime,official_district_id,geographic_name\n"
+        + "".join(
+            f"toronto_city_council,toronto_council_25_wards,ward-{ward},Area {ward}\n"
+            for ward in range(1, 26)
+        ),
+        encoding="utf-8",
     )
     gpd.GeoDataFrame(
         {

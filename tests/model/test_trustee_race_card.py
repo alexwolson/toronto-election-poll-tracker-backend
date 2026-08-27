@@ -78,7 +78,8 @@ def test_maps_match_ranked_wards_and_factual_signals(tmp_path: Path) -> None:
     path = tmp_path / "districts.parquet"
     gpd.GeoDataFrame(rows, geometry="geometry", crs="EPSG:26917").to_parquet(path)
 
-    cards = build_trustee_race_cards(source, path)
+    city_ward_names = {str(ward): f"City area {ward}" for ward in range(1, 26)}
+    cards = build_trustee_race_cards(source, path, city_ward_names)
 
     assert {board["board_id"]: len(board["map"]["features"]) for board in cards["boards"]} == {
         "tdsb": 12,
@@ -104,6 +105,11 @@ def test_maps_match_ranked_wards_and_factual_signals(tmp_path: Path) -> None:
     no_prior = next(feature for feature in viamonde["map"]["features"] if feature["ward_id"] == "2")
     assert no_prior["signal_key"] == "no_comparable_result"
     assert no_prior["signal_value"] is None
+    assert next(feature for feature in viamonde["map"]["features"] if feature["ward_id"] == "3")[
+        "panel"
+    ]["geography"] == "; ".join(
+        city_ward_names[str(ward)] for ward in _ward(cards, "viamonde", "3")["city_wards"]
+    )
 
 
 def test_tdsb_uses_field_structure_and_approved_order() -> None:

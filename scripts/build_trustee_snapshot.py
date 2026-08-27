@@ -11,6 +11,7 @@ from pathlib import Path
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
+from backend.model.council_snapshot import load_ward_names
 from backend.model.trustee_race_card import build_trustee_race_cards, load_trustee_races
 from backend.release_inputs import load_release_input_paths
 
@@ -25,6 +26,7 @@ def main() -> None:
     snapshot = build_trustee_race_cards(
         load_trustee_races(inputs.trustee_races),
         geometry_path=inputs.electoral_districts_parquet,
+        city_ward_names=load_ward_names(inputs.electoral_districts),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as handle:

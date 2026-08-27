@@ -208,7 +208,11 @@ def _incumbent_summary(ward: dict) -> str:
     return f"Incumbents: {' and '.join(names)}"
 
 
-def _board_map(board: dict, geometry_path: str | Path | None) -> dict | None:
+def _board_map(
+    board: dict,
+    geometry_path: str | Path | None,
+    city_ward_names: dict[str, str] | None,
+) -> dict | None:
     if geometry_path is None:
         return None
     board_id = board["board_id"]
@@ -235,6 +239,15 @@ def _board_map(board: dict, geometry_path: str | Path | None) -> dict | None:
             "signal_value": signal_value,
             "panel": {
                 "heading": ward["district_name"],
+                **(
+                    {
+                        "geography": "; ".join(
+                            city_ward_names[str(city_ward)] for city_ward in ward["city_wards"]
+                        )
+                    }
+                    if city_ward_names is not None
+                    else {}
+                ),
                 "status": status,
                 "candidate_count": len(ward["candidates"]),
                 "incumbent_summary": _incumbent_summary(ward),
@@ -278,7 +291,11 @@ def _board_map(board: dict, geometry_path: str | Path | None) -> dict | None:
     )
 
 
-def build_trustee_race_cards(source: dict, geometry_path: str | Path | None = None) -> dict:
+def build_trustee_race_cards(
+    source: dict,
+    geometry_path: str | Path | None = None,
+    city_ward_names: dict[str, str] | None = None,
+) -> dict:
     """Carry through Results facts and add one backend-owned context per ward."""
 
     payload = copy.deepcopy(source)
@@ -293,6 +310,6 @@ def build_trustee_race_cards(source: dict, geometry_path: str | Path | None = No
         board["wards"].sort(
             key=lambda ward: (ward["race_context"]["sort_priority"], int(ward["ward_id"]))
         )
-        board["map"] = _board_map(board, geometry_path)
+        board["map"] = _board_map(board, geometry_path, city_ward_names)
     validate_trustee_race_cards(payload)
     return payload
