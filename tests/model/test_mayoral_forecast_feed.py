@@ -53,6 +53,50 @@ def test_margin_distribution_is_a_normalized_nonnegative_density() -> None:
     assert abs(float(np.trapezoid(dens, xs)) - 1.0) < 0.05
 
 
+def test_winner_margin_densities_are_joint_subsets_of_the_aggregate() -> None:
+    q = forecast_quantities(DRAWS, incumbent_candidate_id="chow")
+    dist = q.margin_distribution
+    assert set(dist.by_winner) == {"chow", "bradford"}
+    assert dist.by_winner["chow"].draw_weight == 3.0
+    assert dist.by_winner["bradford"].draw_weight == 1.0
+
+    combined = sum(
+        (np.asarray(component.density) for component in dist.by_winner.values()),
+        start=np.zeros(len(dist.x)),
+    )
+    assert np.allclose(combined, np.asarray(dist.density), rtol=1e-12, atol=1e-12)
+
+    chow_mass = float(np.trapezoid(dist.by_winner["chow"].density, dist.x))
+    bradford_mass = float(np.trapezoid(dist.by_winner["bradford"].density, dist.x))
+    assert abs(chow_mass - 0.75) < 0.05
+    assert abs(bradford_mass - 0.25) < 0.05
+
+
+def test_margin_feed_omits_zero_winners_and_groups_non_public_winners_as_other() -> None:
+    draws = FullBallotShareDraws(
+        candidate_ids=("chow", "bradford", "alexander", "outsider"),
+        draws=(
+            (0.50, 0.30, 0.15, 0.05),
+            (0.30, 0.45, 0.15, 0.10),
+            (0.25, 0.20, 0.15, 0.40),
+        ),
+    )
+    dist = forecast_quantities(draws, incumbent_candidate_id="chow").margin_distribution
+    feed = dist.to_feed(
+        0.05,
+        public_candidate_ids=("chow", "bradford", "alexander"),
+    )
+
+    assert set(feed["by_winner"]) == {"chow", "bradford", "other"}
+    assert feed["by_winner"]["other"]["draw_weight"] == 1.0
+    assert "alexander" not in feed["by_winner"]
+    combined = sum(
+        (np.asarray(component["density"]) for component in feed["by_winner"].values()),
+        start=np.zeros(len(feed["x"])),
+    )
+    assert np.allclose(combined, np.asarray(feed["density"]), rtol=1e-12, atol=1e-12)
+
+
 def test_incumbent_defeat_is_one_minus_incumbent_win() -> None:
     q = forecast_quantities(DRAWS, incumbent_candidate_id="chow")
     assert q.incumbent_defeat.probability == 0.25
@@ -70,6 +114,12 @@ def test_a_tied_top_share_splits_the_winner_weight() -> None:
     q = forecast_quantities(tied, incumbent_candidate_id=None)
     assert q.candidate_win["a"].probability == 0.5
     assert q.candidate_win["b"].probability == 0.5
+    assert q.margin_distribution.by_winner["a"].draw_weight == 1.0
+    assert q.margin_distribution.by_winner["b"].draw_weight == 1.0
+    assert np.allclose(
+        q.margin_distribution.by_winner["a"].density,
+        np.asarray(q.margin_distribution.density) / 2.0,
+    )
 
 
 def _stub(pollsters):

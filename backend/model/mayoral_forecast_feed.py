@@ -119,6 +119,14 @@ _MARGIN_GRID_SIZE = 120
 
 
 @dataclass(frozen=True, slots=True)
+class WinnerMarginDistribution:
+    """One winner's joint contribution to the aggregate margin density."""
+
+    density: tuple[float, ...]
+    draw_weight: float
+
+
+@dataclass(frozen=True, slots=True)
 class MarginDistribution:
     """Smoothed density of the winning margin (winner share minus runner-up
     share) across the share draws. `x` is a grid in share units on [0, x_max];
@@ -127,18 +135,47 @@ class MarginDistribution:
 
     x: tuple[float, ...]
     density: tuple[float, ...]
+    by_winner: dict[str, WinnerMarginDistribution]
 
-    def to_feed(self, close_threshold: float) -> dict:
+    def to_feed(
+        self,
+        close_threshold: float,
+        *,
+        public_candidate_ids: tuple[str, ...],
+    ) -> dict:
+        public_ids = set(public_candidate_ids)
+        by_winner: dict[str, dict] = {}
+        other_density = np.zeros(len(self.x), dtype=float)
+        other_draw_weight = 0.0
+        for candidate_id, component in self.by_winner.items():
+            if candidate_id in public_ids:
+                by_winner[candidate_id] = {
+                    "density": list(component.density),
+                    "draw_weight": component.draw_weight,
+                }
+            else:
+                other_density += np.asarray(component.density, dtype=float)
+                other_draw_weight += component.draw_weight
+        if other_draw_weight > 0.0:
+            by_winner["other"] = {
+                "density": [float(value) for value in other_density],
+                "draw_weight": other_draw_weight,
+            }
         return {
             "unit": "share_gap",  # winner minus runner-up, a fraction in [0, 1]
             "x": list(self.x),
             "density": list(self.density),
             "close_threshold": close_threshold,
+            "by_winner": by_winner,
         }
 
 
 def _margin_distribution(
-    margins: np.ndarray, *, grid_size: int = _MARGIN_GRID_SIZE
+    margins: np.ndarray,
+    candidate_ids: tuple[str, ...],
+    winner_weights: np.ndarray,
+    *,
+    grid_size: int = _MARGIN_GRID_SIZE,
 ) -> MarginDistribution:
     """Reflected-boundary Gaussian KDE of the winning margins.
 
@@ -163,10 +200,21 @@ def _margin_distribution(
     diffs = (xs[:, None] - data[None, :]) / bandwidth
     reflected = (xs[:, None] + data[None, :]) / bandwidth
     kernel = np.exp(-0.5 * diffs**2) + np.exp(-0.5 * reflected**2)
-    density = kernel.sum(axis=1) / (n * bandwidth * math.sqrt(2.0 * math.pi))
+    denominator = n * bandwidth * math.sqrt(2.0 * math.pi)
+    winner_density = (kernel @ winner_weights) / denominator
+    density = winner_density.sum(axis=1)
+    by_winner = {
+        candidate_id: WinnerMarginDistribution(
+            density=tuple(float(value) for value in winner_density[:, index]),
+            draw_weight=float(winner_weights[:, index].sum()),
+        )
+        for index, candidate_id in enumerate(candidate_ids)
+        if np.any(winner_weights[:, index] > 0.0)
+    }
     return MarginDistribution(
         x=tuple(float(v) for v in xs),
         density=tuple(float(v) for v in density),
+        by_winner=by_winner,
     )
 
 
@@ -193,7 +241,8 @@ def forecast_quantities(
     # Winner weight per candidate, splitting an exact top-share tie equally.
     winners_mask = rows == rows.max(axis=1, keepdims=True)
     ties = winners_mask.sum(axis=1, keepdims=True)
-    win_weight_arr = (winners_mask / (draw_count * ties)).sum(axis=0)
+    winner_weights = winners_mask / ties
+    win_weight_arr = winner_weights.sum(axis=0) / draw_count
     win_weight = {
         candidate_id: float(win_weight_arr[index])
         for index, candidate_id in enumerate(candidate_ids)
@@ -216,7 +265,7 @@ def forecast_quantities(
         candidate_win=candidate_win,
         close_result=close_result,
         incumbent_defeat=incumbent_defeat,
-        margin_distribution=_margin_distribution(margins),
+        margin_distribution=_margin_distribution(margins, candidate_ids, winner_weights),
     )
 
 
@@ -518,7 +567,10 @@ def build_mayoral_forecast_feed(
     # would leak an estimate the Band Stability Gate judged too unstable to show).
     bridge_base = per_variant.get("bridge-base")
     margin_distribution = (
-        bridge_base.margin_distribution.to_feed(_CLOSE_THRESHOLD)
+        bridge_base.margin_distribution.to_feed(
+            _CLOSE_THRESHOLD,
+            public_candidate_ids=inputs.viable_field,
+        )
         if close_result["availability"] == "Forecast Available" and bridge_base is not None
         else None
     )
