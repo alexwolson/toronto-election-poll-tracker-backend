@@ -92,6 +92,47 @@ def test_pending_certified_candidacy_is_not_election_history(tmp_path: Path) -> 
     assert load_council_results(path) == ()
 
 
+def test_pre_2003_career_rows_are_outside_council_biography_scope(
+    tmp_path: Path,
+) -> None:
+    path = tmp_path / "results.csv"
+    columns = (
+        "represented_body",
+        "office_type",
+        "result_status",
+        "boundary_regime",
+        "election_year",
+        "official_district_id",
+        "person_id",
+        "candidate_name",
+        "votes",
+        "vote_share",
+        "elected",
+        "acclaimed",
+    )
+    with path.open("w", newline="", encoding="utf-8") as handle:
+        writer = csv.DictWriter(handle, fieldnames=columns)
+        writer.writeheader()
+        writer.writerow(
+            {
+                "represented_body": "toronto_city_council",
+                "office_type": "councillor",
+                "result_status": "final",
+                "boundary_regime": "toronto-1997-wards",
+                "election_year": "1997",
+                "official_district_id": "ward-24",
+                "person_id": "person-chow",
+                "candidate_name": "Olivia Chow",
+                "votes": "12345",
+                "vote_share": "0.5",
+                "elected": "True",
+                "acclaimed": "False",
+            }
+        )
+
+    assert load_council_results(path) == ()
+
+
 def test_unknown_candidate_has_an_empty_biography() -> None:
     bio = build_candidate_biography("nobody atall", _results())
     assert bio.appearances == ()

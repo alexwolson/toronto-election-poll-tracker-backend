@@ -23,6 +23,7 @@ from typing import Final
 from backend.model.canonical_results import is_completed_result
 
 # Canonical boundary_regime -> the biography's boundary_era label.
+_COUNCIL_HISTORY_START_YEAR: Final = 2003
 _BOUNDARY_ERA: Final = {
     "toronto_council_44_wards": "44-ward",
     "toronto_council_25_wards": "25-ward",
@@ -86,9 +87,7 @@ class CandidateBiography:
             return None
         return max(self.appearances, key=lambda a: a.vote_share)
 
-    def wins_in_ward(
-        self, ward: str, boundary_era: str
-    ) -> tuple[ElectoralAppearance, ...]:
+    def wins_in_ward(self, ward: str, boundary_era: str) -> tuple[ElectoralAppearance, ...]:
         """Winning appearances in a specific ward of a specific boundary era.
 
         Ward numbers are only comparable within an era (the 2018 redraw reassigned
@@ -112,14 +111,15 @@ def load_council_results(path: str | Path) -> tuple[CouncilElectionResult, ...]:
                 or row["office_type"] != "councillor"
             ):
                 continue
+            election_year = int(row["election_year"])
+            if election_year < _COUNCIL_HISTORY_START_YEAR:
+                continue
             boundary_era = _BOUNDARY_ERA.get(row["boundary_regime"])
             if boundary_era is None:
-                raise ValueError(
-                    f"unknown councillor boundary_regime {row['boundary_regime']!r}"
-                )
+                raise ValueError(f"unknown councillor boundary_regime {row['boundary_regime']!r}")
             results.append(
                 CouncilElectionResult(
-                    election_year=int(row["election_year"]),
+                    election_year=election_year,
                     ward=row["official_district_id"].removeprefix("ward-"),
                     boundary_era=boundary_era,
                     candidate_id=row["person_id"].strip(),
