@@ -41,7 +41,7 @@ def build_backend_release_bundle(
     results_manifest, polling_manifest = validate_release_chain(
         results, polling, results_release=results_release
     )
-    names = ("mayoral_forecast.json", "council_race_cards.json")
+    names = ("mayoral_forecast.json", "council_race_cards.json", "trustee_race_cards.json")
     for name in names:
         if not (processed / name).is_file():
             raise FileNotFoundError(f"missing backend release feed: {processed / name}")
@@ -73,6 +73,7 @@ def build_backend_release_bundle(
             "feeds": {
                 "mayoral_forecast": "mayoral_forecast.json",
                 "council_race_cards": "council_race_cards.json",
+                "trustee_race_cards": "trustee_race_cards.json",
             },
             "assets": [
                 {

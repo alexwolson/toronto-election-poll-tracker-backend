@@ -16,6 +16,7 @@ def _manifest(live_cycle, summary=None):
         feed_versions={
             "mayoral_forecast": 2,
             "council_race_cards": 2,
+            "trustee_race_cards": 1,
         },
         mayoral_publication_summary=summary,
     )
@@ -37,9 +38,11 @@ def test_manifest_indexes_only_backend_owned_feeds() -> None:
     assert set(m["feeds"]) == {
         "mayoral_forecast",
         "council_race_cards",
+        "trustee_race_cards",
         "manifest",
     }
     assert m["generated_at"] == "2026-08-20"
     assert m["election"]["nomination_close_date"] == "2026-08-21"
     assert m["feed_versions"]["council_race_cards"] == 2
     assert m["feed_versions"]["mayoral_forecast"] == 2
+    assert m["feed_versions"]["trustee_race_cards"] == 1

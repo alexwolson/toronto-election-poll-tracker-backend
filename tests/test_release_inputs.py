@@ -4,6 +4,8 @@ import hashlib
 import json
 from pathlib import Path
 
+import pytest
+
 from backend.release_inputs import hydrate_release_inputs, load_release_input_paths
 
 
@@ -23,6 +25,7 @@ def test_hydration_is_isolated_and_returns_explicit_model_paths(tmp_path: Path) 
     results.mkdir()
     polling.mkdir()
     (results / "election_results.csv").write_text("result_status\nfinal\n", encoding="utf-8")
+    _write_json(results / "trustee_races.json", {"schema_version": 1, "boards": []})
     results_manifest = {
         "repository": "alexwolson/toronto-election-results",
         "source_commit": "results-commit",
@@ -57,7 +60,12 @@ def test_hydration_is_isolated_and_returns_explicit_model_paths(tmp_path: Path) 
     assert sentinel.read_text(encoding="utf-8") == "tracked fixture\n"
     assert paths == load_release_input_paths(project / "data/upstream/input_manifest.json")
     assert paths.election_results == project / "data/upstream/results/election_results.csv"
+    assert paths.trustee_races == project / "data/upstream/results/trustee_races.json"
     assert paths.model_polls == project / "data/upstream/model/polls"
     responses = (paths.model_polls / "poll_responses.csv").read_text(encoding="utf-8")
     assert "candidate_id" in responses.splitlines()[0]
     assert "person-chow" in responses
+
+    paths.trustee_races.unlink()
+    with pytest.raises(FileNotFoundError):
+        load_release_input_paths(project / "data/upstream/input_manifest.json")

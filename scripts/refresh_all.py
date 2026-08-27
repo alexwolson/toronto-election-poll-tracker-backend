@@ -75,6 +75,18 @@ def main() -> None:
         dry_run=args.dry_run,
     )
     _run(
+        "Build trustee race cards",
+        [
+            PYTHON,
+            "scripts/build_trustee_snapshot.py",
+            "--input-manifest",
+            str(input_manifest),
+            "--output",
+            str(generated / "trustee_race_cards.json"),
+        ],
+        dry_run=args.dry_run,
+    )
+    _run(
         "Build pinned backend release bundle",
         [
             PYTHON,

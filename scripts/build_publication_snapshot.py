@@ -30,6 +30,7 @@ from backend.model.publication_manifest import (
     build_publication_manifest,
     load_live_cycle,
 )
+from backend.model.trustee_race_card import TRUSTEE_RACE_CARD_SCHEMA_VERSION
 from backend.release_inputs import load_release_input_paths
 
 
@@ -74,6 +75,7 @@ def main() -> None:
         feed_versions={
             "mayoral_forecast": MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
             "council_race_cards": COUNCIL_RACE_CARD_SCHEMA_VERSION,
+            "trustee_race_cards": TRUSTEE_RACE_CARD_SCHEMA_VERSION,
         },
         mayoral_publication_summary=_publication_summary(forecast),
     )
