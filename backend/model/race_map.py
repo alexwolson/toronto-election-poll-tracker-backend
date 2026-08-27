@@ -44,9 +44,12 @@ def _ring_path(coordinates) -> str:
 
 def _polygon_path(polygon: Polygon) -> str:
     normalized = orient(polygon, sign=1.0)
-    rings = [_ring_path(normalized.exterior.coords)]
-    rings.extend(_ring_path(interior.coords) for interior in normalized.interiors)
-    return " ".join(rings)
+    # Canonical district geometry is assembled from voting subdivisions and can
+    # retain thousands of tiny interior gaps. They are not electoral enclaves;
+    # drawing them produces distracting white flecks and dark outlines. Keep
+    # every exterior component (including real islands), but suppress holes in
+    # this presentation-only path.
+    return _ring_path(normalized.exterior.coords)
 
 
 def _geometry_path(geometry: Polygon | MultiPolygon) -> str:

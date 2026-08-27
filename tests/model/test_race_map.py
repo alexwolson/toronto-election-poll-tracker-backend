@@ -91,7 +91,7 @@ def test_builds_deterministic_polygon_and_multipolygon_svg(tmp_path: Path) -> No
     assert first["view_box"] == "0 0 1000 720"
     assert [feature["ward_id"] for feature in first["features"]] == ["2", "1"]
     assert first["features"][0]["path"].count("M") == 2  # mainland + island
-    assert first["features"][1]["path"].count("M") == 2  # exterior + hole
+    assert first["features"][1]["path"].count("M") == 1  # source gap suppressed
     assert all(
         0 <= feature["label"][axis] <= (1000 if axis == "x" else 720)
         for feature in first["features"]
