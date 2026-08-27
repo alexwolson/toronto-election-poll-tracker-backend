@@ -23,6 +23,7 @@ class ReleaseInputPaths:
     results_dir: Path
     polling_dir: Path
     election_results: Path
+    electoral_districts: Path
     trustee_races: Path
     model_polls: Path
 
@@ -49,6 +50,7 @@ def load_release_input_paths(path: str | Path) -> ReleaseInputPaths:
         results_dir=resolve("results_dir"),
         polling_dir=resolve("polling_dir"),
         election_results=resolve("election_results"),
+        electoral_districts=resolve("electoral_districts"),
         trustee_races=resolve("trustee_races"),
         model_polls=resolve("model_polls"),
     )
@@ -161,6 +163,7 @@ def hydrate_release_inputs(
                         "results_dir": "results",
                         "polling_dir": "polling",
                         "election_results": "results/election_results.csv",
+                        "electoral_districts": "results/electoral_districts.csv",
                         "trustee_races": "results/trustee_races.json",
                         "model_polls": "model/polls",
                     },

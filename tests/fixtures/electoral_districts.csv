@@ -1,0 +1,26 @@
+district_id,represented_body,boundary_regime,official_district_id,geographic_name,district_display_name
+dst_1,toronto_city_council,toronto_council_25_wards,1,Etobicoke North,Ward 1 — Etobicoke North
+dst_2,toronto_city_council,toronto_council_25_wards,2,Etobicoke Centre,Ward 2 — Etobicoke Centre
+dst_3,toronto_city_council,toronto_council_25_wards,3,Etobicoke-Lakeshore,Ward 3 — Etobicoke-Lakeshore
+dst_4,toronto_city_council,toronto_council_25_wards,4,Parkdale-High Park,Ward 4 — Parkdale-High Park
+dst_5,toronto_city_council,toronto_council_25_wards,5,York South-Weston,Ward 5 — York South-Weston
+dst_6,toronto_city_council,toronto_council_25_wards,6,York Centre,Ward 6 — York Centre
+dst_7,toronto_city_council,toronto_council_25_wards,7,Humber River-Black Creek,Ward 7 — Humber River-Black Creek
+dst_8,toronto_city_council,toronto_council_25_wards,8,Eglinton-Lawrence,Ward 8 — Eglinton-Lawrence
+dst_9,toronto_city_council,toronto_council_25_wards,9,Davenport,Ward 9 — Davenport
+dst_10,toronto_city_council,toronto_council_25_wards,10,Spadina-Fort York,Ward 10 — Spadina-Fort York
+dst_11,toronto_city_council,toronto_council_25_wards,11,University-Rosedale,Ward 11 — University-Rosedale
+dst_12,toronto_city_council,toronto_council_25_wards,12,Toronto-St. Paul's,Ward 12 — Toronto-St. Paul's
+dst_13,toronto_city_council,toronto_council_25_wards,13,Toronto Centre,Ward 13 — Toronto Centre
+dst_14,toronto_city_council,toronto_council_25_wards,14,Toronto-Danforth,Ward 14 — Toronto-Danforth
+dst_15,toronto_city_council,toronto_council_25_wards,15,Don Valley West,Ward 15 — Don Valley West
+dst_16,toronto_city_council,toronto_council_25_wards,16,Don Valley East,Ward 16 — Don Valley East
+dst_17,toronto_city_council,toronto_council_25_wards,17,Don Valley North,Ward 17 — Don Valley North
+dst_18,toronto_city_council,toronto_council_25_wards,18,Willowdale,Ward 18 — Willowdale
+dst_19,toronto_city_council,toronto_council_25_wards,19,Beaches-East York,Ward 19 — Beaches-East York
+dst_20,toronto_city_council,toronto_council_25_wards,20,Scarborough Southwest,Ward 20 — Scarborough Southwest
+dst_21,toronto_city_council,toronto_council_25_wards,21,Scarborough Centre,Ward 21 — Scarborough Centre
+dst_22,toronto_city_council,toronto_council_25_wards,22,Scarborough-Agincourt,Ward 22 — Scarborough-Agincourt
+dst_23,toronto_city_council,toronto_council_25_wards,23,Scarborough North,Ward 23 — Scarborough North
+dst_24,toronto_city_council,toronto_council_25_wards,24,Scarborough-Guildwood,Ward 24 — Scarborough-Guildwood
+dst_25,toronto_city_council,toronto_council_25_wards,25,Scarborough-Rouge Park,Ward 25 — Scarborough-Rouge Park

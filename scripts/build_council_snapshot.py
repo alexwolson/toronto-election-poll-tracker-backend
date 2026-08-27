@@ -43,8 +43,8 @@ def main() -> None:
         load_registered_field(canonical),
         load_council_results(canonical),
         load_ward_poll_readings(RAW / "polls" / "ward_poll_readings.csv"),
-        ward_names=load_ward_names(RAW / "defeatability" / "data-qT4Kx.csv"),
-        officeholding=load_officeholding_history(canonical),
+        ward_names=load_ward_names(inputs.electoral_districts),
+        officeholding=load_officeholding_history(canonical, inputs.electoral_districts),
         supported_hints=load_supported_hints(RAW / "hints" / "supported_historical_hints.csv"),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)

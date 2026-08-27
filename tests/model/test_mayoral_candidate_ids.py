@@ -19,7 +19,7 @@ def test_minor_candidate_ids_are_normalized_name_slugs() -> None:
     assert mayoral_candidate_id("  Odessa Paloma ", " Parker ") == "odessa-paloma-parker"
 
 
-@pytest.mark.parametrize("schema_version", [3, 4])
+@pytest.mark.parametrize("schema_version", [3, 4, 5])
 def test_canonical_ids_accept_results_owned_full_career_feed(
     tmp_path, schema_version: int
 ) -> None:

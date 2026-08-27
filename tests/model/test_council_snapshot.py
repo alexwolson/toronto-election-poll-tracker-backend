@@ -19,7 +19,7 @@ RESULTS = ROOT / "data/raw/canonical/election_results.csv"
 INCUMBENCY = ROOT / "data/raw/defeatability/ward_defeatability.csv"
 FIELD = ROOT / "data/raw/candidates/councillor_registered.csv"
 WARD_POLLS = ROOT / "data/raw/polls/ward_poll_readings.csv"
-WARD_NAMES = ROOT / "data/raw/defeatability/data-qT4Kx.csv"
+WARD_NAMES = ROOT / "tests/fixtures/electoral_districts.csv"
 HINTS = ROOT / "data/raw/hints/supported_historical_hints.csv"
 
 
@@ -43,8 +43,8 @@ def test_snapshot_covers_all_wards_and_serializes_cleanly() -> None:
     json.dumps(snap, allow_nan=False)  # no Decimal / NaN leaks
 
 
-def test_schema_bumped_to_v6_for_candidate_campaign_links() -> None:
-    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 6
+def test_schema_bumped_to_v7_for_results_owned_ward_names() -> None:
+    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 7
 
 
 def test_ward_23_han_dong_surfaces_prior_mp_and_mpp_offices() -> None:

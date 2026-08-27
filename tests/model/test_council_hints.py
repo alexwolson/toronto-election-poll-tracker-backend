@@ -68,6 +68,25 @@ def test_former_trustee_win_is_prior_elected_office() -> None:
     assert f.all_prior_victory_count == 1
 
 
+def test_past_election_preserves_results_owned_district_display_name() -> None:
+    record = CandidacyRecord(
+        "p1",
+        "trustee",
+        "2018-10-22",
+        True,
+        0.50,
+        0.20,
+        contest_id="contest",
+        district_name="Ward 4",
+        district_display_name="Ward 4 — York Centre; Willowdale",
+    )
+
+    election = past_election_history([record])[0]
+
+    assert election.district_name == "Ward 4"
+    assert election.district_display_name == "Ward 4 — York Centre; Willowdale"
+
+
 def test_returning_councillor_counts_prior_council_win() -> None:
     rec = [_rec("councillor", "2018-10-22", True, 0.55, 0.10)]
     returning = candidate_features(rec, is_sitting_incumbent=False)

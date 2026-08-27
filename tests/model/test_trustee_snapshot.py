@@ -17,6 +17,9 @@ def test_snapshot_command_reads_only_the_hydrated_trustee_input(tmp_path: Path) 
     polling.mkdir()
     model_polls.mkdir(parents=True)
     (results / "election_results.csv").write_text("result_status\n", encoding="utf-8")
+    (results / "electoral_districts.csv").write_text(
+        "district_id,district_display_name\n", encoding="utf-8"
+    )
     (results / "trustee_races.json").write_bytes(FIXTURE.read_bytes())
     manifest = tmp_path / "input_manifest.json"
     manifest.write_text(
@@ -27,6 +30,7 @@ def test_snapshot_command_reads_only_the_hydrated_trustee_input(tmp_path: Path) 
                     "results_dir": "results",
                     "polling_dir": "polling",
                     "election_results": "results/election_results.csv",
+                    "electoral_districts": "results/electoral_districts.csv",
                     "trustee_races": "results/trustee_races.json",
                     "model_polls": "model/polls",
                 },
@@ -50,7 +54,7 @@ def test_snapshot_command_reads_only_the_hydrated_trustee_input(tmp_path: Path) 
     )
 
     payload = json.loads(output.read_text(encoding="utf-8"))
-    assert payload["schema_version"] == 1
+    assert payload["schema_version"] == 2
     assert [board["board_id"] for board in payload["boards"]] == [
         "tdsb",
         "tcdsb",

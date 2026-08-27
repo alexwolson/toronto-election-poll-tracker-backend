@@ -100,16 +100,37 @@ class CandidacyRecord:
     represented_body: str = ""  # e.g. canada_house_of_commons, toronto_city_council
     vote_rank: int | None = None  # 1 == first; where they placed
     field_size: int | None = None  # candidates in the contest
+    district_display_name: str = ""  # Results-owned number-plus-geographic label
 
 
 def load_officeholding_history(
     path: str | Path,
+    districts_path: str | Path | None = None,
 ) -> tuple[dict[str, list[CandidacyRecord]], dict[str, set[frozenset[str]]]]:
     """All-offices candidacy history keyed by upstream ``person_id``, plus each
     person's set of name token-sets (for the generous 2026 name resolver).
     Rows upstream left ``person_id``-blank are unattributable and skipped."""
     with Path(path).open(encoding="utf-8") as handle:
         rows = [row for row in csv.DictReader(handle) if is_completed_result(row)]
+
+    display_names: dict[str, str] = {}
+    if districts_path is not None:
+        with Path(districts_path).open(encoding="utf-8") as handle:
+            for district in csv.DictReader(handle):
+                district_id = district.get("district_id", "").strip()
+                display_name = district.get("district_display_name", "").strip()
+                if district_id:
+                    display_names[district_id] = display_name
+        for row in rows:
+            in_scope = (
+                row.get("office_type") in {"councillor", "trustee"}
+                and row.get("election_date", "") >= "2003-01-01"
+            )
+            if in_scope and not display_names.get(row.get("district_id", "")):
+                raise ValueError(
+                    "Results district dimension has no display name for "
+                    f"{row.get('district_id', '')}"
+                )
 
     # Per-contest winner / runner-up vote shares, for signed margins.
     by_contest: dict[str, list[dict[str, str]]] = defaultdict(list)
@@ -156,6 +177,7 @@ def load_officeholding_history(
                 represented_body=row.get("represented_body", "").strip(),
                 vote_rank=_int(row.get("vote_rank")),
                 field_size=_int(row.get("n_candidates")),
+                district_display_name=display_names.get(row.get("district_id", ""), ""),
             )
         )
         tokens = _name_tokens(row["candidate_name"])
@@ -261,6 +283,7 @@ class PastElection:
     vote_share: float | None
     rank: int | None  # placement, 1 == first
     field_size: int | None  # candidates in the contest
+    district_display_name: str | None = None
 
 
 def past_election_to_dict(election: PastElection) -> dict:
@@ -271,6 +294,7 @@ def past_election_to_dict(election: PastElection) -> dict:
         "office_type": election.office_type,
         "represented_body": election.represented_body,
         "district_name": election.district_name,
+        "district_display_name": election.district_display_name,
         "party_name": election.party_name,
         "result": election.result,
         "vote_share": election.vote_share,
@@ -307,6 +331,7 @@ def past_election_history(records: list[CandidacyRecord]) -> tuple[PastElection,
                 vote_share=max(shares) if shares else None,
                 rank=min(ranks) if ranks else None,  # best (final) placement
                 field_size=max(sizes) if sizes else None,
+                district_display_name=head.district_display_name or None,
             )
         )
     # Full-date descending: same-year races order by their actual dates (ISO

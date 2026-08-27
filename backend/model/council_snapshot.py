@@ -45,7 +45,7 @@ from backend.model.council_race_card import (
     race_exposure_triggers,
 )
 
-COUNCIL_RACE_CARD_SCHEMA_VERSION = 6
+COUNCIL_RACE_CARD_SCHEMA_VERSION = 7
 
 
 def _race_candidate_hints(
@@ -121,14 +121,25 @@ def _race_candidate_offices(
 
 
 def load_ward_names(path: str | Path) -> dict[str, str]:
-    """Ward number -> ward name, from Matt Elliott's CDI source (BOM-prefixed)."""
+    """Current ward number -> geographic name from the Results district dimension."""
     names: dict[str, str] = {}
-    with open(path, newline="", encoding="utf-8-sig") as handle:
+    csv.field_size_limit(max(csv.field_size_limit(), 10_000_000))
+    with open(path, newline="", encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
-            ward = (row.get("Ward") or "").strip()
-            name = (row.get("Ward Name") or "").strip().rstrip("*").strip()
-            if ward and name:
-                names[ward] = name
+            if (
+                row.get("represented_body") != "toronto_city_council"
+                or row.get("boundary_regime") != "toronto_council_25_wards"
+            ):
+                continue
+            ward = (row.get("official_district_id") or "").strip().removeprefix("ward-")
+            name = (row.get("geographic_name") or "").strip()
+            if not ward or not name:
+                continue
+            if ward in names and names[ward] != name:
+                raise ValueError(f"Results district dimension disagrees on Ward {ward}")
+            names[ward] = name
+    if set(names) != {str(ward) for ward in range(1, 26)}:
+        raise ValueError("Results district dimension does not cover all 25 current wards")
     return names
 
 

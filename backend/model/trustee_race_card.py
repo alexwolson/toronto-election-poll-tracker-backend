@@ -12,7 +12,7 @@ import math
 import re
 from pathlib import Path
 
-TRUSTEE_RACE_CARD_SCHEMA_VERSION = 1
+TRUSTEE_RACE_CARD_SCHEMA_VERSION = 2
 
 TDSB_METHOD = "tdsb_field_structure"
 CONTINUOUS_METHOD = "continuous_ward_vote_share"
@@ -39,7 +39,7 @@ def load_trustee_races(path: str | Path) -> dict:
 
     with Path(path).open(encoding="utf-8") as handle:
         payload = json.load(handle)
-    if payload.get("schema_version") not in {1, 2} or not isinstance(payload.get("boards"), list):
+    if payload.get("schema_version") not in {1, 2, 3} or not isinstance(payload.get("boards"), list):
         raise ValueError("unsupported trustee races input")
     return payload
 
