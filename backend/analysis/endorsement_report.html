@@ -1,0 +1,267 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>John Tory endorsement scenarios</title>
+  <style>
+    :root { color-scheme: light dark; --bg: light-dark(#f6f4ef,#181a1d); --surface: light-dark(#fffefa,#22252a); --ink: light-dark(#272d31,#efefed); --muted: light-dark(#596165,#b6bdc3); --line: light-dark(#d6d8d4,#454b51); --accent: light-dark(#145d65,#81ced4); --soft: light-dark(#e4efec,#243d3d); --chow: light-dark(#a45b29,#e3ab76); --bradford: light-dark(#426eaa,#8baee1); --alexander: light-dark(#766390,#ba9fd5); }
+    * { box-sizing: border-box; }
+    body { margin: 0; color: var(--ink); background: var(--bg); font: 16px/1.55 system-ui, sans-serif; }
+    main { max-width: 1120px; margin: auto; padding: 44px 28px 36px; }
+    .eyebrow { color: var(--accent); font-size: 12px; font-weight: 700; letter-spacing: .12em; text-transform: uppercase; }
+    h1 { font: 46px/1.1 Georgia, serif; max-width: 760px; margin: 12px 0 18px; letter-spacing: -.035em; }
+    .intro { color: var(--muted); max-width: 820px; margin: 0 0 22px; }
+    .notice { background: var(--soft); padding: 12px 16px; border-left: 3px solid var(--accent); margin-bottom: 28px; }
+    h2 { font: 26px/1.2 Georgia, serif; margin: 0 0 12px; }
+    h3 { font-size: 17px; margin: 0; }
+    p { margin: 8px 0; }
+    a { color: var(--accent); text-underline-offset: 3px; }
+    .controls { display: grid; grid-template-columns: 1fr 1.1fr 1.2fr; gap: 18px; }
+    label, legend { font-size: 13px; font-weight: 650; }
+    select { display: block; width: 100%; margin-top: 7px; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 5px; padding: 11px 8px; font: inherit; font-size: 14px; min-height: 44px; }
+    fieldset { margin: 24px 0 0; border: 0; padding: 0; }
+    .effects { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 9px; }
+    button { min-width: 68px; min-height: 44px; padding: 8px 15px; font: inherit; cursor: pointer; color: var(--ink); background: var(--surface); border: 1px solid var(--line); border-radius: 5px; }
+    button[aria-pressed="true"] { color: var(--bg); background: var(--ink); border-color: var(--ink); }
+    .small { font-size: 13px; color: var(--muted); }
+    .context { margin: 20px 0 24px; color: var(--muted); }
+    .context strong { color: var(--ink); }
+    .panels { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; }
+    .panel { padding: 24px; background: var(--surface); border: 1px solid var(--line); border-radius: 8px; min-width: 0; }
+    .branch { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .06em; }
+    .metric { font: 34px/1.2 Georgia, serif; margin: 14px 0 2px; }
+    .bar-row { margin-top: 18px; }
+    .bar-label { display: flex; justify-content: space-between; gap: 12px; font-size: 14px; }
+    .value, td { font-variant-numeric: tabular-nums; }
+    .track { height: 13px; background: color-mix(in srgb,var(--ink) 8%,transparent); margin-top: 6px; position: relative; }
+    .bar { height: 100%; background: var(--series); }
+    .marker { position: absolute; width: 2px; background: var(--ink); height: 19px; top: -3px; }
+    .scale { display: flex; justify-content: space-between; color: var(--muted); font-size: 11px; margin-top: 9px; }
+    .threshold { border-top: 1px solid var(--line); margin-top: 20px; padding-top: 12px; font-size: 14px; }
+    .unavailable { padding: 26px 0; }
+    .legend { margin: 12px 0 28px; color: var(--muted); font-size: 13px; }
+    .legend span { display: inline-block; width: 2px; height: 14px; background: var(--ink); vertical-align: -2px; margin-right: 4px; }
+    .table-wrap { overflow-x: auto; margin-top: 15px; }
+    table { width: 100%; border-collapse: collapse; font-size: 14px; text-align: right; }
+    th, td { padding: 12px 10px; border-bottom: 1px solid var(--line); }
+    th { font-size: 12px; color: var(--muted); font-weight: 600; }
+    th:first-child, td:first-child { text-align: left; }
+    tr.selected { background: var(--soft); }
+    #entry-comparisons td:not(:first-child) { white-space: nowrap; }
+    #consolidation-history td:not(:first-child) { white-space: nowrap; }
+    .transfer-control { max-width: 700px; margin: 22px 0; }
+    input[type="range"] { display: block; width: 100%; min-height: 44px; margin: 7px 0; accent-color: var(--accent); }
+    .pool-stack { display: flex; height: 18px; margin: 14px 0 8px; background: var(--line); }
+    .pool-stack span { height: 100%; }
+    .pool-legend { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 8px; font-size: 13px; }
+    .pool-legend i { display: inline-block; width: 10px; height: 10px; margin-right: 5px; }
+    .section { margin-top: 34px; }
+    details { border-top: 1px solid var(--line); padding-top: 18px; margin-top: 30px; }
+    summary { cursor: pointer; font-weight: 650; min-height: 44px; }
+    .source-copy { overflow-wrap: anywhere; }
+    .footer { border-top: 1px solid var(--line); padding-top: 20px; margin-top: 30px; display: flex; flex-wrap: wrap; gap: 18px; font-size: 13px; }
+    :focus-visible { outline: 3px solid var(--accent); outline-offset: 3px; }
+    @media (max-width: 700px) { main { padding: 25px 18px; } h1 { font-size: 36px; } .controls, .panels { grid-template-columns: 1fr; } .panel { padding: 19px; } select { font-size: 16px; } }
+    @media print { .controls, fieldset, .footer { display: none; } main { max-width: none; padding: 0; } .panel { break-inside: avoid; } body { background: white; color: black; } }
+  </style>
+</head>
+<body>
+<main>
+  <header>
+    <div class="eyebrow">Toronto 2026 · Research notebook · September 9</div>
+    <h1>What could a Tory endorsement change?</h1>
+    <p class="intro">Explore the same assumptions for Brad Bradford and Chris Alexander. Choose how much support moves, where it comes from, and how much of the effect remains at election day.</p>
+    <div class="notice"><strong>Conditional scenario.</strong> These effects are chosen, not estimated. Results hold a dated poll baseline and all other campaign changes fixed; they are not a forecast or win probabilities.</div>
+  </header>
+  <section aria-label="Scenario assumptions">
+    <div class="controls">
+      <label for="baseline">Poll baseline<select id="baseline"></select></label>
+      <label for="flow">Source of a positive gain<select id="flow"></select></label>
+      <label for="timing">Hypothetical date &amp; retention<select id="timing"></select></label>
+    </div>
+    <fieldset><legend>Potential shift if fully retained · percentage points</legend><div class="effects" id="effects"></div></fieldset>
+    <p class="small">A negative value reverses the selected flows. “Other challenger” means Alexander when Bradford is endorsed, and Bradford when Alexander is endorsed.</p>
+    <div class="context" id="context" aria-live="polite"></div>
+  </section>
+  <section class="panels" id="panels" aria-label="Compare both endorsement recipients" aria-live="polite"></section>
+  <p class="legend"><span></span> Dated poll baseline &nbsp;·&nbsp; Filled bars: assumed result &nbsp;·&nbsp; <span id="residual" style="display:inline;width:auto;height:auto;background:none"></span></p>
+  <section class="section">
+    <h2>Across the assumption range</h2>
+    <p class="small">Margins compare the recipient with their strongest other named opponent. Positive means ahead; zero means tied. The rows have no assigned probabilities.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Potential / net shift</th><th scope="col">Bradford support</th><th scope="col">Bradford margin</th><th scope="col">Alexander support</th><th scope="col">Alexander margin</th></tr></thead>
+      <tbody id="grid"></tbody>
+    </table></div>
+  </section>
+  <section class="section" id="consolidation" aria-label="Challenger vote consolidation">
+    <h2>How much of the rival vote consolidates?</h2>
+    <p>In 2023, Bailão gained a larger share of a selected challenger pool, while that pool also grew. These are separate changes. The first polls after June 21 show much less net loss among Saunders, Furey and Bradford than Bailão’s own gain.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">2023 comparison</th><th scope="col">Bailão</th><th scope="col">Combined pool</th><th scope="col">Bailão’s share of pool</th><th scope="col">Rivals’ net change</th></tr></thead>
+      <tbody id="consolidation-history"></tbody>
+    </table></div>
+    <p class="small">The pool contains Bailão, Saunders, Furey and Bradford. It is a candidate grouping, not a measurement of voters’ ideology. Poll figures are rounded; the election result includes advance and mail votes cast before the endorsements. Poll-to-result differences also include polling error and turnout differences.</p>
+    <p id="historical-concentration"></p>
+    <h3 class="section">Apply a net transfer between Bradford and Alexander</h3>
+    <p id="consolidation-context"></p>
+    <div class="transfer-control">
+      <label for="rival-transfer">Rival support transferred · <output id="rival-transfer-value" for="rival-transfer">50%</output></label>
+      <input id="rival-transfer" type="range" min="0" max="100" step="1" value="50">
+      <div class="effects" id="transfer-presets"></div>
+      <p class="small">This is a chosen net transfer, independent of the point-shift and retention controls above. The common rate makes the branches comparable; it does not assume both endorsements would produce the same response.</p>
+    </div>
+    <div class="panels" id="consolidation-panels" aria-live="polite"></div>
+    <div class="notice section" id="consolidation-ceiling" aria-live="polite"></div>
+    <p><a href="../tory-consolidation-dynamics.md">Concentration, pool growth, pretrends &amp; the 2026 application</a></p>
+  </section>
+  <section class="section">
+    <h2>What 2023 contributes</h2>
+    <p>Ana Bailão rose <strong>5 points in Liaison</strong> and <strong>7 points in Forum</strong> in their first subsequent polls after Tory’s June 21 endorsement. She was already gaining, and the Star endorsed her the same day. This history supplies a scale to explore, not a measured Tory effect.</p>
+    <p>Continuing her preceding two to three weeks of momentum leaves <strong>3.6–4.7 points above trend</strong> in those polls. Four-week trends leave 5.2–6.5 points. These residuals still combine Tory, the Star, other campaign changes and polling error.</p>
+    <p>Across 21 Star-endorsed council candidates in 2022, election-day support averaged 3.1 points below advance-vote support. This excludes Ward 23, where a candidate’s death changed the counted field. Different electorates and overlapping endorsements prevent treating the contrast as the Star’s effect. It cannot simply be subtracted from Bailão’s increase.</p>
+    <p><a href="../endorsement-identification/README.md">Pretrend calculations, council comparisons &amp; an explicit attribution sensitivity table</a></p>
+    <p class="small"><a href="https://press.liaisonstrategies.ca/chow-leads-in-final-days-of-campaign/" target="_blank" rel="noreferrer">Liaison release</a> · <a href="https://poll.forumresearch.com/data/cb12c41a-8453-40e6-90f1-7558d098f7e1Chow%20lead%20narrowing%20in%20final%20days%20of%20campaign_June%2024%202023.pdf" target="_blank" rel="noreferrer">Forum trend table</a> · <a href="../john-tory-2023-endorsement-evidence.md">Full evidence memo</a></p>
+  </section>
+  <section class="section" aria-label="Alexander entry and further growth">
+    <h2>What Alexander’s entry tells us</h2>
+    <p>The largest net decline was in <strong>“someone else”</strong>. Before Alexander was named, that response could already include people who preferred him. These comparisons measure response categories, not individual voter transfers.</p>
+    <div class="table-wrap"><table>
+      <thead><tr><th scope="col">Comparison</th><th scope="col">Chow</th><th scope="col">Bradford</th><th scope="col">Alexander</th><th scope="col">Someone else</th></tr></thead>
+      <tbody id="entry-comparisons"></tbody>
+    </table></div>
+    <p class="small">Forum used sequential questions in one survey, with slightly different decided/leaning bases. Liaison used separate surveys before and after the launch. Published figures are preserved above; Forum’s first table totals 101%. Neither comparison identifies a transition matrix.</p>
+    <h3>Could the same mix support further Alexander growth?</h3>
+    <p>This separate illustration uses the poll baseline and net shift selected above. It lets support move from “someone else” as well as Chow and Bradford. Applying an entry pattern to an endorsement response is an assumption.</p>
+    <label for="entry-profile">Assumed repeat of entry pattern<select id="entry-profile"></select></label>
+    <div id="entry-growth" class="context" aria-live="polite"></div>
+    <p class="small">The allocation assumes only switches into Alexander. Rounded readings are separately scaled to 100 before calculating it. Countervailing switches could produce the same published totals with very different sources of Alexander support. Undecided voters require a separate model with a broader denominator.</p>
+    <p><a href="../alexander-entry-dynamics.md">Entry chronology, all-voter checks, calculations &amp; modeling implications</a></p>
+  </section>
+  <details><summary>Source figures, rounding &amp; timing assumptions</summary>
+    <div class="source-copy" id="source"></div>
+    <p>Calendar dates do not estimate retention. The selected percentage is an assumption about the net effect realized by October 26, including persistence and any inability to switch already-cast ballots. No turnout model or uncast-ballot adjustment is inferred.</p>
+    <p>The baseline is a dated poll, not an election-day prediction or a measured no-endorsement counterfactual. The unmeasured candidate field is not modeled. “Tie the lead” refers to the three named candidates. Do not add these shifts to post-event polls that may already contain an endorsement’s response.</p>
+  </details>
+  <footer class="footer"><a href="scenarios.csv" download>Download endorsement grid</a><a href="scenarios.json" download>Download all inputs &amp; results</a><a href="README.md">Method &amp; reproducibility</a></footer>
+  <noscript><p>Enable JavaScript for the interactive comparison, or use the downloadable scenario grid and method report above.</p></noscript>
+</main>
+<script id="scenario-data" type="application/json">@@DATA@@</script>
+<script>
+  const data = JSON.parse(document.getElementById('scenario-data').textContent);
+  const byId = id => document.getElementById(id);
+  const safe = value => String(value).replace(/[&<>"']/g, ch => ({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[ch]));
+  const number = value => (Math.abs(value) < 0.000001 ? 0 : value).toFixed(1);
+  const signed = value => `${value > 0.000001 ? '+' : ''}${number(value)}`;
+  let effect = 0;
+  const fill = (id, rows) => rows.forEach(row => byId(id).add(new Option(row.label, row.id)));
+  fill('baseline', data.baselines.map(row => ({...row, label:`${row.label} · ${row.fieldwork_end}`})));
+  fill('flow', data.flows);
+  fill('timing', data.timings);
+  fill('entry-profile', data.alexander_entry.profiles);
+  byId('consolidation-history').innerHTML = data.consolidation.historical_comparisons.map(row => {
+    const pre = row.before, post = row.after;
+    return `<tr><td><a href="${safe(row.source_url)}" target="_blank" rel="noreferrer">${safe(row.label)}</a></td><td>${number(pre.recipient_share_pp)} → ${number(post.recipient_share_pp)}%</td><td>${number(pre.pool_share_pp)} → ${number(post.pool_share_pp)}%</td><td>${number(pre.recipient_pool_fraction*100)} → ${number(post.recipient_pool_fraction*100)}%</td><td>${signed(row.rival_change_pp)} pts</td></tr>`;
+  }).join('');
+  const finalPool = data.consolidation.historical_result;
+  byId('consolidation-history').insertAdjacentHTML('beforeend', `<tr><td><a href="${safe(data.consolidation.inputs.official_result.source_url)}" target="_blank" rel="noreferrer">Certified June 26 result</a></td><td>${number(finalPool.recipient_share_pp)}%</td><td>${number(finalPool.pool_share_pp)}%</td><td>${number(finalPool.recipient_pool_fraction*100)}%</td><td>Different endpoint</td></tr>`);
+  byId('historical-concentration').innerHTML = `Bailão closed <strong>9.6–16.8% of her remaining gap to owning the whole selected pool</strong> in the first subsequent polls, and 22.9% through Liaison’s final poll. Those are descriptive concentration statistics. With a growing pool, they are not measured fractions of rival voters switching, and they do not isolate Tory’s effect.`;
+  [0,10,25,50,100].forEach(percent => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = `${percent}%`;
+    button.setAttribute('aria-label', `Transfer ${percent}% of rival support`);
+    button.dataset.transfer = percent;
+    button.addEventListener('click', () => { byId('rival-transfer').value = percent; renderConsolidation(); });
+    byId('transfer-presets').append(button);
+  });
+  byId('entry-comparisons').innerHTML = data.alexander_entry.comparisons.slice(0,2).map(row => {
+    const cells = ['chow','bradford','alexander','residual'].map(key => {
+      const before = row.before.reported_shares[key], after = row.after.reported_shares[key];
+      return `<td>${before === undefined ? 'Not named' : before + '%'} → ${after}%</td>`;
+    }).join('');
+    return `<tr><td><a href="${safe(row.after.source_url)}" target="_blank" rel="noreferrer">${safe(row.label)}</a></td>${cells}</tr>`;
+  }).join('');
+  byId('flow').value = 'mixed';
+  data.effects_pp.forEach(value => {
+    const button = document.createElement('button');
+    button.type = 'button';
+    button.textContent = `${value > 0 ? '+' : ''}${value}`;
+    button.setAttribute('aria-label', `${value} percentage point potential shift`);
+    button.addEventListener('click', () => { effect = value; render(); renderEntry(); });
+    button.dataset.effect = value;
+    byId('effects').append(button);
+  });
+  function render() {
+    const base = data.baselines.find(row => row.id === byId('baseline').value);
+    const timing = data.timings.find(row => row.id === byId('timing').value);
+    const flowId = byId('flow').value;
+    const rows = data.scenarios.filter(row => row.baseline_id === base.id && row.timing_id === timing.id && row.flow_id === flowId);
+    const get = (recipient, potential) => rows.find(row => row.recipient === recipient && row.effect_pp === potential);
+    byId('effects').querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.effect) === effect)));
+    byId('context').innerHTML = `<strong>Assumed net effect: ${signed(effect * timing.retained_fraction)} points.</strong> ${safe(timing.event_date)}, ${timing.days_before_election} days before voting; ${timing.retained_fraction * 100}% retained by assumption.`;
+    byId('residual').textContent = `Poll residual held at ${number(base.shares.residual)}%.`;
+    byId('panels').innerHTML = ['bradford','alexander'].map(recipient => {
+      const row = get(recipient, effect);
+      const threshold = row.tie_reachable
+        ? `Needs <strong>+${number(row.tie_gain_pp)} net points</strong> to tie the lead from this baseline. A strict lead requires more.`
+        : `Cannot tie the lead using this source mix alone: needs +${number(row.tie_gain_pp)} net points; only ${number(row.max_gain_pp)} available.`;
+      const content = !row.feasible
+        ? `<div class="unavailable"><h3>Transfer not feasible</h3><p>${safe(row.reason)}</p><p class="small">No support was clipped or reassigned.</p></div>`
+        : `<div class="metric">${signed(row.recipient_margin_pp)} pts</div><div class="small">${Math.abs(row.recipient_margin_pp) < 0.000001 ? 'Tied with' : row.recipient_margin_pp > 0 ? 'Ahead of' : 'Behind'} the strongest other named candidate</div>
+          ${Object.entries(data.candidate_names).map(([key,name]) => `<div class="bar-row"><div class="bar-label"><span>${safe(name)}</span><span class="value">${number(row.shares[key])}%</span></div><div class="track"><div class="bar" style="--series:var(--${key});width:${row.shares[key] / 60 * 100}%"></div><div class="marker" style="left:${base.shares[key] / 60 * 100}%" title="Baseline ${number(base.shares[key])}%"></div></div></div>`).join('')}<div class="scale"><span>0%</span><span>60%</span></div>`;
+      return `<article class="panel"><div class="branch">If Tory endorses</div><h2>${safe(data.candidate_names[recipient])}</h2>${content}<div class="threshold">${threshold}</div></article>`;
+    }).join('');
+    byId('grid').innerHTML = data.effects_pp.map(value => {
+      const b = get('bradford',value), a = get('alexander',value);
+      const cells = (row,key) => row.feasible ? `<td>${number(row.shares[key])}%</td><td>${signed(row.recipient_margin_pp)} pts</td>` : '<td colspan="2">Not feasible</td>';
+      return `<tr class="${value === effect ? 'selected' : ''}"><td>${signed(value)} / ${signed(value * timing.retained_fraction)}</td>${cells(b,'bradford')}${cells(a,'alexander')}</tr>`;
+    }).join('');
+    byId('source').innerHTML = `<p><a href="${safe(base.source_url)}" target="_blank" rel="noreferrer">${safe(base.label)}</a> · fieldwork ${safe(base.fieldwork_start)}–${safe(base.fieldwork_end)} · published ${safe(base.publication_date)} · parent sample ${base.sample_size}.</p><p>${safe(base.denominator)}. Original published values: ${Object.entries(base.reported_shares).map(([key,value]) => `${safe(data.candidate_names[key] || 'Poll residual')} ${value}%`).join('; ')}.</p><p>The reported values sum to <strong>${base.reported_total}%</strong>. Each is scaled by 100/${base.reported_total} for this arithmetic only. The source values remain unchanged in the input export.</p><p class="small">Reading: ${safe(base.reading_id)}. ${safe(base.source_locator)}. Input and source-document hashes are included in the JSON export.</p>`;
+  }
+  function renderEntry() {
+    const base = data.baselines.find(row => row.id === byId('baseline').value);
+    const profile = data.alexander_entry.profiles.find(row => row.id === byId('entry-profile').value);
+    const extension = data.alexander_entry.extensions.find(row => row.baseline_id === base.id && row.timing_id === byId('timing').value && row.profile_id === profile.id && row.effect_pp === effect);
+    const label = key => data.candidate_names[key] || 'Someone else';
+    const mix = Object.entries(profile.weights).map(([key,value]) => `${safe(label(key))} ${number(value*100)}%`).join('; ');
+    const outcome = extension.feasible
+      ? `<p><strong>Alexander reaches ${number(extension.shares.alexander)}% under this assumed mix.</strong> ${Object.entries(extension.shares).filter(([key]) => key !== 'alexander').map(([key,value]) => `${safe(label(key))} ${number(value)}%`).join('; ')}.</p>`
+      : `<p><strong>Selected shift unavailable.</strong> ${safe(extension.reason)} No support is reassigned to another source.</p>`;
+    byId('entry-growth').innerHTML = `<p>Assumed allocation of the gain: ${mix}.</p><p>This baseline supports at most <strong>+${number(extension.max_gain_pp)} points</strong> with this mix, limited by ${safe(label(extension.limiting_source))}.</p>${outcome}`;
+  }
+  function renderConsolidation() {
+    const base = data.baselines.find(row => row.id === byId('baseline').value);
+    const percent = Number(byId('rival-transfer').value);
+    const rows = data.consolidation.scenarios.filter(row => row.baseline_id === base.id && Math.abs(row.rival_fraction*100-percent) < 0.000001);
+    byId('rival-transfer-value').textContent = `${percent}%`;
+    byId('transfer-presets').querySelectorAll('button').forEach(button => button.setAttribute('aria-pressed', String(Number(button.dataset.transfer) === percent)));
+    const pool = rows[0].pool_share_pp;
+    const alexanderBranch = rows.find(row => row.recipient === 'alexander');
+    byId('consolidation-context').innerHTML = `<strong>${safe(base.label)} · ${safe(base.fieldwork_end)}:</strong> Bradford starts with ${number(base.shares.bradford/pool*100)}% of their combined support; Alexander with ${number(base.shares.alexander/pool*100)}%. Their combined vote is ${number(pool)}% of this normalized poll baseline. Alexander would need ${number(alexanderBranch.rival_fraction_to_tie_pair*100)}% of Bradford’s baseline support just to draw level with him.`;
+    byId('consolidation-panels').innerHTML = rows.map(row => {
+      const name = data.candidate_names[row.recipient];
+      const rival = row.recipient === 'bradford' ? 'alexander' : 'bradford';
+      const outside = row.chow_transfer_to_tie_pp === null
+        ? 'Chow alone cannot supply enough additional support to tie the lead at this setting.'
+        : row.chow_transfer_to_tie_pp > 0.000001
+          ? `After this consolidation, a further <strong>${number(row.chow_transfer_to_tie_pp)} points from Chow</strong> would tie the lead. A strict lead requires more.`
+          : 'This setting already ties or exceeds the lead among the named candidates.';
+      return `<article class="panel"><div class="branch">If support consolidates behind</div><h2>${safe(name)}</h2><div class="metric">${number(row.shares[row.recipient])}%</div><p><strong>+${number(row.gain_pp)} points</strong> from ${safe(data.candidate_names[rival])} · ${signed(row.recipient_margin_pp)} points against the strongest other named candidate.</p><p class="small">Recipient’s share of the pair: ${number(row.recipient_pool_fraction_before*100)}% → <strong>${number(row.recipient_pool_fraction_after*100)}%</strong>.</p><div class="pool-stack" role="img" aria-label="Bradford ${number(row.shares.bradford/pool*100)} percent and Alexander ${number(row.shares.alexander/pool*100)} percent of their combined support"><span style="background:var(--bradford);width:${row.shares.bradford/pool*100}%"></span><span style="background:var(--alexander);width:${row.shares.alexander/pool*100}%"></span></div><div class="pool-legend"><span><i style="background:var(--bradford)"></i>Bradford ${number(row.shares.bradford)}%</span><span><i style="background:var(--alexander)"></i>Alexander ${number(row.shares.alexander)}%</span></div><p class="small">Bar = combined pair. Labels = share of all decided/leaning support.</p><div class="threshold">${outside}</div></article>`;
+    }).join('');
+    const ceiling = rows[0];
+    const condition = Math.abs(ceiling.full_consolidation_margin_pp) < 0.000001
+      ? 'Full consolidation only ties Chow in these rounded source figures. It does not produce a strict lead.'
+      : ceiling.full_consolidation_margin_pp < 0
+        ? `Even full consolidation leaves either recipient ${number(-ceiling.full_consolidation_margin_pp)} points behind Chow. After that, another ${number(ceiling.chow_transfer_to_tie_after_full_pp)} points switching from Chow would produce a tie.`
+        : 'Full consolidation exceeds Chow’s support in this baseline.';
+    byId('consolidation-ceiling').innerHTML = `<strong>The shared ceiling: ${number(pool)}%.</strong> ${condition} Chow and the poll residual stay fixed during consolidation. This ceiling applies to the dated baseline, not to all possible campaign outcomes.`;
+  }
+  byId('rival-transfer').addEventListener('input', renderConsolidation);
+  ['baseline','flow','timing','entry-profile'].forEach(id => byId(id).addEventListener('change', () => { render(); renderEntry(); renderConsolidation(); }));
+  render();
+  renderEntry();
+  renderConsolidation();
+</script>
+</body>
+</html>

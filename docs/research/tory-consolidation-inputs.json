@@ -1,0 +1,166 @@
+{
+  "status": "Research transcription only; no canonical polling or forecasting input changed.",
+  "pool_definition": "Bailao, Saunders, Furey and Bradford. A candidate-based comparison, not a measured right-wing electorate. Hunter appears solely for a broader-pool sensitivity check.",
+  "readings": [
+    {
+      "id": "forum-june09",
+      "pollster": "Forum",
+      "fieldwork_start": "2023-06-09",
+      "fieldwork_end": "2023-06-09",
+      "denominator": "Decided/leaning",
+      "reported_shares": {
+        "bailao": 10,
+        "saunders": 14,
+        "furey": 11,
+        "bradford": 5,
+        "hunter": 7
+      },
+      "source_url": "https://poll.forumresearch.com/data/cb12c41a-8453-40e6-90f1-7558d098f7e1Chow%20lead%20narrowing%20in%20final%20days%20of%20campaign_June%2024%202023.pdf",
+      "source_note": "Page 1 trend table. Only selected named candidates transcribed; this is not a complete ballot."
+    },
+    {
+      "id": "forum-june16",
+      "pollster": "Forum",
+      "fieldwork_start": "2023-06-16",
+      "fieldwork_end": "2023-06-16",
+      "denominator": "Decided/leaning",
+      "reported_shares": {
+        "bailao": 13,
+        "saunders": 15,
+        "furey": 13,
+        "bradford": 4,
+        "hunter": 6
+      },
+      "source_url": "https://poll.forumresearch.com/data/cb12c41a-8453-40e6-90f1-7558d098f7e1Chow%20lead%20narrowing%20in%20final%20days%20of%20campaign_June%2024%202023.pdf",
+      "source_note": "Page 1 trend table. Only selected named candidates transcribed; this is not a complete ballot."
+    },
+    {
+      "id": "forum-june23",
+      "pollster": "Forum",
+      "fieldwork_start": "2023-06-23",
+      "fieldwork_end": "2023-06-23",
+      "denominator": "Decided/leaning",
+      "reported_shares": {
+        "bailao": 20,
+        "saunders": 15,
+        "furey": 11,
+        "bradford": 3,
+        "hunter": 5
+      },
+      "source_url": "https://poll.forumresearch.com/data/cb12c41a-8453-40e6-90f1-7558d098f7e1Chow%20lead%20narrowing%20in%20final%20days%20of%20campaign_June%2024%202023.pdf",
+      "source_note": "Page 1 trend table. Only selected named candidates transcribed; this is not a complete ballot."
+    },
+    {
+      "id": "liaison-june10",
+      "pollster": "Liaison",
+      "fieldwork_start": "2023-06-10",
+      "fieldwork_end": "2023-06-11",
+      "denominator": "Decided voters",
+      "reported_shares": {
+        "bailao": 10,
+        "saunders": 15,
+        "furey": 9,
+        "bradford": 6,
+        "hunter": 9
+      },
+      "source_url": "https://www.scribd.com/document/652661765",
+      "source_note": "Decided list. Also retained in canonical historical reading liaison_2023_06_10_11_decided."
+    },
+    {
+      "id": "liaison-june12",
+      "pollster": "Liaison",
+      "fieldwork_start": "2023-06-12",
+      "fieldwork_end": "2023-06-13",
+      "denominator": "Decided voters",
+      "reported_shares": {
+        "bailao": 11,
+        "saunders": 16,
+        "furey": 8,
+        "bradford": 5,
+        "hunter": 8
+      },
+      "source_url": "https://www.scribd.com/document/653169044",
+      "source_note": "Decided list. Also retained in canonical historical reading liaison_2023_06_12_13_decided."
+    },
+    {
+      "id": "liaison-june17",
+      "pollster": "Liaison",
+      "fieldwork_start": "2023-06-17",
+      "fieldwork_end": "2023-06-18",
+      "denominator": "Decided voters",
+      "reported_shares": {
+        "bailao": 12,
+        "saunders": 16,
+        "furey": 10,
+        "bradford": 4,
+        "hunter": 7
+      },
+      "source_url": "https://press.liaisonstrategies.ca/chow-steady-as-she-goes-while-rest-of-field-has-minor-ups-downs/",
+      "source_note": "Decided list."
+    },
+    {
+      "id": "liaison-june22",
+      "pollster": "Liaison",
+      "fieldwork_start": "2023-06-22",
+      "fieldwork_end": "2023-06-23",
+      "denominator": "Decided voters",
+      "reported_shares": {
+        "bailao": 17,
+        "saunders": 16,
+        "furey": 11,
+        "bradford": 4,
+        "hunter": 6
+      },
+      "source_url": "https://press.liaisonstrategies.ca/chow-leads-in-final-days-of-campaign/",
+      "source_note": "Bailao 17 from narrative and detailed table. Decided-list line incorrectly says 12 (+5)."
+    },
+    {
+      "id": "liaison-june24",
+      "pollster": "Liaison",
+      "fieldwork_start": "2023-06-24",
+      "fieldwork_end": "2023-06-25",
+      "denominator": "Decided voters",
+      "reported_shares": {
+        "bailao": 22,
+        "saunders": 15,
+        "furey": 10,
+        "bradford": 2,
+        "hunter": 5
+      },
+      "source_url": "https://press.liaisonstrategies.ca/bailao-surging-but-chow-remains-in-lead/",
+      "source_note": "Decided list."
+    }
+  ],
+  "comparisons": [
+    {
+      "id": "forum-first",
+      "label": "Forum · June 16 → 23",
+      "before_id": "forum-june16",
+      "after_id": "forum-june23"
+    },
+    {
+      "id": "liaison-first",
+      "label": "Liaison · June 17–18 → 22–23",
+      "before_id": "liaison-june17",
+      "after_id": "liaison-june22"
+    },
+    {
+      "id": "liaison-final",
+      "label": "Liaison · June 17–18 → 24–25",
+      "before_id": "liaison-june17",
+      "after_id": "liaison-june24"
+    }
+  ],
+  "official_result": {
+    "date": "2023-06-26",
+    "valid_candidate_votes": 724638,
+    "votes": {
+      "bailao": 235175,
+      "saunders": 62167,
+      "furey": 35899,
+      "bradford": 9254
+    },
+    "source_url": "https://www.toronto.ca/wp-content/uploads/2023/06/8eef-Declaration-of-Results-for-the-2023-Toronto-By-Election-for-Mayor-Final.pdf",
+    "note": "Final certified candidate totals; denominator excludes invalid ballots. The result includes advance and mail votes cast before the endorsements, unlike a post-event poll."
+  }
+}
