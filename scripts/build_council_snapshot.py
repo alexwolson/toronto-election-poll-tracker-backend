@@ -42,7 +42,7 @@ def main() -> None:
         load_ward_incumbency(RAW / "defeatability" / "ward_defeatability.csv"),
         load_registered_field(canonical),
         load_council_results(canonical),
-        load_ward_poll_readings(RAW / "polls" / "ward_poll_readings.csv"),
+        load_ward_poll_readings(inputs.polling_dir / "ward_poll_readings.csv"),
         ward_names=load_ward_names(inputs.electoral_districts),
         officeholding=load_officeholding_history(canonical, inputs.electoral_districts),
         supported_hints=load_supported_hints(RAW / "hints" / "supported_historical_hints.csv"),
