@@ -16,8 +16,8 @@ Forecast Unavailable, correctly.
 
 from __future__ import annotations
 
-import collections
 import math
+from collections import defaultdict
 from dataclasses import dataclass, replace
 from datetime import datetime
 from decimal import Decimal
@@ -38,6 +38,9 @@ from backend.model.mayoral_endpoint import (
     MayoralEndpointDataError,
     MayoralEndpointEvidence,
     MayoralEndpointPredictor,
+    SelectedMayoralPollReading,
+    measured_candidate_field,
+    select_mayoral_endpoint_readings,
 )
 from backend.model.mayoral_evaluation import (
     FullBallotShareDraws,
@@ -64,7 +67,12 @@ from backend.model.mayoral_publication_gates import (
     CLOSE_RESULT,
     INCUMBENT_DEFEAT,
 )
-from backend.model.poll_sources import load_poll_source_bundle
+from backend.model.poll_sources import (
+    PollResponse,
+    PollSample,
+    PollSourceBundle,
+    load_poll_source_bundle,
+)
 from backend.model.publication import (
     ErrorInterval,
     SensitivityVariant,
@@ -272,14 +280,56 @@ def forecast_quantities(
 # --- live target + evidence from the current-cycle bundle -------------------
 
 
-# The registered field carries names; the poll bundle keys the modelled
-def _measured_named_candidates(bundle: object) -> dict[str, frozenset[str]]:
-    read_sample = {r.poll_reading_id: r.poll_sample_id for r in bundle.poll_readings}
-    measured: dict[str, set[str]] = collections.defaultdict(set)
+def _select_live_final_field_readings(
+    bundle: PollSourceBundle,
+    citywide: tuple[PollSample, ...],
+    viable: frozenset[str],
+    *,
+    endpoint_cycle: str,
+) -> tuple[SelectedMayoralPollReading, ...]:
+    """Select one exact-field endpoint reading per live respondent sample.
+
+    ADR 0046 makes the measured field a property of the selected reading. A
+    dependent alternate scenario therefore cannot contaminate another reading
+    from the same sample, while the endpoint's maximal-field and denominator
+    priorities still choose at most one reading from that sample.
+    """
+
+    if not citywide:
+        return ()
+    sample_ids = {sample.poll_sample_id for sample in citywide}
+    responses_by_reading: dict[str, list[PollResponse]] = defaultdict(list)
     for response in bundle.poll_responses:
-        if response.response_kind == "candidate" and response.candidate_id:
-            measured[read_sample[response.poll_reading_id]].add(response.candidate_id)
-    return {sample_id: frozenset(names) for sample_id, names in measured.items()}
+        responses_by_reading[response.poll_reading_id].append(response)
+    readings = tuple(
+        reading
+        for reading in bundle.poll_readings
+        if reading.poll_sample_id in sample_ids
+        and measured_candidate_field(
+            tuple(responses_by_reading[reading.poll_reading_id])
+        )
+        == viable
+    )
+    reading_ids = {reading.poll_reading_id for reading in readings}
+    responses = tuple(
+        response for response in bundle.poll_responses if response.poll_reading_id in reading_ids
+    )
+    evidence = MayoralEndpointEvidence(
+        election_cycle_id=endpoint_cycle,
+        final_ballot_evidence_available_at=min(
+            sample.evidence_available_at for sample in citywide
+        ),
+        poll_samples=tuple(
+            replace(sample, election_cycle_id=endpoint_cycle) for sample in citywide
+        ),
+        poll_readings=readings,
+        poll_responses=responses,
+        enforce_final_ballot_timing=False,
+    )
+    return select_mayoral_endpoint_readings(
+        evidence,
+        final_candidate_ids=tuple(sorted(viable)),
+    )
 
 
 @dataclass(frozen=True, slots=True)
@@ -290,6 +340,7 @@ class LiveForecastInputs:
     incumbent_candidate_id: str | None
     viable_field: tuple[str, ...]
     final_field_sample_ids: tuple[str, ...]
+    final_field_reading_ids: tuple[str, ...]
     final_field_pollsters: tuple[str, ...]
 
 
@@ -305,39 +356,78 @@ def load_live_forecast_inputs(
     final_field = viable if bool(live_cycle["field_certified"]) else None
 
     bundle = load_poll_source_bundle(str(polls_dir), require_audited_sources=False)
-    measured = _measured_named_candidates(bundle)
-    citywide = [
+    citywide = tuple(
         sample
         for sample in bundle.poll_samples
         if sample.election_cycle_id == cycle_id
         and sample.geography_type == "citywide"
         and sample.extraction_status == "extracted"
-    ]
+    )
+    endpoint_cycle = cycle_id.replace("-", "_")
+    selected = _select_live_final_field_readings(
+        bundle,
+        citywide,
+        viable,
+        endpoint_cycle=endpoint_cycle,
+    )
+    selected_sample_ids = {reading.poll_sample_id for reading in selected}
+    reading_sample = {
+        reading.poll_reading_id: reading.poll_sample_id for reading in bundle.poll_readings
+    }
+    measured_by_sample: dict[str, set[str]] = defaultdict(set)
+    responses_by_reading: dict[str, list[PollResponse]] = defaultdict(list)
+    for response in bundle.poll_responses:
+        responses_by_reading[response.poll_reading_id].append(response)
+    for reading_id, responses_for_reading in responses_by_reading.items():
+        sample_id = reading_sample.get(reading_id)
+        if sample_id is not None:
+            measured_by_sample[sample_id].update(
+                measured_candidate_field(tuple(responses_for_reading))
+            )
+
+    def tier_field(sample_id: str) -> frozenset[str]:
+        if sample_id in selected_sample_ids:
+            return viable
+        measured = frozenset(measured_by_sample[sample_id])
+        # An exact raw field that failed endpoint eligibility is not final-field
+        # evidence. Use an empty diagnostic field so the tier fails closed.
+        return frozenset() if measured == viable else measured
+
     tier_samples = tuple(
         MayoralPollSampleEvidence(
             sample_id=sample.poll_sample_id,
             pollster=sample.pollster,
-            measured_candidates=measured.get(sample.poll_sample_id, frozenset()),
+            measured_candidates=tier_field(sample.poll_sample_id),
         )
         for sample in citywide
     )
     tier_result = classify_mayoral_evidence_tier(tier_samples, final_field=final_field)
+    if final_field is not None and set(tier_result.final_field_sample_ids) != selected_sample_ids:
+        raise AssertionError("evidence tier and endpoint selected different final-field samples")
 
-    # Field-consistency evidence: samples measuring exactly the viable field.
-    final_field_samples = [
-        sample for sample in citywide if measured.get(sample.poll_sample_id) == viable
-    ]
-    sample_ids = {sample.poll_sample_id for sample in final_field_samples}
-    readings = [r for r in bundle.poll_readings if r.poll_sample_id in sample_ids]
-    reading_ids = {r.poll_reading_id for r in readings}
-    responses = [r for r in bundle.poll_responses if r.poll_reading_id in reading_ids]
+    # Field-consistency evidence: the one selected reading from each sample must
+    # measure exactly the viable field. Broader alternate scenarios and narrower
+    # head-to-heads remain descriptive evidence attached to the same sample.
+    final_field_selected = selected
+    sample_ids = {reading.poll_sample_id for reading in final_field_selected}
+    final_field_samples = tuple(
+        sample for sample in citywide if sample.poll_sample_id in sample_ids
+    )
+    reading_ids = {reading.poll_reading_id for reading in final_field_selected}
+    readings = tuple(
+        reading for reading in bundle.poll_readings if reading.poll_reading_id in reading_ids
+    )
+    responses = tuple(
+        response
+        for response in bundle.poll_responses
+        if response.poll_reading_id in reading_ids
+    )
     if not final_field_samples:
         raise ValueError("no final-field samples to forecast from")
     # The endpoint (and the incumbency parse) use the historical underscore cycle
     # convention (toronto_YYYY); the current-cycle bundle keys samples with a
     # hyphen. Relabel the samples so the endpoint's sample<->evidence cycle check
     # and IncumbencyInformedPredictor's city/year parse both succeed.
-    endpoint_cycle = cycle_id.replace("-", "_")
     evidence = MayoralEndpointEvidence(
         election_cycle_id=endpoint_cycle,
         final_ballot_evidence_available_at=min(
@@ -346,8 +436,9 @@ def load_live_forecast_inputs(
         poll_samples=tuple(
             replace(sample, election_cycle_id=endpoint_cycle) for sample in final_field_samples
         ),
-        poll_readings=tuple(readings),
-        poll_responses=tuple(responses),
+        poll_readings=readings,
+        poll_responses=responses,
+        enforce_final_ballot_timing=False,
     )
     snapshot = LeadTimeSnapshot(
         days_before_election=0,
@@ -390,6 +481,7 @@ def load_live_forecast_inputs(
         incumbent_candidate_id=incumbent,
         viable_field=tuple(sorted(viable)),
         final_field_sample_ids=tuple(sorted(sample_ids)),
+        final_field_reading_ids=tuple(sorted(reading_ids)),
         final_field_pollsters=tuple(sorted({sample.pollster for sample in final_field_samples})),
     )
 
@@ -580,6 +672,7 @@ def build_mayoral_forecast_feed(
         "election_cycle_id": inputs.target.election_cycle_id,
         "evidence_tier": tier.tier.label,
         "final_field_samples": list(inputs.final_field_sample_ids),
+        "final_field_readings": list(inputs.final_field_reading_ids),
         "incumbent_candidate_id": inputs.incumbent_candidate_id,
         "candidate_win": candidate_win,
         "close_result": close_result,

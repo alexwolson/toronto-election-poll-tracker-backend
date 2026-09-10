@@ -80,6 +80,7 @@ class MayoralEndpointEvidence:
     poll_samples: tuple[PollSample, ...]
     poll_readings: tuple[PollReading, ...]
     poll_responses: tuple[PollResponse, ...]
+    enforce_final_ballot_timing: bool = True
 
     def __post_init__(self) -> None:
         if not self.election_cycle_id.strip():
@@ -313,10 +314,10 @@ def select_mayoral_endpoint_readings(
 ) -> tuple[SelectedMayoralPollReading, ...]:
     """Select at most one endpoint reading from each Distinct Poll Sample.
 
-    V1 deliberately uses only samples whose fieldwork reaches the conservative
-    Final Ballot availability date.  A later choice-set challenger may attempt
-    to earn use of pre-Final evidence; this baseline does not silently solve
-    that harder problem.
+    Historical evaluation uses only samples whose fieldwork reaches the
+    conservative Final Ballot availability date. Live evidence may disable that
+    date proxy after the field is certified and apply ADR 0046's selected-reading
+    field-consistency rule instead.
     """
 
     final_ids = _candidate_universe(final_candidate_ids)
@@ -375,7 +376,7 @@ def select_mayoral_endpoint_readings(
     ).date()
     selected: list[SelectedMayoralPollReading] = []
     for sample in sorted(samples.values(), key=lambda row: row.poll_sample_id):
-        if sample.fieldwork_end < boundary_date:
+        if evidence.enforce_final_ballot_timing and sample.fieldwork_end < boundary_date:
             continue
         candidates = tuple(
             candidate
@@ -872,6 +873,24 @@ class _EligibleReading:
     denominator_priority: int
 
 
+def measured_candidate_field(
+    responses: tuple[PollResponse, ...],
+) -> frozenset[str]:
+    """Return the candidate field a reading actually measured for selection."""
+
+    return frozenset(
+        response.candidate_id
+        for response in responses
+        if response.response_kind == "candidate"
+        and response.candidate_id is not None
+        and response.candidate_observation_status
+        in {
+            "individually_published",
+            "offered_not_individually_published",
+        }
+    )
+
+
 def _eligible_reading(
     reading: PollReading,
     responses: tuple[PollResponse, ...],
@@ -882,16 +901,7 @@ def _eligible_reading(
     candidate_rows = tuple(
         response for response in responses if response.response_kind == "candidate"
     )
-    candidate_field = frozenset(
-        response.candidate_id
-        for response in candidate_rows
-        if response.candidate_id is not None
-        and response.candidate_observation_status
-        in {
-            "individually_published",
-            "offered_not_individually_published",
-        }
-    )
+    candidate_field = measured_candidate_field(candidate_rows)
     if len(candidate_field) < 2 or not candidate_field <= final_ids:
         return None
     if reading.response_coverage == "complete":
