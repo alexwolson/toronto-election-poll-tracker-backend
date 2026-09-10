@@ -79,9 +79,7 @@ def _old_fit_tail_odds(training_cycles, selected_by_cycle):
             tail_share = sum(outcome[candidate] for candidate in unmeasured)
             if not 0.0 < tail_share < 1.0:
                 continue
-            reading_estimates.append(
-                tail_share / ((1.0 - tail_share) * len(unmeasured))
-            )
+            reading_estimates.append(tail_share / ((1.0 - tail_share) * len(unmeasured)))
         if reading_estimates:
             cycle_estimates.append(sum(reading_estimates) / len(reading_estimates))
     return sum(cycle_estimates) / len(cycle_estimates)
@@ -102,9 +100,7 @@ def _fit_snapshot_selection(cycle):
 
 
 def _old_fit(training, held):
-    training_selected = {
-        c.election_cycle_id: _fit_snapshot_selection(c) for c in training
-    }
+    training_selected = {c.election_cycle_id: _fit_snapshot_selection(c) for c in training}
     odds = _old_fit_tail_odds(training, training_selected)
     selected = endpoint._filter_selected(
         endpoint._selected_for_cycle(
@@ -136,16 +132,12 @@ def _old_fit(training, held):
 def _folds(cycles, lead_times):
     for target in cycles:
         for lead in lead_times:
-            target_snapshot = next(
-                s for s in target.snapshots if s.days_before_election == lead
-            )
+            target_snapshot = next(s for s in target.snapshots if s.days_before_election == lead)
             training = tuple(
                 TrainingCycle(
                     election_cycle_id=c.election_cycle_id,
                     election_type=c.election_type,
-                    snapshot=next(
-                        s for s in c.snapshots if s.days_before_election == lead
-                    ),
+                    snapshot=next(s for s in c.snapshots if s.days_before_election == lead),
                     history=c.snapshots,
                     outcome=c.outcome,
                 )

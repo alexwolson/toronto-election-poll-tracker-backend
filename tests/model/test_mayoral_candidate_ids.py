@@ -20,9 +20,7 @@ def test_minor_candidate_ids_are_normalized_name_slugs() -> None:
 
 
 @pytest.mark.parametrize("schema_version", [3, 4, 5])
-def test_canonical_ids_accept_results_owned_full_career_feed(
-    tmp_path, schema_version: int
-) -> None:
+def test_canonical_ids_accept_results_owned_full_career_feed(tmp_path, schema_version: int) -> None:
     path = tmp_path / "mayoral_candidates.json"
     path.write_text(
         json.dumps(

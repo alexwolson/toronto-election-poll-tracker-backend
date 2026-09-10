@@ -56,9 +56,7 @@ def test_triggers_are_gated_off_for_open_seats() -> None:
     _, races = _fixtures()
     # An incumbent race passes its triggers through unchanged (ward 11 is now an
     # open seat after Saxe left, so ward 20's running incumbent Kandavel anchors this).
-    assert race_exposure_triggers(races["20"]) == exposure_triggers(
-        races["20"].incumbent
-    )
+    assert race_exposure_triggers(races["20"]) == exposure_triggers(races["20"].incumbent)
     assert race_exposure_triggers(races["20"])  # non-empty
     # An open seat suppresses triggers even when the incumbent's numbers fire.
     firing = WardIncumbent(

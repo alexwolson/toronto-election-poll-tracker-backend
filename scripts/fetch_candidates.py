@@ -14,14 +14,16 @@ Run: uv run scripts/fetch_candidates.py
 from __future__ import annotations
 
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import pandas as pd
 import requests
 
 MAYOR_URL = "https://www.toronto.ca/data/elections/candidate_list/mayorCandidates_2026.json"
-COUNCILLOR_URL = "https://www.toronto.ca/data/elections/candidate_list/councilorCandidates_2026.json"
+COUNCILLOR_URL = (
+    "https://www.toronto.ca/data/elections/candidate_list/councilorCandidates_2026.json"
+)
 
 OUTPUT_DIR = Path("data/raw/candidates")
 
@@ -29,7 +31,8 @@ OUTPUT_DIR = Path("data/raw/candidates")
 def _parse_date(date_str: str) -> str:
     """Convert '01-May-2026' to '2026-05-01'."""
     try:
-        return datetime.strptime(date_str, "%d-%b-%Y").strftime("%Y-%m-%d")
+        # This input is a calendar date with no time or timezone component.
+        return datetime.strptime(date_str, "%d-%b-%Y").strftime("%Y-%m-%d")  # noqa: DTZ007
     except (ValueError, TypeError) as exc:
         raise ValueError(f"Unparseable dateNomination: {date_str!r}") from exc
 
@@ -82,7 +85,7 @@ def write_with_sidecar(df: pd.DataFrame, path: Path) -> None:
     df.to_csv(path, index=False)
     sidecar = path.with_suffix(".json")
     sidecar.write_text(
-        json.dumps({"fetched_at": datetime.now(timezone.utc).isoformat()}, indent=2),
+        json.dumps({"fetched_at": datetime.now(UTC).isoformat()}, indent=2),
         encoding="utf-8",
     )
     print(f"  Written: {path} ({len(df)} rows)")

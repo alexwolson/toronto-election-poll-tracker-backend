@@ -129,9 +129,7 @@ def main() -> None:
 
     log_m = [math.log(m) for m in all_m]
     log_total_odds = [math.log(t / (1 - t)) for t in all_tail]
-    log_per_candidate_odds = [
-        math.log(t / ((1 - t) * m)) for m, t in zip(all_m, all_tail)
-    ]
+    log_per_candidate_odds = [math.log(t / ((1 - t) * m)) for m, t in zip(all_m, all_tail)]
     slope_total, r_total, n = _ols(log_m, log_total_odds)
     slope_per, r_per, _ = _ols(log_m, log_per_candidate_odds)
     print(

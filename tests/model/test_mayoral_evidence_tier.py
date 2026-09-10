@@ -25,8 +25,7 @@ def test_tier_labels_are_the_adr_0033_wording() -> None:
     assert MayoralEvidenceTier.M1_PRE_FINAL.label == "M1 — Pre-Final Polling"
     assert MayoralEvidenceTier.M2_POST_FINAL.label == "M2 — Final-Field Polling"
     assert (
-        MayoralEvidenceTier.M3_REPLICATED_POST_FINAL.label
-        == "M3 — Replicated Final-Field Polling"
+        MayoralEvidenceTier.M3_REPLICATED_POST_FINAL.label == "M3 — Replicated Final-Field Polling"
     )
 
 

@@ -37,17 +37,13 @@ def _append_rows(path: Path, rows: list[dict[str, str]]) -> None:
         fieldnames = next(csv.reader(handle))
     unknown = {key for row in rows for key in row} - set(fieldnames)
     if unknown:
-        raise IngestError(
-            f"{path.name}: spec has columns not in the schema: {sorted(unknown)}"
-        )
+        raise IngestError(f"{path.name}: spec has columns not in the schema: {sorted(unknown)}")
     term = _line_terminator(path)
     if not path.read_bytes().endswith(term.encode()):
         with open(path, "a", newline="") as handle:
             handle.write(term)
     with open(path, "a", newline="") as handle:
-        writer = csv.DictWriter(
-            handle, fieldnames=fieldnames, restval="", lineterminator=term
-        )
+        writer = csv.DictWriter(handle, fieldnames=fieldnames, restval="", lineterminator=term)
         for row in rows:
             writer.writerow(row)
 
@@ -89,9 +85,7 @@ def ingest_poll_source(
     try:
         for table in TABLES:
             _append_rows(bundle_dir / f"{table}.csv", spec[table])
-        load_poll_source_bundle(
-            str(bundle_dir), require_audited_sources=require_audited_sources
-        )
+        load_poll_source_bundle(str(bundle_dir), require_audited_sources=require_audited_sources)
     except Exception:
         for table, data in snapshots.items():
             (bundle_dir / f"{table}.csv").write_bytes(data)

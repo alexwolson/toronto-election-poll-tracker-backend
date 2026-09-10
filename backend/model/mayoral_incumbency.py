@@ -16,7 +16,6 @@ from decimal import Decimal
 from pathlib import Path
 from typing import Final, Literal
 
-
 SOURCE_COLUMNS: Final = (
     "source_document_id",
     "city_id",
@@ -126,9 +125,9 @@ class MayoralIncumbencyTrial:
 
     @property
     def incumbent_margin_share(self) -> Decimal:
-        return Decimal(
-            self.incumbent_votes - self.strongest_opponent_votes
-        ) / Decimal(self.valid_votes)
+        return Decimal(self.incumbent_votes - self.strongest_opponent_votes) / Decimal(
+            self.valid_votes
+        )
 
 
 @dataclass(frozen=True, slots=True)
@@ -155,9 +154,7 @@ class MayoralIncumbencyPopulation:
 
     @property
     def v1_trials(self) -> tuple[MayoralIncumbencyTrial, ...]:
-        return tuple(
-            trial for trial in self.trials if trial.population_group == "v1_regular"
-        )
+        return tuple(trial for trial in self.trials if trial.population_group == "v1_regular")
 
     @property
     def toronto_2000_sensitivity_trial(self) -> MayoralIncumbencyTrial:
@@ -174,9 +171,7 @@ class MayoralIncumbencyPopulation:
 
     @property
     def source_gaps(self) -> tuple[IncumbencySourceDocument, ...]:
-        source_by_id = {
-            source.source_document_id: source for source in self.source_documents
-        }
+        source_by_id = {source.source_document_id: source for source in self.source_documents}
         used_ids = {trial.source_document_id for trial in self.trials}
         return tuple(
             source_by_id[source_id]
@@ -195,15 +190,12 @@ class MayoralIncumbencyPopulation:
         return tuple(
             trial
             for trial in self.v1_trials
-            if status_by_source_id[trial.source_document_id]
-            == "corroborated_secondary"
+            if status_by_source_id[trial.source_document_id] == "corroborated_secondary"
         )
 
     @property
     def is_v1_ready(self) -> bool:
-        source_by_id = {
-            source.source_document_id: source for source in self.source_documents
-        }
+        source_by_id = {source.source_document_id: source for source in self.source_documents}
         return all(
             source_by_id[trial.source_document_id].verification_status != "source_gap"
             for trial in self.v1_trials
@@ -221,9 +213,7 @@ class MayoralIncumbencyPopulation:
             wins=wins,
             losses=len(trials) - wins,
             empirical_win_rate=Decimal(wins) / Decimal(len(trials)),
-            median_incumbent_share=_median(
-                tuple(trial.incumbent_share for trial in trials)
-            ),
+            median_incumbent_share=_median(tuple(trial.incumbent_share for trial in trials)),
             median_incumbent_margin_share=_median(
                 tuple(trial.incumbent_margin_share for trial in trials)
             ),
@@ -235,12 +225,8 @@ class MayoralIncumbencyPopulation:
         return tuple(
             MayoralIncumbencyFold(
                 held_out_city_id=city_id,
-                training_trials=tuple(
-                    trial for trial in trials if trial.city_id != city_id
-                ),
-                held_out_trials=tuple(
-                    trial for trial in trials if trial.city_id == city_id
-                ),
+                training_trials=tuple(trial for trial in trials if trial.city_id != city_id),
+                held_out_trials=tuple(trial for trial in trials if trial.city_id == city_id),
             )
             for city_id in cities
         )
@@ -302,16 +288,11 @@ def verify_mayoral_incumbency_artifacts(
             )
         prefix = artifact.read_bytes()[:16].lstrip()
         if source.media_type == "application/pdf" and not prefix.startswith(b"%PDF-"):
-            raise MayoralIncumbencyDataError(
-                f"source {source.source_document_id!r} is not a PDF"
-            )
+            raise MayoralIncumbencyDataError(f"source {source.source_document_id!r} is not a PDF")
         if source.media_type == "text/html" and not (
-            prefix.lower().startswith(b"<!doctype html")
-            or prefix.lower().startswith(b"<html")
+            prefix.lower().startswith(b"<!doctype html") or prefix.lower().startswith(b"<html")
         ):
-            raise MayoralIncumbencyDataError(
-                f"source {source.source_document_id!r} is not HTML"
-            )
+            raise MayoralIncumbencyDataError(f"source {source.source_document_id!r} is not HTML")
         if source.media_type == "application/vnd.ms-excel" and not prefix.startswith(
             bytes.fromhex("d0cf11e0a1b11ae1")
         ):
@@ -344,18 +325,14 @@ def _parse_source(row: dict[str, str], row_number: int) -> IncumbencySourceDocum
         "corroborated_secondary",
         "source_gap",
     }:
-        raise MayoralIncumbencyDataError(
-            f"source row {row_number} has invalid verification_status"
-        )
+        raise MayoralIncumbencyDataError(f"source row {row_number} has invalid verification_status")
     media_type = _required(row, "media_type", row_number)
     if media_type not in {
         "application/pdf",
         "application/vnd.ms-excel",
         "text/html",
     }:
-        raise MayoralIncumbencyDataError(
-            f"source row {row_number} has unsupported media_type"
-        )
+        raise MayoralIncumbencyDataError(f"source row {row_number} has unsupported media_type")
     sha256 = row["sha256"].strip() or None
     local_path = Path(row["local_path"].strip()) if row["local_path"].strip() else None
     byte_size = _optional_positive_int(row["byte_size"], "byte_size", row_number)
@@ -372,9 +349,7 @@ def _parse_source(row: dict[str, str], row_number: int) -> IncumbencySourceDocum
     if status not in artifact_statuses and any(
         value is not None for value in (sha256, local_path, byte_size)
     ):
-        raise MayoralIncumbencyDataError(
-            f"source {source_id!r} has partial artifact metadata"
-        )
+        raise MayoralIncumbencyDataError(f"source {source_id!r} has partial artifact metadata")
     return IncumbencySourceDocument(
         source_document_id=source_id,
         city_id=_required(row, "city_id", row_number),
@@ -393,9 +368,7 @@ def _parse_source(row: dict[str, str], row_number: int) -> IncumbencySourceDocum
 def _parse_trial(row: dict[str, str], row_number: int) -> MayoralIncumbencyTrial:
     group = _required(row, "population_group", row_number)
     if group not in {"v1_regular", "toronto_pre_2006_sensitivity"}:
-        raise MayoralIncumbencyDataError(
-            f"trial row {row_number} has invalid population_group"
-        )
+        raise MayoralIncumbencyDataError(f"trial row {row_number} has invalid population_group")
     try:
         election_date = date.fromisoformat(_required(row, "election_date", row_number))
     except ValueError as exc:
@@ -408,20 +381,14 @@ def _parse_trial(row: dict[str, str], row_number: int) -> MayoralIncumbencyTrial
         city_name=_required(row, "city_name", row_number),
         election_date=election_date,
         population_group=group,  # type: ignore[arg-type]
-        term_length_years=_positive_int(
-            row["term_length_years"], "term_length_years", row_number
-        ),
+        term_length_years=_positive_int(row["term_length_years"], "term_length_years", row_number),
         incumbent_candidate_id=_required(row, "incumbent_candidate_id", row_number),
         incumbent_name=_required(row, "incumbent_name", row_number),
-        incumbent_votes=_positive_int(
-            row["incumbent_votes"], "incumbent_votes", row_number
-        ),
+        incumbent_votes=_positive_int(row["incumbent_votes"], "incumbent_votes", row_number),
         strongest_opponent_candidate_id=_required(
             row, "strongest_opponent_candidate_id", row_number
         ),
-        strongest_opponent_name=_required(
-            row, "strongest_opponent_name", row_number
-        ),
+        strongest_opponent_name=_required(row, "strongest_opponent_name", row_number),
         strongest_opponent_votes=_positive_int(
             row["strongest_opponent_votes"],
             "strongest_opponent_votes",
@@ -482,9 +449,7 @@ def _validate_population(population: MayoralIncumbencyPopulation) -> None:
                 "v1 regular comparison trials must fall within 2006-2022"
             )
         if trial.term_length_years != 4:
-            raise MayoralIncumbencyDataError(
-                "v1 regular comparison trials require four-year terms"
-            )
+            raise MayoralIncumbencyDataError("v1 regular comparison trials require four-year terms")
     if v1_counts != _EXPECTED_V1_CITY_COUNTS:
         raise MayoralIncumbencyDataError(
             "v1 comparison population does not match the frozen city/cycle counts"
@@ -512,9 +477,7 @@ def _median(values: tuple[Decimal, ...]) -> Decimal:
 def _required(row: dict[str, str], column: str, row_number: int) -> str:
     value = row[column].strip()
     if not value:
-        raise MayoralIncumbencyDataError(
-            f"row {row_number} has blank required {column}"
-        )
+        raise MayoralIncumbencyDataError(f"row {row_number} has blank required {column}")
     return value
 
 
@@ -522,13 +485,9 @@ def _positive_int(raw: str, column: str, row_number: int) -> int:
     try:
         value = int(raw)
     except ValueError as exc:
-        raise MayoralIncumbencyDataError(
-            f"row {row_number} has invalid integer {column}"
-        ) from exc
+        raise MayoralIncumbencyDataError(f"row {row_number} has invalid integer {column}") from exc
     if value <= 0:
-        raise MayoralIncumbencyDataError(
-            f"row {row_number} requires positive {column}"
-        )
+        raise MayoralIncumbencyDataError(f"row {row_number} requires positive {column}")
     return value
 
 

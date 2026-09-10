@@ -150,9 +150,7 @@ def test_returning_councillor_in_open_contest_fires_small_sample_hint_only() -> 
         [_rec("councillor", "2018-10-22", True, 0.50, 0.20)],
         is_sitting_incumbent=False,
     )
-    assert set(_fire(returning, open_contest=True)) == {
-        "own_returning_councillor__open_contest"
-    }
+    assert set(_fire(returning, open_contest=True)) == {"own_returning_councillor__open_contest"}
 
 
 def test_binary_prior_win_hint_is_gated_off_for_sitting_incumbent() -> None:
@@ -174,10 +172,7 @@ def test_single_prior_loss_fires_history_and_margin_hints() -> None:
         "own_most_recent_all_past_race_margin__non_incumbent_non_returning",
     }
     assert (
-        fired[
-            "own_most_recent_all_past_race_margin__non_incumbent_non_returning"
-        ].direction
-        == ""
+        fired["own_most_recent_all_past_race_margin__non_incumbent_non_returning"].direction == ""
     )
 
 
@@ -212,9 +207,7 @@ def test_prior_mpp_race_uses_named_office_scope() -> None:
     assert "own_prior_mpp_race__non_incumbent_non_returning" in fired
 
 
-def test_open_candidate_faces_returning_councillor_even_when_own_history_unknown() -> (
-    None
-):
+def test_open_candidate_faces_returning_councillor_even_when_own_history_unknown() -> None:
     unknown = candidate_features(
         [], is_sitting_incumbent=False, history_confirmed=False, name="Newcomer"
     )
@@ -255,9 +248,7 @@ def test_incumbent_opponent_margin_requires_complete_opponent_history() -> None:
 def test_signal_direction_withholds_a_verdict_for_continuous_hints() -> None:
     assert signal_direction("own_prior_win_type__trustee", None) == "positive"
     assert (
-        signal_direction(
-            "own_any_all_past_race_victory__non_incumbent_non_returning", None
-        )
+        signal_direction("own_any_all_past_race_victory__non_incumbent_non_returning", None)
         == "positive"
     )
     for hint_id in (

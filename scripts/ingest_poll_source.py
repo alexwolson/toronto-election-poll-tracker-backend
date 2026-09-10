@@ -50,21 +50,15 @@ def _prepare_document(doc: dict) -> None:
     if not local.exists():
         url = doc.get("retrieval_url") or doc.get("publisher_url")
         if not url:
-            raise SystemExit(
-                f"{doc['source_document_id']}: no local file and no URL to fetch"
-            )
+            raise SystemExit(f"{doc['source_document_id']}: no local file and no URL to fetch")
         local.parent.mkdir(parents=True, exist_ok=True)
         print(f"fetching {doc['source_document_id']} …")
-        subprocess.run(
-            ["curl", "-sL", "--max-time", "120", "-o", str(local), url], check=True
-        )
+        subprocess.run(["curl", "-sL", "--max-time", "120", "-o", str(local), url], check=True)
     doc["sha256"] = hashlib.sha256(local.read_bytes()).hexdigest()
     doc["byte_size"] = str(local.stat().st_size)
     if doc.get("media_type") == "application/pdf":
         doc["page_count"] = _page_count(local)
-    print(
-        f"  {doc['source_document_id']}: {doc['byte_size']} bytes, sha256 {doc['sha256'][:12]}…"
-    )
+    print(f"  {doc['source_document_id']}: {doc['byte_size']} bytes, sha256 {doc['sha256'][:12]}…")
 
 
 def main() -> None:

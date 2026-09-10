@@ -9,7 +9,7 @@ import csv
 import io
 import json
 import sys
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import requests
@@ -58,8 +58,7 @@ def download_resource(resource: dict, output_dir: Path) -> Path:
     for col in EXPECTED_COLUMNS:
         if col not in header_fields:
             raise ValueError(
-                f"Expected column '{col}' not found in {name}. "
-                f"Header: {first_line[:200]}"
+                f"Expected column '{col}' not found in {name}. Header: {first_line[:200]}"
             )
 
     output_path.write_text(content, encoding="utf-8")
@@ -67,7 +66,7 @@ def download_resource(resource: dict, output_dir: Path) -> Path:
     metadata = {
         "source_url": url,
         "resource_name": resource["name"],
-        "fetched_at": datetime.now(timezone.utc).isoformat(),
+        "fetched_at": datetime.now(UTC).isoformat(),
     }
     sidecar_path.write_text(json.dumps(metadata, indent=2), encoding="utf-8")
     print(f"  Saved to {output_path}")

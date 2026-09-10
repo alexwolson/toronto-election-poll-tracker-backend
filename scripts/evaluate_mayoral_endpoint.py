@@ -56,8 +56,7 @@ def _report_summary(report: EvaluationReport) -> dict[str, object]:
         "population": report.population,
         "metrics": _metric_summary(report.metrics),
         "cycles": {
-            cycle.election_cycle_id: _metric_summary(cycle.metrics)
-            for cycle in report.cycles
+            cycle.election_cycle_id: _metric_summary(cycle.metrics) for cycle in report.cycles
         },
         "manifest": {
             cycle.election_cycle_id: [
@@ -95,15 +94,11 @@ def main() -> None:
         },
         "comparator": {
             "all_elections": _report_summary(result.comparator.all_elections),
-            "regular_elections_only": _report_summary(
-                result.comparator.regular_elections_only
-            ),
+            "regular_elections_only": _report_summary(result.comparator.regular_elections_only),
         },
         "bridge": {
             "all_elections": _report_summary(result.bridge.all_elections),
-            "regular_elections_only": _report_summary(
-                result.bridge.regular_elections_only
-            ),
+            "regular_elections_only": _report_summary(result.bridge.regular_elections_only),
         },
         "qualification": {
             "all_elections": asdict(result.all_elections),

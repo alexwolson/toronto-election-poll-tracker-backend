@@ -50,9 +50,7 @@ def load_registered_mayoral_candidates(
 def build_mayoral_candidates_feed(
     registrations: tuple[MayoralRegistration, ...],
     live_cycle: dict,
-    officeholding: tuple[
-        dict[str, list[CandidacyRecord]], dict[str, set[frozenset[str]]]
-    ],
+    officeholding: tuple[dict[str, list[CandidacyRecord]], dict[str, set[frozenset[str]]]],
 ) -> dict:
     certified = bool(live_cycle["field_certified"])
     feed = {
@@ -72,9 +70,7 @@ def build_mayoral_candidates_feed(
     for registration in sorted(
         active, key=lambda row: (row.last_name.casefold(), row.first_name.casefold())
     ):
-        candidate_id = mayoral_candidate_id(
-            registration.first_name, registration.last_name
-        )
+        candidate_id = mayoral_candidate_id(registration.first_name, registration.last_name)
         if candidate_id in seen_ids:
             raise ValueError(f"duplicate mayoral candidate id: {candidate_id}")
         seen_ids.add(candidate_id)
@@ -82,9 +78,7 @@ def build_mayoral_candidates_feed(
             registration.first_name, registration.last_name, name_variants
         )
         is_matched = person_id is not None and person_id in history_by_person
-        elections = (
-            past_election_history(history_by_person[person_id]) if is_matched else ()
-        )
+        elections = past_election_history(history_by_person[person_id]) if is_matched else ()
         candidates.append(
             {
                 "candidate_id": candidate_id,

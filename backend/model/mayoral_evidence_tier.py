@@ -80,17 +80,13 @@ class MayoralEvidenceTierResult:
         # >=3 Distinct Poll Samples measuring the challenger, across >=2 pollsters,
         # with >=2 of those final-field.
         measuring = [
-            sample
-            for sample in self._samples
-            if candidate_id in sample.measured_candidates
+            sample for sample in self._samples if candidate_id in sample.measured_candidates
         ]
         if len(measuring) < 3:
             return False
         if len({sample.pollster for sample in measuring}) < 2:
             return False
-        final_field = sum(
-            1 for sample in measuring if sample.sample_id in self._final_field_ids
-        )
+        final_field = sum(1 for sample in measuring if sample.sample_id in self._final_field_ids)
         return final_field >= 2
 
 

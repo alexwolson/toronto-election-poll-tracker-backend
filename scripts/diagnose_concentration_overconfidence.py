@@ -106,9 +106,7 @@ def _cycle_squared_error(cycle, tail_mass):
     point = _point_estimate(
         selected, cycle.outcome.candidate_ids, tail_mass=tail_mass, variant=VARIANT
     )
-    observed = tuple(
-        cycle.outcome.candidate_shares[c] for c in cycle.outcome.candidate_ids
-    )
+    observed = tuple(cycle.outcome.candidate_shares[c] for c in cycle.outcome.candidate_ids)
     return sum((a - p) ** 2 for a, p in zip(observed, point, strict=True))
 
 
@@ -136,9 +134,7 @@ def main() -> None:
                 _held(target, lead),
                 variant=VARIANT,
             )
-            margins = _margin_draws(
-                fit.candidate_ids, fit.point_shares, fit.concentration
-            )
+            margins = _margin_draws(fit.candidate_ids, fit.point_shares, fit.concentration)
             realized = target.outcome.winning_margin
             p05, p10, p50, p90, p95 = (
                 float(np.quantile(margins, q)) for q in (0.05, 0.10, 0.50, 0.90, 0.95)
@@ -177,9 +173,7 @@ def main() -> None:
     )
     print(f"tail_mass={tail:.4f}   kappa(all 4 cycles)={kappa_all:.1f}")
     for drop in all_training:
-        subset = tuple(
-            t for t in all_training if t.election_cycle_id != drop.election_cycle_id
-        )
+        subset = tuple(t for t in all_training if t.election_cycle_id != drop.election_cycle_id)
         k = _fit_concentration(
             subset,
             tail_mass=tail,
@@ -201,9 +195,7 @@ def main() -> None:
         variant=VARIANT,
     )
     realized = target.outcome.winning_margin
-    top = sorted(
-        zip(fit.candidate_ids, fit.point_shares), key=lambda kv: kv[1], reverse=True
-    )[:3]
+    top = sorted(zip(fit.candidate_ids, fit.point_shares), key=lambda kv: kv[1], reverse=True)[:3]
     print(
         f"2023 point top-3: {[(k, round(v, 4)) for k, v in top]}   realized margin={realized:.4f}"
     )
@@ -220,9 +212,7 @@ def main() -> None:
         f"a 2026 target trains on every historical cycle, so it uses kappa={kappa_all:.1f}, "
         "not the leave-one-out value. Coverage of each historical margin at that kappa:"
     )
-    print(
-        f"{'cycle':<14}{'realized':>10}{'p05':>8}{'p50':>8}{'p95':>8}{'PIT':>7}{'in80%':>7}"
-    )
+    print(f"{'cycle':<14}{'realized':>10}{'p05':>8}{'p50':>8}{'p95':>8}{'PIT':>7}{'in80%':>7}")
     for cycle in all_training:
         point = _point_estimate(
             _fit_selection(cycle),

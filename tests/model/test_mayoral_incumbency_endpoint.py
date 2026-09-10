@@ -70,9 +70,7 @@ def test_prior_share_excludes_only_the_target_election_trial() -> None:
     got = incumbency_prior_share(pop, exclude_city="toronto", exclude_year=2018)
     assert got == pytest.approx(expected)
     # a Toronto trial from another year is retained in the pool
-    assert any(
-        t.city_id == "toronto" and t.election_date.year == 2022 for t in pop.v1_trials
-    )
+    assert any(t.city_id == "toronto" and t.election_date.year == 2022 for t in pop.v1_trials)
 
 
 def test_open_race_leaves_the_point_estimate_unchanged() -> None:

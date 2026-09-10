@@ -43,6 +43,7 @@ Create `tests/scripts/test_fetch_polls.py`:
 
 ```python
 """Tests for fetch_polls.py parsing logic."""
+
 from __future__ import annotations
 
 import importlib.util
@@ -133,9 +134,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-WIKIPEDIA_URL = (
-    "https://en.wikipedia.org/api/rest_v1/page/html/2026_Toronto_mayoral_election"
-)
+WIKIPEDIA_URL = "https://en.wikipedia.org/api/rest_v1/page/html/2026_Toronto_mayoral_election"
 USER_AGENT = (
     "toronto-election-poll-tracker/1.0"
     " (https://github.com/alexwolson/toronto-election-poll-tracker-data)"
@@ -169,12 +168,24 @@ CANDIDATE_SLUG: dict[str, str] = {
 }
 
 METADATA_COLS = [
-    "poll_id", "firm", "date_conducted", "date_published",
-    "sample_size", "methodology", "field_tested",
+    "poll_id",
+    "firm",
+    "date_conducted",
+    "date_published",
+    "sample_size",
+    "methodology",
+    "field_tested",
 ]
 ALL_CANDIDATE_COLS = [
-    "bailao", "bradford", "chow", "furey", "ford",
-    "mendicino", "tory", "other", "undecided",
+    "bailao",
+    "bradford",
+    "chow",
+    "furey",
+    "ford",
+    "mendicino",
+    "tory",
+    "other",
+    "undecided",
 ]
 _SKIP_COLS = frozenset({"Polling Firm", "Methodology", "Poll Date", "Sample Size", "MOE", "Lead"})
 
@@ -250,8 +261,16 @@ def test_firm_slug_unknown(fp):
 
 
 def test_candidate_col_names_maps_known(fp):
-    headers = ["Polling Firm", "Methodology", "Poll Date", "Sample Size", "MOE",
-               "Bradford", "Chow", "Lead"]
+    headers = [
+        "Polling Firm",
+        "Methodology",
+        "Poll Date",
+        "Sample Size",
+        "MOE",
+        "Bradford",
+        "Chow",
+        "Lead",
+    ]
     result = fp._candidate_col_names(headers)
     assert result == {"Bradford": "bradford", "Chow": "chow"}
 
@@ -304,9 +323,7 @@ def _firm_slug(firm: str) -> str:
     """Map a Wikipedia firm name to its poll_id slug."""
     firm = firm.strip()
     if firm not in FIRM_SLUG:
-        raise ValueError(
-            f"Unknown polling firm: {firm!r}. Add it to FIRM_SLUG in fetch_polls.py."
-        )
+        raise ValueError(f"Unknown polling firm: {firm!r}. Add it to FIRM_SLUG in fetch_polls.py.")
     return FIRM_SLUG[firm]
 
 
@@ -548,17 +565,19 @@ def _parse_table(table) -> list[dict]:
         raw_n = row_data.get("Sample Size", "").replace(",", "").strip()
         sample_size = int(raw_n) if raw_n.isdigit() else None
 
-        rows.append({
-            "poll_id": poll_id,
-            "firm": firm,
-            "date_conducted": date,
-            "date_published": date,
-            "sample_size": sample_size,
-            "methodology": row_data.get("Methodology", "").strip(),
-            "field_tested": field_tested,
-            **shares,
-            "notes": "",
-        })
+        rows.append(
+            {
+                "poll_id": poll_id,
+                "firm": firm,
+                "date_conducted": date,
+                "date_published": date,
+                "sample_size": sample_size,
+                "methodology": row_data.get("Methodology", "").strip(),
+                "field_tested": field_tested,
+                **shares,
+                "notes": "",
+            }
+        )
 
     return rows
 
@@ -577,8 +596,7 @@ def parse_polls(html: str) -> list[dict]:
         for row in _parse_table(table):
             if row["poll_id"] in seen_ids:
                 raise ValueError(
-                    f"Duplicate poll_id: {row['poll_id']!r} — "
-                    "two tables produced the same ID."
+                    f"Duplicate poll_id: {row['poll_id']!r} — two tables produced the same ID."
                 )
             seen_ids.add(row["poll_id"])
             all_rows.append(row)

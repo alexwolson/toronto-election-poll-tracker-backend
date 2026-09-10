@@ -80,9 +80,7 @@ def test_registered_candidate_is_matched_to_its_history() -> None:
 def test_newcomers_carry_no_biography() -> None:
     races = _races()
     # Across the whole field, unmatched candidates are newcomers with no history.
-    newcomers = [
-        c for race in races.values() for c in race.candidates if not c.is_matched
-    ]
+    newcomers = [c for race in races.values() for c in race.candidates if not c.is_matched]
     assert newcomers  # there are always newcomers
     assert all(c.biography is None and c.candidate_id is None for c in newcomers)
 

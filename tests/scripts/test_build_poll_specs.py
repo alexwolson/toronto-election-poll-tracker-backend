@@ -81,9 +81,7 @@ def _copy_bundle(tmp_path: Path) -> Path:
 
 def test_single_document_group_produces_an_ingestible_spec(tmp_path) -> None:
     group = [(_meta(), _merged([_reading("Ford / Tory", FORD_TORY)]))]
-    spec, problems = build_spec(
-        group, "toronto_2014", retrieved_at="2026-08-19T00:00:00Z"
-    )
+    spec, problems = build_spec(group, "toronto_2014", retrieved_at="2026-08-19T00:00:00Z")
     assert problems == []
     assert set(spec) == set(TABLES)
     assert len(spec["poll_samples"]) == 1
@@ -132,9 +130,7 @@ def test_build_spec_mainstreet_firm_decimals_and_residuals(tmp_path) -> None:
     assert spec["poll_readings"][0]["reported_share_precision"] == "1"
     by_label = {r.get("response_label"): r for r in spec["poll_responses"]}
     assert by_label["John Tory"]["reported_value"] == "45.5"  # decimal preserved
-    assert (
-        by_label["Jennifer Keesmat"]["candidate_id"] == "keesmaat"
-    )  # typo canonicalized
+    assert by_label["Jennifer Keesmat"]["candidate_id"] == "keesmaat"  # typo canonicalized
     assert by_label["Another Candidate"]["response_kind"] == "other"
     assert by_label["Another Candidate"]["response_option_id"] == "another-candidate"
     assert by_label["Undecided"]["response_kind"] == "undecided"
@@ -169,11 +165,7 @@ def test_build_spec_keeps_all_and_decided_readings_of_same_race(tmp_path) -> Non
         "all_respondents",
         "decided_respondents",
     ]
-    dec = next(
-        r
-        for r in spec["poll_readings"]
-        if r["denominator_type"] == "decided_respondents"
-    )
+    dec = next(r for r in spec["poll_readings"] if r["denominator_type"] == "decided_respondents")
     assert dec["reported_base_status"] == "not_reported"  # base -1 -> unreported
     assert dec["denominator_text"] == "Among Decided Voters"
     counts = ingest_poll_source(spec, bundle_dir=_copy_bundle(tmp_path))
@@ -213,13 +205,9 @@ def test_build_spec_flags_unknown_candidate() -> None:
         {"label": "Rob Ford", "kind": "candidate", "value": 40},
         {"label": "Don't know", "kind": "dont_know", "value": 10},
     ]
-    spec, problems = build_spec(
-        [(_meta(), _merged([_reading("X", responses)]))], "toronto_2014"
-    )
+    spec, problems = build_spec([(_meta(), _merged([_reading("X", responses)]))], "toronto_2014")
     assert problems and "Some Newcomer" in problems[0]
-    assert "Some Newcomer" not in {
-        r.get("candidate_name") for r in spec["poll_responses"]
-    }
+    assert "Some Newcomer" not in {r.get("candidate_name") for r in spec["poll_responses"]}
 
 
 def test_shared_sample_two_docs_distinct_scenarios(tmp_path) -> None:
@@ -337,21 +325,15 @@ def test_group_by_sample_groups_same_fieldwork_and_size() -> None:
     items = [
         (
             _meta("a"),
-            _merged(
-                [_reading("Ford / Tory", FORD_TORY)], fieldwork="2014-01-05", n=900
-            ),
+            _merged([_reading("Ford / Tory", FORD_TORY)], fieldwork="2014-01-05", n=900),
         ),
         (
             _meta("b"),
-            _merged(
-                [_reading("Ford / Chow", FORD_CHOW)], fieldwork="2014-01-05", n=900
-            ),
+            _merged([_reading("Ford / Chow", FORD_CHOW)], fieldwork="2014-01-05", n=900),
         ),
         (
             _meta("c"),
-            _merged(
-                [_reading("Ford / Tory", FORD_TORY)], fieldwork="2014-02-02", n=800
-            ),
+            _merged([_reading("Ford / Tory", FORD_TORY)], fieldwork="2014-02-02", n=800),
         ),
     ]
     groups = group_by_sample(items)

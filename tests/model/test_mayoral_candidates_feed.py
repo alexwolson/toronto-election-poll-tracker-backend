@@ -80,9 +80,9 @@ def test_ambiguous_name_is_not_guessed() -> None:
         },
     )
 
-    [candidate] = build_mayoral_candidates_feed(
-        registrations, live_cycle(), officeholding
-    )["candidates"]
+    [candidate] = build_mayoral_candidates_feed(registrations, live_cycle(), officeholding)[
+        "candidates"
+    ]
 
     assert candidate["person_id"] is None
     assert candidate["is_matched"] is False
@@ -110,9 +110,7 @@ def test_inactive_registrations_are_excluded() -> None:
     feed = build_mayoral_candidates_feed(
         (registration("Olivia", "Chow"), withdrawn), live_cycle(), ({}, {})
     )
-    assert [candidate["display_name"] for candidate in feed["candidates"]] == [
-        "Olivia Chow"
-    ]
+    assert [candidate["display_name"] for candidate in feed["candidates"]] == ["Olivia Chow"]
 
 
 def test_committed_certified_field_contains_all_53_candidates_once() -> None:

@@ -81,9 +81,7 @@ def build_historical_mayoral_evaluation_cycles(
             raise ValueError(f"unknown historical mayoral cycle {cycle_id!r}")
 
         outcome_pairs = corpus.outcome_share_vector(cycle_id)
-        candidate_shares = {
-            candidate_id: float(share) for candidate_id, share in outcome_pairs
-        }
+        candidate_shares = {candidate_id: float(share) for candidate_id, share in outcome_pairs}
         incumbent_id = _INCUMBENT_BY_CYCLE[cycle_id]
         if incumbent_id is not None and incumbent_id not in candidate_shares:
             raise ValueError(
@@ -99,9 +97,7 @@ def build_historical_mayoral_evaluation_cycles(
             _snapshot_at_cutoff(
                 cycle_id=cycle_id,
                 election_date=election.election_date,
-                final_ballot_evidence_available_at=(
-                    election.final_ballot_evidence_available_at
-                ),
+                final_ballot_evidence_available_at=(election.final_ballot_evidence_available_at),
                 days_before_election=days_before_election,
                 analysis_time_local=local_time,
                 samples_by_cycle=relationships.samples_by_cycle,
@@ -140,9 +136,7 @@ def _validate_and_index_relationships(
     if unknown_cycles:
         raise ValueError(f"unknown historical mayoral cycle(s) {unknown_cycles}")
 
-    outcomes_by_cycle: dict[str, list[object]] = {
-        cycle_id: [] for cycle_id in elections_by_id
-    }
+    outcomes_by_cycle: dict[str, list[object]] = {cycle_id: [] for cycle_id in elections_by_id}
     outcome_keys: set[tuple[str, str]] = set()
     for outcome in corpus.outcomes:
         if outcome.election_cycle_id not in elections_by_id:
@@ -159,9 +153,7 @@ def _validate_and_index_relationships(
         cycle_id for cycle_id, rows in outcomes_by_cycle.items() if not rows
     )
     if cycles_without_outcomes:
-        raise ValueError(
-            f"historical cycle(s) have no complete outcome {cycles_without_outcomes}"
-        )
+        raise ValueError(f"historical cycle(s) have no complete outcome {cycles_without_outcomes}")
 
     samples_by_id = _unique_by_id(
         corpus.poll_samples,
@@ -179,8 +171,7 @@ def _validate_and_index_relationships(
             )
         if sample.evidence_available_at.utcoffset() is None:
             raise ValueError(
-                f"poll sample {sample.poll_sample_id!r} has a naive "
-                "evidence_available_at"
+                f"poll sample {sample.poll_sample_id!r} has a naive evidence_available_at"
             )
         samples_by_cycle_lists[sample.election_cycle_id].append(sample)
 
@@ -260,14 +251,10 @@ def _snapshot_at_cutoff(
             "conservatively knowable Final Ballot"
         )
     samples = tuple(
-        sample
-        for sample in samples_by_cycle[cycle_id]
-        if sample.evidence_available_at <= cutoff
+        sample for sample in samples_by_cycle[cycle_id] if sample.evidence_available_at <= cutoff
     )
     readings = tuple(
-        reading
-        for sample in samples
-        for reading in readings_by_sample[sample.poll_sample_id]
+        reading for sample in samples for reading in readings_by_sample[sample.poll_sample_id]
     )
     responses = tuple(
         response
@@ -305,10 +292,7 @@ def _evidence_revision(evidence: HistoricalMayoralEvidence) -> str:
 
 def _canonical_value(value: object) -> object:
     if is_dataclass(value) and not isinstance(value, type):
-        return {
-            field.name: _canonical_value(getattr(value, field.name))
-            for field in fields(value)
-        }
+        return {field.name: _canonical_value(getattr(value, field.name)) for field in fields(value)}
     if isinstance(value, datetime):
         if value.utcoffset() is None:
             raise ValueError("cannot revise evidence containing a naive datetime")

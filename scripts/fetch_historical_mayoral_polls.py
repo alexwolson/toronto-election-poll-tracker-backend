@@ -52,7 +52,14 @@ ELECTIONS = {
         "poll_tables": [7, 8],
         "outcome_table": 9,
         "final_field": {
-            "bailao", "bradford", "brown", "chow", "furey", "hunter", "matlow", "saunders"
+            "bailao",
+            "bradford",
+            "brown",
+            "chow",
+            "furey",
+            "hunter",
+            "matlow",
+            "saunders",
         },
     },
 }
@@ -92,7 +99,7 @@ def _plain(value: object) -> str:
 
 
 def _slug(value: object) -> str:
-    text = re.sub(r"\s+\(X\)$", "", _plain(value), flags=re.I)
+    text = re.sub(r"\s+\(X\)$", "", _plain(value), flags=re.IGNORECASE)
     lower = text.lower()
     if lower in NAME_IDS:
         return NAME_IDS[lower]
@@ -105,25 +112,20 @@ def _flatten(table: pd.DataFrame) -> pd.DataFrame:
     if isinstance(result.columns, pd.MultiIndex):
         first_level = [str(column[0]) for column in result.columns]
         use_second = len(set(first_level)) == 1
-        result.columns = [
-            str(column[1] if use_second else column[0]) for column in result.columns
-        ]
+        result.columns = [str(column[1] if use_second else column[0]) for column in result.columns]
     return result
 
 
 def _date(value: object) -> str | None:
     text = _plain(value).replace("—", "-")
-    same_month_range = re.match(
-        r"^([A-Za-z]+)\s+\d+\s*[–-]\s*(\d+),\s*(\d{4})$", text
-    )
+    same_month_range = re.match(r"^([A-Za-z]+)\s+\d+\s*[–-]\s*(\d+),\s*(\d{4})$", text)
     cross_month_range = re.match(
         r"^[A-Za-z]+\s+\d+\s*[–-]\s*([A-Za-z]+)\s+(\d+),\s*(\d{4})$",
         text,
     )
     if same_month_range:
         text = (
-            f"{same_month_range.group(1)} {same_month_range.group(2)}, "
-            f"{same_month_range.group(3)}"
+            f"{same_month_range.group(1)} {same_month_range.group(2)}, {same_month_range.group(3)}"
         )
     elif cross_month_range:
         text = (
@@ -163,7 +165,11 @@ def _sample(value: object) -> int | None:
 def _table_columns(table: pd.DataFrame) -> tuple[str, str | None, str | None, list[str]]:
     columns = list(table.columns)
     firm = next(column for column in columns if "Polling firm" in column)
-    date = next(column for column in columns if "date of poll" in column.lower() or "date of polling" in column.lower())
+    date = next(
+        column
+        for column in columns
+        if "date of poll" in column.lower() or "date of polling" in column.lower()
+    )
     sample = next((column for column in columns if "sample" in column.lower()), None)
     metadata = {firm, date, sample, "Link", "Source", "MoE", "MOE"}
     candidates = [column for column in columns if column not in metadata]
@@ -218,7 +224,9 @@ def build_history() -> tuple[pd.DataFrame, pd.DataFrame]:
                 ]
                 residual /= total
                 signature = ",".join(sorted(candidate_id for candidate_id, _, _ in offered))
-                digest = hashlib.sha1(f"{firm}|{published}|{signature}|{row_number}".encode()).hexdigest()[:8]
+                digest = hashlib.sha1(
+                    f"{firm}|{published}|{signature}|{row_number}".encode()
+                ).hexdigest()[:8]
                 poll_id = f"{election_id}-{published}-{digest}"
                 common = {
                     "election_id": election_id,
@@ -231,24 +239,34 @@ def build_history() -> tuple[pd.DataFrame, pd.DataFrame]:
                     "source_url": source_url,
                 }
                 for candidate_id, candidate_name, value in offered:
-                    poll_rows.append({
+                    poll_rows.append(
+                        {
+                            **common,
+                            "candidate_id": candidate_id,
+                            "candidate_name": candidate_name,
+                            "share": round(value, 4),
+                            "is_residual": False,
+                        }
+                    )
+                poll_rows.append(
+                    {
                         **common,
-                        "candidate_id": candidate_id,
-                        "candidate_name": candidate_name,
-                        "share": round(value, 4),
-                        "is_residual": False,
-                    })
-                poll_rows.append({
-                    **common,
-                    "candidate_id": "residual",
-                    "candidate_name": "Other / undecided",
-                    "share": round(min(1.0, residual), 4),
-                    "is_residual": True,
-                })
+                        "candidate_id": "residual",
+                        "candidate_name": "Other / undecided",
+                        "share": round(min(1.0, residual), 4),
+                        "is_residual": True,
+                    }
+                )
 
         outcome = _flatten(tables[int(config["outcome_table"])])
-        candidate_column = next(column for column in outcome.columns if "candidate" in column.lower())
-        share_column = next(column for column in outcome.columns if "%" in column.lower() or "popular vote" in column.lower())
+        candidate_column = next(
+            column for column in outcome.columns if "candidate" in column.lower()
+        )
+        share_column = next(
+            column
+            for column in outcome.columns
+            if "%" in column.lower() or "popular vote" in column.lower()
+        )
         final_field = set(config["final_field"])
         residual_share = 0.0
         for _, row in outcome.iterrows():
@@ -258,28 +276,34 @@ def build_history() -> tuple[pd.DataFrame, pd.DataFrame]:
                 continue
             candidate_id = _slug(candidate_name)
             if candidate_id in final_field:
-                outcome_rows.append({
-                    "election_id": election_id,
-                    "election_date": config["election_date"],
-                    "candidate_id": candidate_id,
-                    "candidate_name": candidate_name,
-                    "share": round(share, 4),
-                    "is_residual": False,
-                    "source_url": source_url,
-                })
+                outcome_rows.append(
+                    {
+                        "election_id": election_id,
+                        "election_date": config["election_date"],
+                        "candidate_id": candidate_id,
+                        "candidate_name": candidate_name,
+                        "share": round(share, 4),
+                        "is_residual": False,
+                        "source_url": source_url,
+                    }
+                )
             else:
                 residual_share += share
-        outcome_rows.append({
-            "election_id": election_id,
-            "election_date": config["election_date"],
-            "candidate_id": "residual",
-            "candidate_name": "Other candidates",
-            "share": round(residual_share, 4),
-            "is_residual": True,
-            "source_url": source_url,
-        })
+        outcome_rows.append(
+            {
+                "election_id": election_id,
+                "election_date": config["election_date"],
+                "candidate_id": "residual",
+                "candidate_name": "Other candidates",
+                "share": round(residual_share, 4),
+                "is_residual": True,
+                "source_url": source_url,
+            }
+        )
 
-    polls = pd.DataFrame(poll_rows).sort_values(["election_id", "date_published", "poll_id", "candidate_id"])
+    polls = pd.DataFrame(poll_rows).sort_values(
+        ["election_id", "date_published", "poll_id", "candidate_id"]
+    )
     outcomes = pd.DataFrame(outcome_rows).sort_values(["election_id", "candidate_id"])
     return polls, outcomes
 
@@ -289,7 +313,9 @@ def main() -> None:
     RAW.mkdir(parents=True, exist_ok=True)
     polls.to_csv(RAW / "historical_mayoral_polls.csv", index=False)
     outcomes.to_csv(RAW / "historical_mayoral_outcomes.csv", index=False)
-    print(f"Wrote {polls['poll_id'].nunique()} historical polls across {polls['election_id'].nunique()} elections")
+    print(
+        f"Wrote {polls['poll_id'].nunique()} historical polls across {polls['election_id'].nunique()} elections"
+    )
 
 
 if __name__ == "__main__":

@@ -19,9 +19,7 @@ import shutil
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent.parent
-DEFAULT_SOURCE = (
-    ROOT.parent / "defeatability-index" / "data" / "out" / "candidate_history"
-)
+DEFAULT_SOURCE = ROOT.parent / "defeatability-index" / "data" / "out" / "candidate_history"
 DEST = ROOT / "data" / "raw" / "hints"
 
 FILES = ("supported_historical_hints.csv", "historical_hint_contract.json")

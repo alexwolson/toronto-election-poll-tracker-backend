@@ -50,9 +50,7 @@ def _evaluation_cycles():
 
 def _fold(target_cycle_id: str, lead_time: int):
     cycles = _evaluation_cycles()
-    target_cycle = next(
-        cycle for cycle in cycles if cycle.election_cycle_id == target_cycle_id
-    )
+    target_cycle = next(cycle for cycle in cycles if cycle.election_cycle_id == target_cycle_id)
     target_snapshot = next(
         row for row in target_cycle.snapshots if row.days_before_election == lead_time
     )
@@ -60,9 +58,7 @@ def _fold(target_cycle_id: str, lead_time: int):
         TrainingCycle(
             election_cycle_id=cycle.election_cycle_id,
             election_type=cycle.election_type,
-            snapshot=next(
-                row for row in cycle.snapshots if row.days_before_election == lead_time
-            ),
+            snapshot=next(row for row in cycle.snapshots if row.days_before_election == lead_time),
             history=cycle.snapshots,
             outcome=cycle.outcome,
         )
@@ -89,9 +85,7 @@ def test_selector_uses_one_post_final_reading_per_respondent_sample() -> None:
     assert len({row.poll_sample_id for row in selected}) == len(selected)
     assert all(
         next(
-            sample
-            for sample in corpus.poll_samples
-            if sample.poll_sample_id == row.poll_sample_id
+            sample for sample in corpus.poll_samples if sample.poll_sample_id == row.poll_sample_id
         ).fieldwork_end
         >= cycle.snapshots[0].evidence.final_ballot_evidence_available_at.date()
         for row in selected
@@ -101,9 +95,7 @@ def test_selector_uses_one_post_final_reading_per_respondent_sample() -> None:
     # retired slug scheme dropped him — so the selector prefers it over the three-way
     # round and the trend-row proxy for that sample.
     assert "forum_2014_sep22_horserace__r2" in {row.poll_reading_id for row in selected}
-    assert "forum_2014_sep12_three_way_doug" not in {
-        row.poll_reading_id for row in selected
-    }
+    assert "forum_2014_sep12_three_way_doug" not in {row.poll_reading_id for row in selected}
 
 
 def test_selector_can_apply_field_consistency_without_the_date_proxy() -> None:
@@ -153,18 +145,14 @@ def test_selector_prefers_the_source_published_expressed_preference_product() ->
     assert ipsos.poll_reading_id == "ipsos_2023_total_repercentaged"
 
 
-def test_selector_ignores_poll_residual_and_normalizes_only_numeric_candidates() -> (
-    None
-):
+def test_selector_ignores_poll_residual_and_normalizes_only_numeric_candidates() -> None:
     cycle, _ = _cycle("toronto_2018", 1)
     selected = select_mayoral_endpoint_readings(
         cycle.snapshots[0].evidence,
         final_candidate_ids=cycle.outcome.candidate_ids,
     )
     forum = next(
-        row
-        for row in selected
-        if row.poll_reading_id == "forum_2018_oct10_decided_leaning"
+        row for row in selected if row.poll_reading_id == "forum_2018_oct10_decided_leaning"
     )
 
     assert set(forum.candidate_shares) == {
@@ -172,12 +160,12 @@ def test_selector_ignores_poll_residual_and_normalizes_only_numeric_candidates()
         "per_49a098eb192452f988a3a579ef7f9cca",
     }
     assert sum(forum.candidate_shares.values(), Decimal(0)) == Decimal(1)
-    assert forum.candidate_shares["per_a9eb70da799659daaa285f92cfed1674"] == Decimal(
-        56
-    ) / Decimal(85)
-    assert forum.candidate_shares["per_49a098eb192452f988a3a579ef7f9cca"] == Decimal(
-        29
-    ) / Decimal(85)
+    assert forum.candidate_shares["per_a9eb70da799659daaa285f92cfed1674"] == Decimal(56) / Decimal(
+        85
+    )
+    assert forum.candidate_shares["per_49a098eb192452f988a3a579ef7f9cca"] == Decimal(29) / Decimal(
+        85
+    )
 
 
 def test_partial_unknown_head_to_head_is_not_forecast_evidence() -> None:
@@ -194,9 +182,7 @@ def test_non_general_reading_is_not_forecast_evidence_even_in_isolation() -> Non
     cycle, _ = _cycle("toronto_2023", 1)
     evidence = cycle.snapshots[0].evidence
     sample_id = "liaison_city_2023_06_22_23_n1086"
-    sample = next(
-        row for row in evidence.poll_samples if row.poll_sample_id == sample_id
-    )
+    sample = next(row for row in evidence.poll_samples if row.poll_sample_id == sample_id)
     readings = tuple(
         replace(row, reading_purpose="routed_subgroup")
         for row in evidence.poll_readings
@@ -228,9 +214,7 @@ def test_no_poll_endpoint_fails_instead_of_inventing_a_uniform_forecast() -> Non
         lead_times=(28,),
         analysis_time_local=time(12),
     )
-    target_cycle = next(
-        cycle for cycle in cycles if cycle.election_cycle_id == "toronto_2022"
-    )
+    target_cycle = next(cycle for cycle in cycles if cycle.election_cycle_id == "toronto_2022")
     training = tuple(
         TrainingCycle(
             election_cycle_id=cycle.election_cycle_id,
@@ -291,10 +275,7 @@ def test_global_uncertainty_fit_does_not_change_with_target_lead_time() -> None:
         variant="firm-balanced-bridge",
     )
 
-    assert (
-        early_target.snapshot.evidence_revision
-        == late_target.snapshot.evidence_revision
-    )
+    assert early_target.snapshot.evidence_revision == late_target.snapshot.evidence_revision
     assert early.point_shares == late.point_shares
     assert early.tail_mass_total == late.tail_mass_total
     assert early.concentration == late.concentration
@@ -361,10 +342,7 @@ def test_calibration_scale_is_identity_on_an_already_calibrated_anchor() -> None
 def test_ineligible_new_evidence_does_not_change_monte_carlo_draws() -> None:
     early_training, early_target = _fold("toronto_2018", 3)
     late_training, late_target = _fold("toronto_2018", 1)
-    assert (
-        early_target.snapshot.evidence_revision
-        != late_target.snapshot.evidence_revision
-    )
+    assert early_target.snapshot.evidence_revision != late_target.snapshot.evidence_revision
 
     predictor = MayoralEndpointPredictor("firm-balanced-bridge", draw_count=64)
     assert (
@@ -406,9 +384,7 @@ def test_reported_zero_is_treated_as_rounded_support_not_impossibility() -> None
         final_candidate_ids=cycle.outcome.candidate_ids,
     )
     reading = next(
-        row
-        for row in selected
-        if row.poll_reading_id == "liaison_2023_06_22_23_decided"
+        row for row in selected if row.poll_reading_id == "liaison_2023_06_22_23_decided"
     )
 
     assert all(share > 0 for share in reading.candidate_shares.values())

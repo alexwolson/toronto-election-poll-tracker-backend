@@ -264,9 +264,7 @@ _BALLOT_TIMING_NOTES: Final = {
         "The City release establishes that the Final Ballot was publicly known "
         "by August 20; the internal Clerk action date is not modelled."
     ),
-    2023: (
-        "The May 12 certification date establishes the Final Ballot known-by boundary."
-    ),
+    2023: ("The May 12 certification date establishes the Final Ballot known-by boundary."),
 }
 
 _MAPPED_LEGACY_READINGS: Final = {
@@ -1041,34 +1039,23 @@ class HistoricalMayoralCorpus:
 
     def outcome_universe(self, election_cycle_id: str) -> tuple[MayoralOutcome, ...]:
         """Return the complete certified candidate outcome, ordered by candidate ID."""
-        rows = tuple(
-            row for row in self.outcomes if row.election_cycle_id == election_cycle_id
-        )
+        rows = tuple(row for row in self.outcomes if row.election_cycle_id == election_cycle_id)
         if not rows:
             raise KeyError(election_cycle_id)
         return rows
 
-    def outcome_share_vector(
-        self, election_cycle_id: str
-    ) -> tuple[tuple[str, Decimal], ...]:
+    def outcome_share_vector(self, election_cycle_id: str) -> tuple[tuple[str, Decimal], ...]:
         """Return a complete candidate-id/share vector for evaluation adapters."""
         return tuple(
-            (row.candidate_id, row.share)
-            for row in self.outcome_universe(election_cycle_id)
+            (row.candidate_id, row.share) for row in self.outcome_universe(election_cycle_id)
         )
 
-    def readings_for_sample(
-        self, poll_sample_id: str
-    ) -> tuple[HistoricalPollReading, ...]:
+    def readings_for_sample(self, poll_sample_id: str) -> tuple[HistoricalPollReading, ...]:
         return tuple(
-            reading
-            for reading in self.poll_readings
-            if reading.poll_sample_id == poll_sample_id
+            reading for reading in self.poll_readings if reading.poll_sample_id == poll_sample_id
         )
 
-    def responses_for_reading(
-        self, poll_reading_id: str
-    ) -> tuple[HistoricalPollResponse, ...]:
+    def responses_for_reading(self, poll_reading_id: str) -> tuple[HistoricalPollResponse, ...]:
         return tuple(
             response
             for response in self.poll_responses
@@ -1099,9 +1086,7 @@ def load_historical_mayoral_corpus(project_root: str | Path) -> HistoricalMayora
     root = Path(project_root)
     elections = _load_elections(root / "data/raw/elections/mayoral_elections.csv")
     outcomes = _load_outcomes(root / "data/raw/elections/mayoral_outcomes.csv")
-    crosswalk = _load_crosswalk(
-        root / "data/raw/polls/legacy_historical_poll_crosswalk.csv"
-    )
+    crosswalk = _load_crosswalk(root / "data/raw/polls/legacy_historical_poll_crosswalk.csv")
     poll_sources = load_poll_source_bundle(
         root / "data/raw/polls/historical_mayoral",
         require_audited_sources=True,
@@ -1124,9 +1109,7 @@ def audit_historical_mayoral_corpus(
     corpus: HistoricalMayoralCorpus,
 ) -> HistoricalMayoralAudit:
     non_poll = {
-        row.legacy_poll_id
-        for row in corpus.legacy_crosswalk
-        if row.disposition == "non_poll"
+        row.legacy_poll_id for row in corpus.legacy_crosswalk if row.disposition == "non_poll"
     }
     inventory_ids = {
         row.poll_sample_id
@@ -1215,10 +1198,7 @@ def build_mayoral_outcome_rows(
     winners_by_year: dict[int, set[str]] = defaultdict(set)
     with open(canonical_results_path, newline="", encoding="utf-8") as handle:
         for row in csv.DictReader(handle):
-            if (
-                row["represented_body"] != "toronto_city_council"
-                or row["office_type"] != "mayor"
-            ):
+            if row["represented_body"] != "toronto_city_council" or row["office_type"] != "mayor":
                 continue
             year = int(row["election_year"])
             if year not in _ELECTION_CONFIG:
@@ -1231,9 +1211,7 @@ def build_mayoral_outcome_rows(
                 )
             bucket = grouped.setdefault(year, {})
             if candidate_id in bucket:
-                raise HistoricalMayoralDataError(
-                    f"duplicate {year} candidate id {candidate_id!r}"
-                )
+                raise HistoricalMayoralDataError(f"duplicate {year} candidate id {candidate_id!r}")
             bucket[candidate_id] = {
                 "candidate_name": row["candidate_name"],
                 "candidate_name_as_reported": row["candidate_name_raw"],
@@ -1243,9 +1221,7 @@ def build_mayoral_outcome_rows(
                 winners_by_year[year].add(candidate_id)
     for year in grouped:
         if len(winners_by_year.get(year, set())) != 1:
-            raise HistoricalMayoralDataError(
-                f"{year} must identify exactly one official winner"
-            )
+            raise HistoricalMayoralDataError(f"{year} must identify exactly one official winner")
 
     expected_counts = {
         2003: 44,
@@ -1281,17 +1257,14 @@ def build_mayoral_outcome_rows(
                     "election_cycle_id": _ELECTION_CONFIG[year][0],
                     "candidate_id": candidate_id,
                     "candidate_name": str(info["candidate_name"]),
-                    "candidate_name_as_reported": str(
-                        info["candidate_name_as_reported"]
-                    ),
+                    "candidate_name_as_reported": str(info["candidate_name_as_reported"]),
                     "votes": str(votes),
                     "valid_vote_total": str(total),
                     "share": format(Decimal(votes) / Decimal(total), ".18f"),
                     "is_winner": str(candidate_id in winners_by_year[year]).lower(),
                     "source_document_id": "election_results",
                     "source_locator": (
-                        "represented_body=toronto_city_council;"
-                        f"office_type=mayor;year={year}"
+                        f"represented_body=toronto_city_council;office_type=mayor;year={year}"
                     ),
                 }
             )
@@ -1316,18 +1289,14 @@ def build_legacy_crosswalk_rows(legacy_poll_path: str | Path) -> list[dict[str, 
         )
         for field in invariant_fields:
             if {row[field] for row in group} != {first[field]}:
-                raise HistoricalMayoralDataError(
-                    f"legacy poll {legacy_id!r} disagrees on {field}"
-                )
+                raise HistoricalMayoralDataError(f"legacy poll {legacy_id!r} disagrees on {field}")
         election_id = _required(first, "election_id")
         firm = _required(first, "firm")
         legacy_date = _required(first, "date_published")
         sample_token = first["sample_size"] or "missing"
         firm_slug = _slug(firm)
         proxy_key = f"{election_id}|{firm_slug}|{legacy_date}|{sample_token}"
-        staging_sample_id = (
-            f"staging:{election_id}:{firm_slug}:{legacy_date}:n{sample_token}"
-        )
+        staging_sample_id = f"staging:{election_id}:{firm_slug}:{legacy_date}:n{sample_token}"
         if legacy_id == _NON_POLL_LEGACY_ID:
             disposition = "non_poll"
             sample_id = ""
@@ -1344,9 +1313,7 @@ def build_legacy_crosswalk_rows(legacy_poll_path: str | Path) -> list[dict[str, 
             disposition = "no_public_source"
             sample_id = staging_sample_id
             reading_id = ""
-            notes = _NO_PUBLIC_SOURCE_NOTES.get(
-                legacy_id, _NO_PUBLIC_SOURCE_DEFAULT_NOTE
-            )
+            notes = _NO_PUBLIC_SOURCE_NOTES.get(legacy_id, _NO_PUBLIC_SOURCE_DEFAULT_NOTE)
         else:
             disposition = "unresolved"
             sample_id = staging_sample_id
@@ -1398,8 +1365,7 @@ def _load_elections(path: Path) -> tuple[MayoralElection, ...]:
             nomination_close_date <= final_ballot_known_by <= election_date
         ):
             raise HistoricalMayoralDataError(
-                "Final Ballot known-by date must fall between nomination close "
-                "and election day"
+                "Final Ballot known-by date must fall between nomination close and election day"
             )
         election_type = _required(row, "election_type")
         if election_type not in {"general", "by_election"}:
@@ -1444,9 +1410,7 @@ def _load_outcomes(path: Path) -> tuple[MayoralOutcome, ...]:
                 source_locator=_required(row, "source_locator"),
             )
         )
-    return tuple(
-        sorted(result, key=lambda row: (row.election_cycle_id, row.candidate_id))
-    )
+    return tuple(sorted(result, key=lambda row: (row.election_cycle_id, row.candidate_id)))
 
 
 def _load_crosswalk(path: Path) -> tuple[LegacyPollCrosswalk, ...]:
@@ -1490,8 +1454,7 @@ def _poll_candidate_ids_resolve_to_outcomes(
     for outcome in corpus.outcomes:
         outcome_ids_by_cycle[outcome.election_cycle_id].add(outcome.candidate_id)
     cycle_by_sample = {
-        sample.poll_sample_id: sample.election_cycle_id
-        for sample in corpus.poll_samples
+        sample.poll_sample_id: sample.election_cycle_id for sample in corpus.poll_samples
     }
     cycle_by_reading = {
         reading.poll_reading_id: cycle_by_sample.get(reading.poll_sample_id)
@@ -1507,15 +1470,12 @@ def _poll_candidate_ids_resolve_to_outcomes(
         ):
             continue
         cycle = cycle_by_reading.get(response.poll_reading_id)
-        if cycle is not None and candidate_id not in outcome_ids_by_cycle.get(
-            cycle, set()
-        ):
+        if cycle is not None and candidate_id not in outcome_ids_by_cycle.get(cycle, set()):
             orphans.add(f"{cycle}:{candidate_id}")
     if orphans:
         raise HistoricalMayoralDataError(
             "poll response pins a canonical candidate id absent from its cycle "
-            "outcome (stale identity link after a canonical refresh): "
-            + ", ".join(sorted(orphans))
+            "outcome (stale identity link after a canonical refresh): " + ", ".join(sorted(orphans))
         )
 
 
@@ -1571,9 +1531,7 @@ def _validate_corpus(corpus: HistoricalMayoralCorpus, legacy_poll_path: Path) ->
             raise HistoricalMayoralDataError(f"duplicate candidate ID for {cycle}")
         total = expected_totals[cycle]
         if {row.valid_vote_total for row in rows} != {total}:
-            raise HistoricalMayoralDataError(
-                f"wrong valid-vote denominator for {cycle}"
-            )
+            raise HistoricalMayoralDataError(f"wrong valid-vote denominator for {cycle}")
         if sum(row.votes for row in rows) != total:
             raise HistoricalMayoralDataError(f"votes do not sum for {cycle}")
         winners = [row for row in rows if row.is_winner]
@@ -1582,9 +1540,7 @@ def _validate_corpus(corpus: HistoricalMayoralCorpus, legacy_poll_path: Path) ->
         for row in rows:
             exact = Decimal(row.votes) / Decimal(total)
             if abs(row.share - exact) > Decimal("0.000000000000000001"):
-                raise HistoricalMayoralDataError(
-                    f"incorrect share for {cycle}/{row.candidate_id}"
-                )
+                raise HistoricalMayoralDataError(f"incorrect share for {cycle}/{row.candidate_id}")
 
     samples = {row.poll_sample_id: row for row in corpus.poll_samples}
     readings = {row.poll_reading_id: row for row in corpus.poll_readings}
@@ -1603,13 +1559,8 @@ def _validate_corpus(corpus: HistoricalMayoralCorpus, legacy_poll_path: Path) ->
         if reading.poll_sample_id not in samples:
             raise HistoricalMayoralDataError("reading references unknown sample")
         sample = samples[reading.poll_sample_id]
-        expected_contest_id = sample.election_cycle_id.replace(
-            "toronto_", "toronto-mayor-"
-        )
-        if (
-            reading.contest_type != "mayoral"
-            or reading.contest_id != expected_contest_id
-        ):
+        expected_contest_id = sample.election_cycle_id.replace("toronto_", "toronto-mayor-")
+        if reading.contest_type != "mayoral" or reading.contest_id != expected_contest_id:
             raise HistoricalMayoralDataError(
                 "historical mayoral reading identifies the wrong contest"
             )
@@ -1617,38 +1568,29 @@ def _validate_corpus(corpus: HistoricalMayoralCorpus, legacy_poll_path: Path) ->
         if crosswalk.election_cycle_id not in election_by_id:
             raise HistoricalMayoralDataError("crosswalk references unknown election")
         if crosswalk.disposition == "mapped" and (
-            crosswalk.poll_sample_id not in samples
-            or crosswalk.poll_reading_id not in readings
+            crosswalk.poll_sample_id not in samples or crosswalk.poll_reading_id not in readings
         ):
             raise HistoricalMayoralDataError("mapped crosswalk target is missing")
         if (
             crosswalk.disposition == "mapped"
-            and samples[crosswalk.poll_sample_id].election_cycle_id
-            != crosswalk.election_cycle_id
+            and samples[crosswalk.poll_sample_id].election_cycle_id != crosswalk.election_cycle_id
         ):
-            raise HistoricalMayoralDataError(
-                "mapped crosswalk sample belongs to another election"
-            )
+            raise HistoricalMayoralDataError("mapped crosswalk sample belongs to another election")
         if crosswalk.disposition == "non_poll" and (
-            crosswalk.poll_sample_id is not None
-            or crosswalk.poll_reading_id is not None
+            crosswalk.poll_sample_id is not None or crosswalk.poll_reading_id is not None
         ):
             raise HistoricalMayoralDataError("non-poll crosswalk row has canonical IDs")
 
     legacy_rows = _read_csv(legacy_poll_path, _LEGACY_POLL_COLUMNS)
     legacy_ids = {row["poll_id"] for row in legacy_rows}
     if legacy_ids != {row.legacy_poll_id for row in corpus.legacy_crosswalk}:
-        raise HistoricalMayoralDataError(
-            "legacy crosswalk does not cover every poll ID"
-        )
+        raise HistoricalMayoralDataError("legacy crosswalk does not cover every poll ID")
 
     _poll_candidate_ids_resolve_to_outcomes(corpus)
 
 
 def _normalized_name(value: str) -> str:
-    ascii_value = (
-        unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
-    )
+    ascii_value = unicodedata.normalize("NFKD", value).encode("ascii", "ignore").decode()
     return re.sub(r"[^a-z0-9]+", " ", ascii_value.casefold()).strip()
 
 
@@ -1679,13 +1621,9 @@ def _read_dict_rows(path: Path) -> list[dict[str, str]]:
         rows: list[dict[str, str]] = []
         for row_number, row in enumerate(reader, start=2):
             if None in row:
-                raise HistoricalMayoralDataError(
-                    f"{path.name} row {row_number} is ragged"
-                )
+                raise HistoricalMayoralDataError(f"{path.name} row {row_number} is ragged")
             if all(value == "" for value in row.values()):
-                raise HistoricalMayoralDataError(
-                    f"{path.name} row {row_number} is blank"
-                )
+                raise HistoricalMayoralDataError(f"{path.name} row {row_number} is blank")
             rows.append(row)
         return rows
 

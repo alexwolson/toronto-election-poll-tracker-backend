@@ -37,6 +37,7 @@ Replace the three fundraising-tier tests in `tests/model/test_validate.py` with 
 
 ```python
 """Tests for input validation functions."""
+
 import pandas as pd
 import pytest
 from backend.model.validate import (
@@ -80,13 +81,17 @@ def test_validate_challengers_accepts_pipe_separated_endorsers():
 
 def test_validate_challengers_rejects_missing_endorsements_column():
     """Missing endorsements column must raise ValidationError."""
-    df = pd.DataFrame([{
-        "ward": 1,
-        "candidate_name": "Test Candidate",
-        "name_recognition_tier": "known",
-        "mayoral_alignment": "unaligned",
-        "last_updated": "2026-01-01",
-    }])
+    df = pd.DataFrame(
+        [
+            {
+                "ward": 1,
+                "candidate_name": "Test Candidate",
+                "name_recognition_tier": "known",
+                "mayoral_alignment": "unaligned",
+                "last_updated": "2026-01-01",
+            }
+        ]
+    )
     with pytest.raises(ValidationError, match="endorsements"):
         validate_challengers(df)
 ```
@@ -186,6 +191,7 @@ def test_endorsement_count_boosts_candidate_strength():
     an identical candidate with 0 endorsements, all else equal.
     """
     from backend.model.simulation import ENDORSEMENT_WEIGHT
+
     ward = 5
 
     def _run_with_endorsements(endorsements: str) -> float:
@@ -246,8 +252,7 @@ def _compute_candidate_strength(
     boost = 0.0
     if alignment != "unaligned":
         lean_row = self.leans[
-            (self.leans["ward"] == ward_num)
-            & (self.leans["candidate"] == alignment)
+            (self.leans["ward"] == ward_num) & (self.leans["candidate"] == alignment)
         ]
         if not lean_row.empty:
             lean = lean_row.iloc[0]["lean"]
@@ -290,38 +295,52 @@ from backend.model.run import _derive_endorsed_by_departing
 
 
 def _ward_data(ward: int, councillor_name: str, is_running: bool) -> pd.DataFrame:
-    return pd.DataFrame([{
-        "ward": ward,
-        "councillor_name": councillor_name,
-        "is_running": is_running,
-        "defeatability_score": 20,
-    }])
+    return pd.DataFrame(
+        [
+            {
+                "ward": ward,
+                "councillor_name": councillor_name,
+                "is_running": is_running,
+                "defeatability_score": 20,
+            }
+        ]
+    )
 
 
 def test_derive_endorsed_by_departing_detects_match():
     """Challenger whose endorsements include the departing councillor's name
     should have is_endorsed_by_departing=True."""
     ward_data = _ward_data(5, "Paula Fletcher", is_running=False)
-    challengers = pd.DataFrame([{
-        "ward": 5,
-        "candidate_name": "Challenger A",
-        "endorsements": "Paula Fletcher|CUPE Local 79",
-    }])
+    challengers = pd.DataFrame(
+        [
+            {
+                "ward": 5,
+                "candidate_name": "Challenger A",
+                "endorsements": "Paula Fletcher|CUPE Local 79",
+            }
+        ]
+    )
 
     result = _derive_endorsed_by_departing(challengers, ward_data)
 
-    assert result.loc[0, "is_endorsed_by_departing"] is True or \
-           result.loc[0, "is_endorsed_by_departing"] == True
+    assert (
+        result.loc[0, "is_endorsed_by_departing"] is True
+        or result.loc[0, "is_endorsed_by_departing"] == True
+    )
 
 
 def test_derive_endorsed_by_departing_no_match():
     """Challenger without the departing councillor in endorsements gets False."""
     ward_data = _ward_data(5, "Paula Fletcher", is_running=False)
-    challengers = pd.DataFrame([{
-        "ward": 5,
-        "candidate_name": "Challenger A",
-        "endorsements": "CUPE Local 79",
-    }])
+    challengers = pd.DataFrame(
+        [
+            {
+                "ward": 5,
+                "candidate_name": "Challenger A",
+                "endorsements": "CUPE Local 79",
+            }
+        ]
+    )
 
     result = _derive_endorsed_by_departing(challengers, ward_data)
 
@@ -332,11 +351,15 @@ def test_derive_endorsed_by_departing_incumbent_ward_is_false():
     """Wards where the incumbent is running have no departing councillor;
     is_endorsed_by_departing must be False."""
     ward_data = _ward_data(3, "Mike Colle", is_running=True)
-    challengers = pd.DataFrame([{
-        "ward": 3,
-        "candidate_name": "Challenger B",
-        "endorsements": "Mike Colle",
-    }])
+    challengers = pd.DataFrame(
+        [
+            {
+                "ward": 3,
+                "candidate_name": "Challenger B",
+                "endorsements": "Mike Colle",
+            }
+        ]
+    )
 
     result = _derive_endorsed_by_departing(challengers, ward_data)
 
@@ -346,11 +369,15 @@ def test_derive_endorsed_by_departing_incumbent_ward_is_false():
 def test_derive_endorsed_by_departing_empty_endorsements():
     """Empty endorsements string yields False even for open seats."""
     ward_data = _ward_data(7, "Michael Thompson", is_running=False)
-    challengers = pd.DataFrame([{
-        "ward": 7,
-        "candidate_name": "Challenger C",
-        "endorsements": "",
-    }])
+    challengers = pd.DataFrame(
+        [
+            {
+                "ward": 7,
+                "candidate_name": "Challenger C",
+                "endorsements": "",
+            }
+        ]
+    )
 
     result = _derive_endorsed_by_departing(challengers, ward_data)
 
@@ -400,9 +427,7 @@ def _derive_endorsed_by_departing(
 Replace `_ensure_generic_challenger` (lines 62–101) to remove `fundraising_tier` and `is_endorsed_by_departing` from the required columns and defaults, and add `endorsements`:
 
 ```python
-def _ensure_generic_challenger(
-    challengers: pd.DataFrame, ward_data: pd.DataFrame
-) -> pd.DataFrame:
+def _ensure_generic_challenger(challengers: pd.DataFrame, ward_data: pd.DataFrame) -> pd.DataFrame:
     required_cols = [
         "ward",
         "candidate_name",
@@ -445,20 +470,14 @@ def _ensure_generic_challenger(
 Then in `run_model()`, call `_derive_endorsed_by_departing` immediately after `_ensure_generic_challenger`. The relevant section currently reads:
 
 ```python
-data["challengers"] = _ensure_generic_challenger(
-    data["challengers"], data["defeatability"]
-)
+data["challengers"] = _ensure_generic_challenger(data["challengers"], data["defeatability"])
 ```
 
 Update it to:
 
 ```python
-data["challengers"] = _ensure_generic_challenger(
-    data["challengers"], data["defeatability"]
-)
-data["challengers"] = _derive_endorsed_by_departing(
-    data["challengers"], data["defeatability"]
-)
+data["challengers"] = _ensure_generic_challenger(data["challengers"], data["defeatability"])
+data["challengers"] = _derive_endorsed_by_departing(data["challengers"], data["defeatability"])
 ```
 
 - [ ] **Step 4: Run all run/validate tests**

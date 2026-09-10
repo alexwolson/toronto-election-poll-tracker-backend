@@ -47,9 +47,7 @@ TABLES = (
     (
         ROOT / "data/raw/polls/legacy_historical_poll_crosswalk.csv",
         CROSSWALK_COLUMNS,
-        lambda: build_legacy_crosswalk_rows(
-            ROOT / "data/raw/polls/historical_mayoral_polls.csv"
-        ),
+        lambda: build_legacy_crosswalk_rows(ROOT / "data/raw/polls/historical_mayoral_polls.csv"),
     ),
 )
 
@@ -72,9 +70,7 @@ def _rebuild(*, write: bool) -> None:
         elif not path.is_file() or path.read_text(encoding="utf-8") != rendered:
             stale.append(str(path.relative_to(ROOT)))
     if stale:
-        raise SystemExit(
-            "Canonical historical tables are stale or missing: " + ", ".join(stale)
-        )
+        raise SystemExit("Canonical historical tables are stale or missing: " + ", ".join(stale))
 
 
 def main() -> None:
