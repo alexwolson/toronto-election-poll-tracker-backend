@@ -153,7 +153,7 @@ def test_leave_one_pollster_out_is_not_applicable_below_three_pollsters() -> Non
     assert sum(label.startswith("leave-out-pollster:") for label in three) == 3
 
 
-def test_uncertified_forecast_is_unavailable_at_tier_m1() -> None:
+def test_uncertified_forecast_is_unavailable_at_tier_m1(monkeypatch) -> None:
     # Before the field is certified the tier is M1 and every predictive quantity is
     # tier-gated Unavailable (no variant suite is run).
     live_cycle = {
@@ -164,6 +164,10 @@ def test_uncertified_forecast_is_unavailable_at_tier_m1() -> None:
         "viable_field": ["chow", "bradford", "alexander"],
         "incumbent_candidate_id": "chow",
     }
+    monkeypatch.setattr(
+        "backend.model.mayoral_forecast_feed.load_canonical_mayoral_candidate_ids",
+        lambda _: CANDS,
+    )
     feed = build_mayoral_forecast_feed(ROOT, live_cycle, polls_dir=ROOT / "data/raw/polls")
     assert feed["evidence_tier"] == "M1 — Pre-Final Polling"
     assert feed["close_result"]["availability"] == "Forecast Unavailable"
