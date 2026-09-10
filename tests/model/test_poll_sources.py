@@ -216,9 +216,7 @@ def _write_bundle(
     selected_columns = columns or _COLUMNS
     for filename, expected_columns in selected_columns.items():
         with (directory / filename).open("w", encoding="utf-8", newline="") as handle:
-            writer = csv.DictWriter(
-                handle, fieldnames=expected_columns, extrasaction="ignore"
-            )
+            writer = csv.DictWriter(handle, fieldnames=expected_columns, extrasaction="ignore")
             writer.writeheader()
             writer.writerows(tables[filename])
 
@@ -315,9 +313,7 @@ def test_rejects_reading_base_larger_than_recruited_sample(tmp_path: Path) -> No
     tables["poll_readings.csv"][0]["unweighted_base"] = "801"
     _write_bundle(tmp_path, tables)
 
-    with pytest.raises(
-        PollSourceContractError, match="larger than its recruited sample"
-    ):
+    with pytest.raises(PollSourceContractError, match="larger than its recruited sample"):
         load_poll_source_bundle(tmp_path)
 
 
@@ -343,9 +339,7 @@ def test_accepts_offered_candidate_without_inventing_a_share(tmp_path: Path) -> 
     bundle = load_poll_source_bundle(tmp_path)
 
     loaded = next(
-        response
-        for response in bundle.poll_responses
-        if response.candidate_id == "layton"
+        response for response in bundle.poll_responses if response.candidate_id == "layton"
     )
     assert loaded.candidate_observation_status == "offered_not_individually_published"
     assert loaded.share is None
@@ -623,8 +617,7 @@ def test_verifies_docx_as_an_ooxml_zip_artifact(tmp_path: Path) -> None:
     document.update(
         {
             "media_type": (
-                "application/vnd.openxmlformats-officedocument."
-                "wordprocessingml.document"
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             ),
             "local_path": "data/source_documents/current_mayoral/release.docx",
             "byte_size": str(len(payload)),
@@ -719,8 +712,7 @@ def test_ooxml_verifier_rejects_bad_crc(tmp_path: Path) -> None:
     document.update(
         {
             "media_type": (
-                "application/vnd.openxmlformats-officedocument."
-                "wordprocessingml.document"
+                "application/vnd.openxmlformats-officedocument.wordprocessingml.document"
             ),
             "local_path": relative_path,
             "byte_size": str(len(payload)),
@@ -745,16 +737,12 @@ def test_tracked_current_poll_source_inventory() -> None:
     assert len(bundle.poll_readings) == 62
     assert len(bundle.poll_responses) == 274
 
-    documents = {
-        document.source_document_id: document for document in bundle.source_documents
-    }
+    documents = {document.source_document_id: document for document in bundle.source_documents}
     samples = {sample.poll_sample_id: sample for sample in bundle.poll_samples}
     readings = {reading.poll_reading_id: reading for reading in bundle.poll_readings}
     readings_by_sample = {
         sample_id: [
-            reading
-            for reading in bundle.poll_readings
-            if reading.poll_sample_id == sample_id
+            reading for reading in bundle.poll_readings if reading.poll_sample_id == sample_id
         ]
         for sample_id in samples
     }
@@ -786,16 +774,12 @@ def test_tracked_current_poll_source_inventory() -> None:
     citywide_responses = [
         response
         for response in bundle.poll_responses
-        if samples[readings[response.poll_reading_id].poll_sample_id].geography_type
-        == "citywide"
+        if samples[readings[response.poll_reading_id].poll_sample_id].geography_type == "citywide"
     ]
     assert len(citywide_readings) == 49
     assert len(citywide_responses) == 225
     assert (
-        sum(
-            reading.reading_purpose == "general_vote_intention"
-            for reading in citywide_readings
-        )
+        sum(reading.reading_purpose == "general_vote_intention" for reading in citywide_readings)
         == 48
     )
     assert readings["canadapulse_20251006_mayor_all"].reading_purpose == "context_only"
@@ -827,8 +811,7 @@ def test_tracked_current_poll_source_inventory() -> None:
     )
     ordered_response_samples = list(
         dict.fromkeys(
-            readings[response.poll_reading_id].poll_sample_id
-            for response in citywide_responses
+            readings[response.poll_reading_id].poll_sample_id for response in citywide_responses
         )
     )
     assert ordered_reading_samples == expected_citywide_order
@@ -866,9 +849,7 @@ def test_tracked_current_poll_source_inventory() -> None:
         if link.poll_sample_id == "canadapulse-2025-10-06"
         and link.source_document_id == "canadapulse_2025-10-06_tables"
     )
-    assert canada_link.sample_locator == (
-        "sheet Toronto Civic 10 25; mayoral block A333:C370"
-    )
+    assert canada_link.sample_locator == ("sheet Toronto Civic 10 25; mayoral block A333:C370")
 
     forum_sample = samples["forum-2025-09-04"]
     forum_readings = readings_by_sample[forum_sample.poll_sample_id]
@@ -882,9 +863,7 @@ def test_tracked_current_poll_source_inventory() -> None:
         readings["forum_20250904_mayor_chow_bailao"],
     ]
     assert all(reading.unweighted_base == 1001 for reading in forum_head_to_heads)
-    assert all(
-        reading.weighted_base == Decimal(1001) for reading in forum_head_to_heads
-    )
+    assert all(reading.weighted_base == Decimal(1001) for reading in forum_head_to_heads)
 
     liaison_june_all = readings["liaison_20260628_30_mayor_all"]
     liaison_june_decided = readings["liaison_20260628_30_mayor_decided"]
@@ -904,14 +883,8 @@ def test_tracked_current_poll_source_inventory() -> None:
         "bradford": Decimal("0.40"),
         "someone-else": Decimal("0.10"),
     }
-    assert (
-        readings["liaison_20260724_26_mayor_decided_leaning"].denominator_type
-        == "custom"
-    )
-    assert (
-        readings["liaison_20260804_05_mayor_decided_leaning"].denominator_type
-        == "custom"
-    )
+    assert readings["liaison_20260724_26_mayor_decided_leaning"].denominator_type == "custom"
+    assert readings["liaison_20260804_05_mayor_decided_leaning"].denominator_type == "custom"
 
     candidate_ids = {
         response.candidate_id
@@ -920,21 +893,15 @@ def test_tracked_current_poll_source_inventory() -> None:
     }
     assert "ford" not in candidate_ids
     michael_ford_rows = [
-        response
-        for response in bundle.poll_responses
-        if response.candidate_id == "michael-ford"
+        response for response in bundle.poll_responses if response.candidate_id == "michael-ford"
     ]
     assert len(michael_ford_rows) == 4
     assert {response.response_option_id for response in michael_ford_rows} == {
         "candidate-michael-ford"
     }
-    assert {response.candidate_name for response in michael_ford_rows} == {
-        "Michael Ford"
-    }
+    assert {response.candidate_name for response in michael_ford_rows} == {"Michael Ford"}
     bailao_rows = [
-        response
-        for response in bundle.poll_responses
-        if response.candidate_id == "bailao"
+        response for response in bundle.poll_responses if response.candidate_id == "bailao"
     ]
     assert {response.candidate_name for response in bailao_rows} == {"Ana Bailão"}
     assert "Ana Bailao" in {response.response_label for response in bailao_rows}

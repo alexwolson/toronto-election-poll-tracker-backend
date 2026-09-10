@@ -22,9 +22,7 @@ STAGING = ROOT / "tmp/ingest_staging"
 
 
 def _page_count(pdf: Path) -> int:
-    out = subprocess.run(
-        ["pdfinfo", str(pdf)], capture_output=True, text=True, check=True
-    ).stdout
+    out = subprocess.run(["pdfinfo", str(pdf)], capture_output=True, text=True, check=True).stdout
     for line in out.splitlines():
         if line.startswith("Pages:"):
             return int(line.split()[1])
@@ -52,9 +50,7 @@ def prepare(doc: dict) -> dict:
         )
     for old in stage.glob("page-*.png"):
         old.unlink()
-    subprocess.run(
-        ["pdftoppm", "-png", "-r", "175", str(local), str(stage / "page")], check=True
-    )
+    subprocess.run(["pdftoppm", "-png", "-r", "175", str(local), str(stage / "page")], check=True)
     images = sorted(str(p) for p in stage.glob("page-*.png"))
     meta = {
         "doc_id": did,

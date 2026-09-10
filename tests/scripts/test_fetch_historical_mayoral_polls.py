@@ -10,14 +10,8 @@ import pytest
 
 @pytest.fixture(scope="module")
 def historical_fetcher():
-    script = (
-        Path(__file__).resolve().parents[2]
-        / "scripts"
-        / "fetch_historical_mayoral_polls.py"
-    )
-    spec = importlib.util.spec_from_file_location(
-        "scripts.fetch_historical_mayoral_polls", script
-    )
+    script = Path(__file__).resolve().parents[2] / "scripts" / "fetch_historical_mayoral_polls.py"
+    spec = importlib.util.spec_from_file_location("scripts.fetch_historical_mayoral_polls", script)
     assert spec is not None and spec.loader is not None
     module = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(module)
@@ -47,7 +41,5 @@ def test_date_uses_end_of_fieldwork_range(historical_fetcher, raw, expected):
         ("—", None),
     ],
 )
-def test_sample_size_preserves_thousands_separator(
-    historical_fetcher, raw, expected
-):
+def test_sample_size_preserves_thousands_separator(historical_fetcher, raw, expected):
     assert historical_fetcher._sample(raw) == expected

@@ -27,8 +27,7 @@ def _copy_bundle(tmp_path: Path) -> Path:
 
 def _counts(bundle_dir: Path) -> dict[str, int]:
     return {
-        table: sum(1 for _ in csv.DictReader(open(bundle_dir / f"{table}.csv")))
-        for table in TABLES
+        table: sum(1 for _ in csv.DictReader(open(bundle_dir / f"{table}.csv"))) for table in TABLES
     }
 
 

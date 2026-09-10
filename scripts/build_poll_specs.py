@@ -196,8 +196,7 @@ def _candidate_key(responses) -> tuple:
         sorted(
             str(r["label"]).strip().lower()
             for r in responses
-            if r.get("kind") == "candidate"
-            and str(r["label"]).strip().lower() not in DK
+            if r.get("kind") == "candidate" and str(r["label"]).strip().lower() not in DK
         )
     )
 
@@ -260,9 +259,7 @@ def _sample_row(sample_id, cycle, base, firm_cfg, *, fw_start, fw_end, n):
     }
 
 
-def _emit_reading(
-    did, r, order, sample_id, year, firm_cfg, seen, readings, responses, problems
-):
+def _emit_reading(did, r, order, sample_id, year, firm_cfg, seen, readings, responses, problems):
     """Append one reading + its responses to the accumulators.
 
     Dedupes by candidate set within ``seen``; a recurring candidate set with
@@ -279,8 +276,7 @@ def _emit_reading(
     if key in seen:
         if seen[key] != values:
             problems.append(
-                f"scenario {r['scenario_label']!r} differs across documents "
-                f"in sample {sample_id}"
+                f"scenario {r['scenario_label']!r} differs across documents in sample {sample_id}"
             )
         return
     seen[key] = values
@@ -310,9 +306,7 @@ def _emit_reading(
             "contest_type": "mayoral",
             "contest_id": f"toronto-mayor-{year}",
             "question_order_status": "not_reported",
-            "question_text_status": "reported"
-            if r.get("question_text")
-            else "not_reported",
+            "question_text_status": "reported" if r.get("question_text") else "not_reported",
             "question_text": r.get("question_text", ""),
             "scenario_label": r["scenario_label"],
             "document_display_order": str(order),
@@ -390,9 +384,7 @@ def build_spec(group, cycle, *, retrieved_at=None):
     n = base["recruited_sample_size"]
     for _, md in group:
         if (md["fieldwork_end"], md["recruited_sample_size"]) != (fw_end, n):
-            raise IngestError(
-                "build_spec group does not share a single sample identity"
-            )
+            raise IngestError("build_spec group does not share a single sample identity")
     sample_id = f"{firm_cfg['prefix']}_{fw_end.replace('-', '_')}_n{n}"
     year = cycle.split("_")[1]
 
@@ -510,9 +502,7 @@ def build_multiwave_spec(meta, merged, waves, cycle, *, retrieved_at=None):
 
     for _, r in indexed:
         if int(r["base"]) not in base_to_wave:
-            problems.append(
-                f"reading {r['scenario_label']!r} base {r['base']} matches no wave"
-            )
+            problems.append(f"reading {r['scenario_label']!r} base {r['base']} matches no wave")
 
     spec = {
         "source_documents": docs,

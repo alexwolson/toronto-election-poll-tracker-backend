@@ -30,16 +30,12 @@ def _rows(relative_path: str) -> list[dict[str, str]]:
 
 
 def test_committed_tables_equal_a_fresh_source_reconstruction() -> None:
-    assert _rows("data/raw/elections/mayoral_elections.csv") == (
-        build_mayoral_election_rows()
-    )
+    assert _rows("data/raw/elections/mayoral_elections.csv") == (build_mayoral_election_rows())
     assert _rows("data/raw/elections/mayoral_outcomes.csv") == (
         build_mayoral_outcome_rows(ROOT / "data/raw/canonical/election_results.csv")
     )
     assert _rows("data/raw/polls/legacy_historical_poll_crosswalk.csv") == (
-        build_legacy_crosswalk_rows(
-            ROOT / "data/raw/polls/historical_mayoral_polls.csv"
-        )
+        build_legacy_crosswalk_rows(ROOT / "data/raw/polls/historical_mayoral_polls.csv")
     )
 
 
@@ -104,14 +100,10 @@ def test_one_person_id_may_span_different_reported_names_across_cycles() -> None
     person_id = "per_3d3501723d055766800769f77751b3bf"
 
     brown_2022 = next(
-        row
-        for row in corpus.outcome_universe("toronto_2022")
-        if row.candidate_id == person_id
+        row for row in corpus.outcome_universe("toronto_2022") if row.candidate_id == person_id
     )
     brown_2023 = next(
-        row
-        for row in corpus.outcome_universe("toronto_2023")
-        if row.candidate_id == person_id
+        row for row in corpus.outcome_universe("toronto_2023") if row.candidate_id == person_id
     )
     assert brown_2022.candidate_name == "Chloe-Marie Brown"
     assert brown_2023.candidate_name == "Chloe Brown"
@@ -138,9 +130,7 @@ def test_gate_rejects_a_stale_canonical_poll_id_absent_from_the_outcome() -> Non
         and response.candidate_id.startswith(("per_", "can_"))
     )
     stale = replace(victim, candidate_id="per_" + "0" * 32)
-    responses = (
-        corpus.poll_responses[:index] + (stale,) + corpus.poll_responses[index + 1 :]
-    )
+    responses = corpus.poll_responses[:index] + (stale,) + corpus.poll_responses[index + 1 :]
     stale_corpus = replace(corpus, poll_responses=responses)
 
     with pytest.raises(HistoricalMayoralDataError, match="stale identity link"):
@@ -153,21 +143,14 @@ def test_final_ballot_known_by_dates_are_conservative_replay_boundaries() -> Non
 
     assert elections["toronto_2014"].nomination_close_date == date(2014, 9, 12)
     assert elections["toronto_2014"].final_ballot_known_by_date == date(2014, 9, 15)
-    assert (
-        elections["toronto_2014"].final_ballot_known_by_status == "statutory_deadline"
-    )
+    assert elections["toronto_2014"].final_ballot_known_by_status == "statutory_deadline"
     assert elections["toronto_2014"].final_ballot_evidence_available_at == (
         datetime.fromisoformat("2014-09-16T00:00:00-04:00")
     )
     assert elections["toronto_2018"].final_ballot_known_by_date == date(2018, 7, 30)
-    assert (
-        elections["toronto_2018"].final_ballot_known_by_status
-        == "certification_date_reported"
-    )
+    assert elections["toronto_2018"].final_ballot_known_by_status == "certification_date_reported"
     assert elections["toronto_2022"].final_ballot_known_by_date == date(2022, 8, 20)
-    assert (
-        elections["toronto_2022"].final_ballot_known_by_status == "publicly_announced"
-    )
+    assert elections["toronto_2022"].final_ballot_known_by_status == "publicly_announced"
     assert elections["toronto_2022"].final_ballot_evidence_available_at == (
         datetime.fromisoformat("2022-08-21T00:00:00-04:00")
     )
@@ -191,9 +174,7 @@ def test_only_audited_poll_sources_enter_the_canonical_seam() -> None:
     assert len(corpus.poll_responses) == 1531
     assert len(corpus.source_documents) == 139
     assert len(corpus.poll_sample_documents) == 141
-    assert all(
-        sample.extraction_status == "extracted" for sample in corpus.poll_samples
-    )
+    assert all(sample.extraction_status == "extracted" for sample in corpus.poll_samples)
     assert all(
         document.retrieval_status == "retrieved"
         and document.visual_qa_status in {"passed", "not_applicable"}
@@ -203,13 +184,10 @@ def test_only_audited_poll_sources_enter_the_canonical_seam() -> None:
         response.response_kind for response in corpus.poll_responses
     }
     purposes = {
-        reading.poll_reading_id: reading.reading_purpose
-        for reading in corpus.poll_readings
+        reading.poll_reading_id: reading.reading_purpose for reading in corpus.poll_readings
     }
     assert sum(value == "general_vote_intention" for value in purposes.values()) == 257
-    assert purposes["nanos_jul_initially_unsure_leaning"] == (
-        "conditional_lean_followup"
-    )
+    assert purposes["nanos_jul_initially_unsure_leaning"] == ("conditional_lean_followup")
     assert purposes["ipsos_2023_conditional_lean"] == "conditional_lean_followup"
     assert purposes["mainstreet_2023_apr13_no_chow"] == "routed_subgroup"
 
@@ -220,9 +198,7 @@ def test_only_audited_poll_sources_enter_the_canonical_seam() -> None:
         if sample.poll_sample_id == "nanos_city_2014_09_16_20_n1000"
     )
     assert nanos_sample.publication_date == date(2014, 9, 23)
-    assert nanos_sample.evidence_available_at == datetime.fromisoformat(
-        "2014-09-24T00:00:00-04:00"
-    )
+    assert nanos_sample.evidence_available_at == datetime.fromisoformat("2014-09-24T00:00:00-04:00")
     nanos_document_ids = {
         link.source_document_id
         for link in corpus.poll_sample_documents
@@ -273,30 +249,22 @@ def test_viewpoints_may_sample_keeps_timing_conflict_and_reported_rounding() -> 
     assert sample.fieldwork_start == date(2023, 4, 29)
     assert sample.fieldwork_end == date(2023, 5, 2)
     assert sample.publication_date == date(2023, 5, 4)
-    assert sample.evidence_available_at == datetime.fromisoformat(
-        "2023-05-05T00:00:00-04:00"
-    )
+    assert sample.evidence_available_at == datetime.fromisoformat("2023-05-05T00:00:00-04:00")
     article = next(
         document
         for document in corpus.source_documents
         if document.source_document_id == "viewpoints_2023-05-02_article"
     )
     assert "viewpoints.ca/2023/05/" in article.publisher_url
-    assert article.sha256 == (
-        "d1d48fdb5c7230923eb21735ba68d75eea57fa60bc8fd1346f703cd333d13312"
-    )
+    assert article.sha256 == ("d1d48fdb5c7230923eb21735ba68d75eea57fa60bc8fd1346f703cd333d13312")
     assert sample.notes is not None and "header says May 3" in sample.notes
 
     raw = corpus.responses_for_reading("viewpoints_may2_raw")
     decided = corpus.responses_for_reading("viewpoints_may2_decided")
     assert all(row.share is not None for row in raw + decided)
     assert sum((row.share or Decimal() for row in raw), Decimal()) == Decimal("1.002")
-    assert sum((row.share or Decimal() for row in decided), Decimal()) == Decimal(
-        "1.01"
-    )
-    assert "per_27c46c62f83c5dbaae44b65d34a178c6" not in {
-        row.candidate_id for row in raw
-    }
+    assert sum((row.share or Decimal() for row in decided), Decimal()) == Decimal("1.01")
+    assert "per_27c46c62f83c5dbaae44b65d34a178c6" not in {row.candidate_id for row in raw}
     assert "Not sure" in {row.response_label for row in raw}
 
 
@@ -311,8 +279,7 @@ def test_forum_and_liaison_waves_preserve_source_semantics() -> None:
     decided = corpus.responses_for_reading("forum_2023_may26_decided_leaning")
     assert (
         sum(
-            response.candidate_observation_status
-            == "offered_not_individually_published"
+            response.candidate_observation_status == "offered_not_individually_published"
             for response in decided
         )
         == 5
@@ -357,9 +324,7 @@ def test_recovered_forum_and_mainstreet_boundaries_are_cutoff_faithful() -> None
         for sample in corpus.poll_samples
         if sample.poll_sample_id == "forum_city_2014_09_22_n1164"
     )
-    assert forum_sep22.evidence_available_at == datetime.fromisoformat(
-        "2014-09-30T00:00:00-04:00"
-    )
+    assert forum_sep22.evidence_available_at == datetime.fromisoformat("2014-09-30T00:00:00-04:00")
     assert {
         reading.poll_reading_id
         for reading in corpus.readings_for_sample(forum_sep22.poll_sample_id)
@@ -419,9 +384,7 @@ def test_legacy_sample_token_is_not_promoted_to_a_recruited_sample_size() -> Non
     assert june_two.disposition == "mapped"
     assert june_two.legacy_sample_proxy_key.endswith("|7800.0")
     canonical_sample = next(
-        sample
-        for sample in corpus.poll_samples
-        if sample.poll_sample_id == june_two.poll_sample_id
+        sample for sample in corpus.poll_samples if sample.poll_sample_id == june_two.poll_sample_id
     )
     assert canonical_sample.recruited_sample_size == 1004
 

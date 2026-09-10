@@ -26,12 +26,8 @@ def _s(sid, pollster, measured=("chow", "bradford", "alexander")):
 
 
 def test_required_tiers_follow_adr_0033_floors() -> None:
-    assert MAYORAL_QUANTITY_REQUIRED_TIER[CLOSE_RESULT] is (
-        MayoralEvidenceTier.M2_POST_FINAL
-    )
-    assert MAYORAL_QUANTITY_REQUIRED_TIER[INCUMBENT_DEFEAT] is (
-        MayoralEvidenceTier.M2_POST_FINAL
-    )
+    assert MAYORAL_QUANTITY_REQUIRED_TIER[CLOSE_RESULT] is (MayoralEvidenceTier.M2_POST_FINAL)
+    assert MAYORAL_QUANTITY_REQUIRED_TIER[INCUMBENT_DEFEAT] is (MayoralEvidenceTier.M2_POST_FINAL)
     assert MAYORAL_QUANTITY_REQUIRED_TIER[CHALLENGER_WIN] is (
         MayoralEvidenceTier.M3_REPLICATED_POST_FINAL
     )
@@ -42,21 +38,14 @@ def test_frozen_history_counts_clear_the_three_cycle_floor() -> None:
     # quantity. Frozen from the 2003-2023 corpus: M2 in 7, M3 in 6.
     assert MAYORAL_TIER_UNLOCK_MINIMUM_CYCLES == 3
     assert MAYORAL_TIER_HISTORICAL_CYCLE_COUNTS[MayoralEvidenceTier.M2_POST_FINAL] == 7
-    assert (
-        MAYORAL_TIER_HISTORICAL_CYCLE_COUNTS[
-            MayoralEvidenceTier.M3_REPLICATED_POST_FINAL
-        ]
-        == 6
-    )
+    assert MAYORAL_TIER_HISTORICAL_CYCLE_COUNTS[MayoralEvidenceTier.M3_REPLICATED_POST_FINAL] == 6
     for tier, count in MAYORAL_TIER_HISTORICAL_CYCLE_COUNTS.items():
         assert count >= MAYORAL_TIER_UNLOCK_MINIMUM_CYCLES, tier
 
 
 def test_incumbent_defeat_is_not_applicable_in_an_open_seat() -> None:
     tier = _tier([_s("a", "Forum")])  # M2
-    status = mayoral_quantity_gate_status(
-        INCUMBENT_DEFEAT, tier, race_has_incumbent=False
-    )
+    status = mayoral_quantity_gate_status(INCUMBENT_DEFEAT, tier, race_has_incumbent=False)
     assert status is QuantityGateStatus.NOT_APPLICABLE
 
 

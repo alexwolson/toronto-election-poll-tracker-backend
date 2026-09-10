@@ -66,9 +66,7 @@ def load_mayoral_polls(path: str | Path) -> tuple[MayoralPoll, ...]:
                     notes=row["notes"],
                 )
             )
-    return tuple(
-        sorted(polls, key=lambda p: (p.date_published, p.poll_id), reverse=True)
-    )
+    return tuple(sorted(polls, key=lambda p: (p.date_published, p.poll_id), reverse=True))
 
 
 def build_mayoral_polling_feed(path: str | Path) -> dict:

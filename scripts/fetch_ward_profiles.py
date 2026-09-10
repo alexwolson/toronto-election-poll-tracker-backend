@@ -16,7 +16,7 @@ from __future__ import annotations
 
 import io
 import json
-from datetime import datetime, timezone
+from datetime import UTC, datetime
 from pathlib import Path
 
 import openpyxl
@@ -30,8 +30,8 @@ WARD_PROFILES_PACKAGE = "6678e1a6-d25f-4dff-b2b7-aa8f042bc2eb"
 OUTPUT_DIR = Path("data/raw/census")
 
 # Row indices (0-based) in the ward profiles sheets
-_HEADER_ROW_IDX = 17   # [None, "Toronto", "Ward 1", ..., "Ward 25"]
-_POP_ROW_IDX = 18      # "Total - Age" row with population totals
+_HEADER_ROW_IDX = 17  # [None, "Toronto", "Ward 1", ..., "Ward 25"]
+_POP_ROW_IDX = 18  # "Total - Age" row with population totals
 
 _SHEET_2021 = "2021 One Variable"
 _SHEET_2016 = "2016 Census One Variable"
@@ -76,9 +76,7 @@ def _parse_ward_population(wb: openpyxl.Workbook) -> list[dict]:
 
     def _read_sheet(sheet_name: str) -> list[int]:
         if sheet_name not in wb.sheetnames:
-            raise ValueError(
-                f"Sheet '{sheet_name}' not found. Available: {wb.sheetnames}"
-            )
+            raise ValueError(f"Sheet '{sheet_name}' not found. Available: {wb.sheetnames}")
         ws = wb[sheet_name]
         rows = list(ws.iter_rows(values_only=True))
 
@@ -134,7 +132,7 @@ def write_with_sidecar(df: pd.DataFrame, path: Path) -> None:
     df.to_csv(path, index=False)
     sidecar = path.with_suffix(".json")
     sidecar.write_text(
-        json.dumps({"fetched_at": datetime.now(timezone.utc).isoformat()}, indent=2),
+        json.dumps({"fetched_at": datetime.now(UTC).isoformat()}, indent=2),
         encoding="utf-8",
     )
     print(f"  Written: {path} ({len(df)} rows)")
@@ -160,9 +158,7 @@ def main() -> None:
 
     if census_resource is None:
         available = [(r.get("name"), r.get("format")) for r in resources]
-        raise RuntimeError(
-            f"Could not find CensusData XLSX resource. Available: {available}"
-        )
+        raise RuntimeError(f"Could not find CensusData XLSX resource. Available: {available}")
 
     print(f"  Found resource: {census_resource['name']}")
     print(f"  Downloading from {census_resource['url']} ...")

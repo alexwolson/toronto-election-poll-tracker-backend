@@ -37,9 +37,7 @@ def _snapshot(cycle, days_before_election: int):
 def test_adapter_builds_complete_outcomes_and_source_backed_incumbents() -> None:
     cycles = _by_id(_cycles(30))
 
-    assert {
-        cycle_id: len(cycle.outcome.candidate_ids) for cycle_id, cycle in cycles.items()
-    } == {
+    assert {cycle_id: len(cycle.outcome.candidate_ids) for cycle_id, cycle in cycles.items()} == {
         "toronto_2003": 44,
         "toronto_2006": 38,
         "toronto_2010": 40,
@@ -49,8 +47,7 @@ def test_adapter_builds_complete_outcomes_and_source_backed_incumbents() -> None
         "toronto_2023": 102,
     }
     assert {
-        cycle_id: cycle.outcome.incumbent_candidate_id
-        for cycle_id, cycle in cycles.items()
+        cycle_id: cycle.outcome.incumbent_candidate_id for cycle_id, cycle in cycles.items()
     } == {
         "toronto_2003": None,
         "toronto_2006": "per_ad293f1387af572cad45897886519bb6",
@@ -64,9 +61,9 @@ def test_adapter_builds_complete_outcomes_and_source_backed_incumbents() -> None
         set(cycle.outcome.candidate_ids)
         == {
             candidate_id
-            for candidate_id, _ in load_historical_mayoral_corpus(
-                ROOT
-            ).outcome_share_vector(cycle.election_cycle_id)
+            for candidate_id, _ in load_historical_mayoral_corpus(ROOT).outcome_share_vector(
+                cycle.election_cycle_id
+            )
         }
         for cycle in cycles.values()
     )
@@ -93,16 +90,10 @@ def test_cutoff_filters_samples_and_keeps_every_dependent_reading() -> None:
     after_nanos = _snapshot(toronto_2014, 33).evidence
 
     assert isinstance(before_nanos, HistoricalMayoralEvidence)
-    before_nanos_sample_ids = {
-        sample.poll_sample_id for sample in before_nanos.poll_samples
-    }
-    after_nanos_sample_ids = {
-        sample.poll_sample_id for sample in after_nanos.poll_samples
-    }
+    before_nanos_sample_ids = {sample.poll_sample_id for sample in before_nanos.poll_samples}
+    after_nanos_sample_ids = {sample.poll_sample_id for sample in after_nanos.poll_samples}
     assert "nanos_city_2014_09_16_20_n1000" not in before_nanos_sample_ids
-    assert after_nanos_sample_ids - before_nanos_sample_ids == {
-        "nanos_city_2014_09_16_20_n1000"
-    }
+    assert after_nanos_sample_ids - before_nanos_sample_ids == {"nanos_city_2014_09_16_20_n1000"}
     assert {reading.poll_reading_id for reading in after_nanos.poll_readings} - {
         reading.poll_reading_id for reading in before_nanos.poll_readings
     } == {"nanos_sep_all", "nanos_sep_decided"}
@@ -110,12 +101,8 @@ def test_cutoff_filters_samples_and_keeps_every_dependent_reading() -> None:
     toronto_2023 = _by_id(_cycles(3, 2))["toronto_2023"]
     before_june = _snapshot(toronto_2023, 3).evidence
     after_june = _snapshot(toronto_2023, 2).evidence
-    before_june_sample_ids = {
-        sample.poll_sample_id for sample in before_june.poll_samples
-    }
-    after_june_sample_ids = {
-        sample.poll_sample_id for sample in after_june.poll_samples
-    }
+    before_june_sample_ids = {sample.poll_sample_id for sample in before_june.poll_samples}
+    after_june_sample_ids = {sample.poll_sample_id for sample in after_june.poll_samples}
     assert after_june_sample_ids - before_june_sample_ids == {
         "viewpoints_city_2023_06_15_19_n1007",
         "mainstreet_city_2023_06_22_n1481",
@@ -129,10 +116,7 @@ def test_cutoff_filters_samples_and_keeps_every_dependent_reading() -> None:
     }
     reading_ids = {reading.poll_reading_id for reading in after_june.poll_readings}
     assert after_june.poll_responses
-    assert all(
-        response.poll_reading_id in reading_ids
-        for response in after_june.poll_responses
-    )
+    assert all(response.poll_reading_id in reading_ids for response in after_june.poll_responses)
 
 
 def test_one_sample_with_two_readings_remains_one_sample() -> None:
@@ -166,15 +150,11 @@ def test_snapshot_exposes_the_cutoff_faithful_final_ballot_boundary() -> None:
     cycles = _by_id(_cycles(30))
 
     assert (
-        cycles["toronto_2014"]
-        .snapshots[0]
-        .evidence.final_ballot_evidence_available_at.isoformat()
+        cycles["toronto_2014"].snapshots[0].evidence.final_ballot_evidence_available_at.isoformat()
         == "2014-09-16T00:00:00-04:00"
     )
     assert (
-        cycles["toronto_2023"]
-        .snapshots[0]
-        .evidence.final_ballot_evidence_available_at.isoformat()
+        cycles["toronto_2023"].snapshots[0].evidence.final_ballot_evidence_available_at.isoformat()
         == "2023-05-13T00:00:00-04:00"
     )
 
@@ -197,9 +177,7 @@ def test_evidence_snapshots_admit_the_audited_2022_poll_at_its_cutoff() -> None:
     assert early.evidence_revision.startswith("sha256:")
     assert early.evidence_revision != late.evidence_revision
 
-    assert all(
-        snapshot.evidence.poll_samples for snapshot in cycles["toronto_2018"].snapshots
-    )
+    assert all(snapshot.evidence.poll_samples for snapshot in cycles["toronto_2018"].snapshots)
 
 
 def test_responses_without_reported_option_order_remain_replayable() -> None:
@@ -224,12 +202,8 @@ def test_evidence_revisions_are_stable_and_change_only_with_visible_evidence() -
     assert [row.evidence_revision for row in first.snapshots] == [
         row.evidence_revision for row in second.snapshots
     ]
-    assert (
-        _snapshot(first, 40).evidence_revision != _snapshot(first, 3).evidence_revision
-    )
-    assert (
-        _snapshot(first, 3).evidence_revision != _snapshot(first, 2).evidence_revision
-    )
+    assert _snapshot(first, 40).evidence_revision != _snapshot(first, 3).evidence_revision
+    assert _snapshot(first, 3).evidence_revision != _snapshot(first, 2).evidence_revision
 
     corpus = load_historical_mayoral_corpus(ROOT)
     reordered = replace(
@@ -245,10 +219,7 @@ def test_evidence_revisions_are_stable_and_change_only_with_visible_evidence() -
             analysis_time_local=time(12, 30),
         )
     )["toronto_2023"]
-    assert (
-        reordered_cycle.snapshots[0].evidence_revision
-        == _snapshot(first, 2).evidence_revision
-    )
+    assert reordered_cycle.snapshots[0].evidence_revision == _snapshot(first, 2).evidence_revision
 
 
 def test_pre_final_cutoff_fails_closed_at_next_midnight_boundary() -> None:
@@ -287,9 +258,11 @@ def test_outcomes_do_not_leak_into_snapshot_evidence_or_its_revision() -> None:
     )["toronto_2018"]
     changed_outcomes = tuple(
         replace(row, share=row.share + Decimal("0.001"))
-        if row.election_cycle_id == "toronto_2018" and row.candidate_id == "per_a9eb70da799659daaa285f92cfed1674"
+        if row.election_cycle_id == "toronto_2018"
+        and row.candidate_id == "per_a9eb70da799659daaa285f92cfed1674"
         else replace(row, share=row.share - Decimal("0.001"))
-        if row.election_cycle_id == "toronto_2018" and row.candidate_id == "per_49a098eb192452f988a3a579ef7f9cca"
+        if row.election_cycle_id == "toronto_2018"
+        and row.candidate_id == "per_49a098eb192452f988a3a579ef7f9cca"
         else row
         for row in corpus.outcomes
     )
@@ -303,10 +276,7 @@ def test_outcomes_do_not_leak_into_snapshot_evidence_or_its_revision() -> None:
 
     assert not hasattr(original.snapshots[0].evidence, "outcome")
     assert original.outcome.candidate_shares != changed.outcome.candidate_shares
-    assert (
-        original.snapshots[0].evidence_revision
-        == changed.snapshots[0].evidence_revision
-    )
+    assert original.snapshots[0].evidence_revision == changed.snapshots[0].evidence_revision
 
 
 def test_adapter_rejects_unknown_cycles_and_broken_poll_lineage() -> None:
@@ -369,7 +339,8 @@ def test_adapter_validates_source_backed_incumbent_against_final_ballot() -> Non
     corpus = load_historical_mayoral_corpus(ROOT)
     outcomes = tuple(
         replace(row, candidate_id="renamed-tory")
-        if row.election_cycle_id == "toronto_2018" and row.candidate_id == "per_a9eb70da799659daaa285f92cfed1674"
+        if row.election_cycle_id == "toronto_2018"
+        and row.candidate_id == "per_a9eb70da799659daaa285f92cfed1674"
         else row
         for row in corpus.outcomes
     )

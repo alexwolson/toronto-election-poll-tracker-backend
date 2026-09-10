@@ -145,8 +145,7 @@ class FullBallotShareDraws:
 
     def __post_init__(self) -> None:
         candidate_ids = tuple(
-            _identifier(candidate_id, "candidate_id")
-            for candidate_id in self.candidate_ids
+            _identifier(candidate_id, "candidate_id") for candidate_id in self.candidate_ids
         )
         if len(candidate_ids) < 2:
             raise ValueError("full ballot must contain at least two candidates")
@@ -157,8 +156,7 @@ class FullBallotShareDraws:
             raise ValueError("full ballot prediction must contain at least one draw")
         if draws.shape[1] != len(candidate_ids):
             raise ValueError(
-                f"full ballot draws have {draws.shape[1]} shares; "
-                f"expected {len(candidate_ids)}"
+                f"full ballot draws have {draws.shape[1]} shares; expected {len(candidate_ids)}"
             )
         # Order matters so each malformed input hits its own message: finite first
         # (a NaN would otherwise slip past the sign and sum checks), then sign, sum.
@@ -166,9 +164,7 @@ class FullBallotShareDraws:
             raise ValueError("full ballot draw shares must be finite")
         if np.any(draws < 0.0):
             raise ValueError("full ballot draw shares must be non-negative")
-        if not np.allclose(
-            draws.sum(axis=1), 1.0, rtol=0.0, atol=_PROBABILITY_TOLERANCE
-        ):
+        if not np.allclose(draws.sum(axis=1), 1.0, rtol=0.0, atol=_PROBABILITY_TOLERANCE):
             raise ValueError("full ballot draw shares must sum to 1")
         draws.setflags(write=False)
         object.__setattr__(self, "candidate_ids", candidate_ids)
@@ -177,9 +173,7 @@ class FullBallotShareDraws:
     def __eq__(self, other: object) -> bool:
         if not isinstance(other, FullBallotShareDraws):
             return NotImplemented
-        return self.candidate_ids == other.candidate_ids and np.array_equal(
-            self.draws, other.draws
-        )
+        return self.candidate_ids == other.candidate_ids and np.array_equal(self.draws, other.draws)
 
     __hash__ = None
 
@@ -230,17 +224,14 @@ class ElectionCycle:
             raise ValueError("election_type must be 'general' or 'by_election'")
         lead_times = [snapshot.days_before_election for snapshot in self.snapshots]
         if len(lead_times) != len(set(lead_times)):
-            raise ValueError(
-                f"cycle {self.election_cycle_id!r} has duplicate lead times"
-            )
+            raise ValueError(f"cycle {self.election_cycle_id!r} has duplicate lead times")
         ordered = sorted(
             self.snapshots,
             key=lambda snapshot: snapshot.days_before_election,
             reverse=True,
         )
         if any(
-            earlier.analysis_cutoff >= later.analysis_cutoff
-            for earlier, later in pairwise(ordered)
+            earlier.analysis_cutoff >= later.analysis_cutoff for earlier, later in pairwise(ordered)
         ):
             raise ValueError(
                 f"cycle {self.election_cycle_id!r} analysis cutoffs must move "
@@ -417,12 +408,9 @@ def score_prediction(
     """Derive and score every supported quantity from coherent share draws."""
     distribution = prediction.full_ballot_share_draws
     if set(distribution.candidate_ids) != set(outcome.candidate_ids):
-        raise ValueError(
-            "prediction candidate universe must exactly match the Final Ballot"
-        )
+        raise ValueError("prediction candidate universe must exactly match the Final Ballot")
     index_by_candidate = {
-        candidate_id: index
-        for index, candidate_id in enumerate(distribution.candidate_ids)
+        candidate_id: index for index, candidate_id in enumerate(distribution.candidate_ids)
     }
     draws = distribution.draws  # (n_draws, n_candidates) read-only ndarray
     draw_count = draws.shape[0]
@@ -481,9 +469,7 @@ def score_prediction(
         )
         scores[scalar_crps_metric(candidate_share_quantity(candidate_id))] = score
         candidate_share_scores.append(score)
-    scores[MEAN_CANDIDATE_SHARE_CRPS] = sum(candidate_share_scores) / len(
-        candidate_share_scores
-    )
+    scores[MEAN_CANDIDATE_SHARE_CRPS] = sum(candidate_share_scores) / len(candidate_share_scores)
     scores[scalar_crps_metric(WINNING_MARGIN)] = empirical_crps(
         winning_margin_draws,
         outcome.winning_margin,
@@ -581,17 +567,14 @@ def evaluate_mayoral_model(
                 election_cycle_id=target_cycle.election_cycle_id,
                 election_type=target_cycle.election_type,
                 cutoffs=tuple(cutoff_evaluations),
-                metrics=_mean_metric_maps(
-                    tuple(cutoff.metrics for cutoff in cutoff_evaluations)
-                ),
+                metrics=_mean_metric_maps(tuple(cutoff.metrics for cutoff in cutoff_evaluations)),
             )
         )
 
     cycle_result = tuple(cycle_evaluations)
     aggregate = _mean_metric_maps(tuple(cycle.metrics for cycle in cycle_result))
     counts = {
-        metric: sum(metric in cycle.metrics for cycle in cycle_result)
-        for metric in aggregate
+        metric: sum(metric in cycle.metrics for cycle in cycle_result) for metric in aggregate
     }
     by_lead_time = {
         lead_time: _mean_metric_maps(
@@ -633,9 +616,7 @@ def evaluate_with_regular_election_sensitivity(
         model_name=model_name,
         population="all_elections",
     )
-    regular_cycles = tuple(
-        cycle for cycle in cycle_tuple if cycle.election_type == "general"
-    )
+    regular_cycles = tuple(cycle for cycle in cycle_tuple if cycle.election_type == "general")
     regular_only = evaluate_mayoral_model(
         regular_cycles,
         lead_times=lead_times,
@@ -660,13 +641,9 @@ def compare_against_baseline(
     baseline_cycles = {cycle.election_cycle_id: cycle for cycle in baseline.cycles}
     for report in (candidate, baseline):
         if primary_metric not in report.metrics:
-            raise ValueError(
-                f"{report.model_name!r} has no primary metric {primary_metric!r}"
-            )
+            raise ValueError(f"{report.model_name!r} has no primary metric {primary_metric!r}")
         if log_loss_guard not in report.metrics:
-            raise ValueError(
-                f"{report.model_name!r} has no log-loss guard {log_loss_guard!r}"
-            )
+            raise ValueError(f"{report.model_name!r} has no log-loss guard {log_loss_guard!r}")
 
     candidate_eligible = {
         election_cycle_id
@@ -711,16 +688,12 @@ def compare_against_baseline(
         math.isfinite(score) for score in (candidate_log_loss, baseline_log_loss)
     )
     aggregate_scores_finite = primary_scores_finite and log_loss_scores_finite
-    aggregate_primary_improved = (
-        primary_scores_finite and candidate_primary < baseline_primary
-    )
+    aggregate_primary_improved = primary_scores_finite and candidate_primary < baseline_primary
     aggregate_log_loss_not_worse = (
         log_loss_scores_finite and candidate_log_loss <= baseline_log_loss
     )
     relative_qualifies = (
-        aggregate_primary_improved
-        and aggregate_log_loss_not_worse
-        and majority_improved
+        aggregate_primary_improved and aggregate_log_loss_not_worse and majority_improved
     )
     return RelativeQualificationDecision(
         candidate_model=candidate.model_name,
@@ -795,9 +768,7 @@ def qualify_model_ladder(
         endpoint,
         endpoint_maximum_scores,
     )
-    endpoint_qualifies = (
-        endpoint_relative.relative_qualifies and endpoint_reliability.passed
-    )
+    endpoint_qualifies = endpoint_relative.relative_qualifies and endpoint_reliability.passed
     if richer is None:
         return ModelLadderDecision(
             endpoint_relative=endpoint_relative,
@@ -818,9 +789,7 @@ def qualify_model_ladder(
         endpoint_maximum_scores,
     )
     richer_qualifies = (
-        endpoint_qualifies
-        and richer_relative.relative_qualifies
-        and richer_reliability.passed
+        endpoint_qualifies and richer_relative.relative_qualifies and richer_reliability.passed
     )
     return ModelLadderDecision(
         endpoint_relative=endpoint_relative,
@@ -845,9 +814,7 @@ def _validate_evaluation_inputs(
     if population == "regular_elections_only" and any(
         cycle.election_type != "general" for cycle in cycles
     ):
-        raise ValueError(
-            "regular_elections_only population cannot contain a by-election"
-        )
+        raise ValueError("regular_elections_only population cannot contain a by-election")
     if len(cycles) < 2:
         raise ValueError("whole-election evaluation requires at least two cycles")
     election_cycle_ids = [cycle.election_cycle_id for cycle in cycles]
@@ -864,13 +831,10 @@ def _validate_evaluation_inputs(
             raise ValueError("fixed lead times must be non-negative integers")
     for cycle in cycles:
         available = {snapshot.days_before_election for snapshot in cycle.snapshots}
-        missing = [
-            lead_time for lead_time in lead_time_tuple if lead_time not in available
-        ]
+        missing = [lead_time for lead_time in lead_time_tuple if lead_time not in available]
         if missing:
             raise ValueError(
-                f"cycle {cycle.election_cycle_id!r} is missing "
-                f"fixed lead time(s) {missing}"
+                f"cycle {cycle.election_cycle_id!r} is missing fixed lead time(s) {missing}"
             )
     return lead_time_tuple
 
@@ -910,9 +874,7 @@ def _add_binary_scores(
     truth = 1.0 if observed else 0.0
     scores[binary_brier_metric(quantity)] = (probability - truth) ** 2
     probability_of_observed = probability if observed else 1.0 - probability
-    scores[binary_log_loss_metric(quantity)] = _negative_log_probability(
-        probability_of_observed
-    )
+    scores[binary_log_loss_metric(quantity)] = _negative_log_probability(probability_of_observed)
 
 
 def _identifier(value: object, label: str) -> str:

@@ -23,7 +23,6 @@ from typing import Final
 from urllib.parse import urlsplit
 from zoneinfo import ZoneInfo
 
-
 SOURCE_DOCUMENT_COLUMNS: Final = (
     "source_document_id",
     "document_role",
@@ -131,23 +130,13 @@ _DOCUMENT_ROLES: Final = frozenset(
 _RETRIEVAL_STATUSES: Final = frozenset(
     {"retrieved", "not_retrieved", "access_pending", "dead_link", "corrupt"}
 )
-_TEXT_LAYER_STATUSES: Final = frozenset(
-    {"present", "partial", "absent", "not_applicable"}
-)
-_VISUAL_QA_STATUSES: Final = frozenset(
-    {"pending", "passed", "failed", "not_applicable"}
-)
-_ACCESS_CLASSES: Final = frozenset(
-    {"public", "licensed", "institutional_restricted"}
-)
-_REDISTRIBUTION_STATUSES: Final = frozenset(
-    {"permitted", "prohibited", "unknown"}
-)
+_TEXT_LAYER_STATUSES: Final = frozenset({"present", "partial", "absent", "not_applicable"})
+_VISUAL_QA_STATUSES: Final = frozenset({"pending", "passed", "failed", "not_applicable"})
+_ACCESS_CLASSES: Final = frozenset({"public", "licensed", "institutional_restricted"})
+_REDISTRIBUTION_STATUSES: Final = frozenset({"permitted", "prohibited", "unknown"})
 _GEOGRAPHY_TYPES: Final = frozenset({"citywide", "ward"})
 _PUBLICATION_PRECISIONS: Final = frozenset({"exact", "date_only"})
-_EXTRACTION_STATUSES: Final = frozenset(
-    {"pending", "in_progress", "extracted", "blocked"}
-)
+_EXTRACTION_STATUSES: Final = frozenset({"pending", "in_progress", "extracted", "blocked"})
 _CONTEST_TYPES: Final = frozenset({"mayoral", "council"})
 _QUESTION_ORDER_STATUSES: Final = frozenset({"reported", "not_reported"})
 _QUESTION_TEXT_STATUSES: Final = frozenset({"reported", "not_reported"})
@@ -355,8 +344,7 @@ def load_poll_source_bundle(
 
     root = Path(directory)
     raw_tables = {
-        filename: _read_rows(root / filename, columns)
-        for filename, columns in _FILES.items()
+        filename: _read_rows(root / filename, columns) for filename, columns in _FILES.items()
     }
 
     documents = tuple(
@@ -387,9 +375,7 @@ def load_poll_source_bundle(
     return bundle
 
 
-def verify_poll_source_artifacts(
-    bundle: PollSourceBundle, project_root: str | Path
-) -> None:
+def verify_poll_source_artifacts(bundle: PollSourceBundle, project_root: str | Path) -> None:
     """Verify retrieved local artifacts against their tracked manifest metadata.
 
     Existence, containment below ``data/source_documents``, byte size, SHA-256,
@@ -496,9 +482,7 @@ def _verify_ooxml_archive(document: SourceDocument, artifact: Path) -> None:
         )
 
 
-def _read_rows(
-    path: Path, expected_columns: tuple[str, ...]
-) -> list[tuple[int, dict[str, str]]]:
+def _read_rows(path: Path, expected_columns: tuple[str, ...]) -> list[tuple[int, dict[str, str]]]:
     try:
         handle = path.open(encoding="utf-8-sig", newline="")
     except OSError as exc:
@@ -520,9 +504,7 @@ def _read_rows(
                         f"{path.name} row {row_number} has more values than columns"
                     )
                 if all(value == "" for value in row.values()):
-                    raise PollSourceContractError(
-                        f"{path.name} row {row_number} is blank"
-                    )
+                    raise PollSourceContractError(f"{path.name} row {row_number} is blank")
                 rows.append((row_number, row))
         except csv.Error as exc:
             raise PollSourceContractError(f"invalid CSV in {path}: {exc}") from exc
@@ -533,13 +515,9 @@ def _parse_source_document(
     row: dict[str, str], *, filename: str, row_number: int
 ) -> SourceDocument:
     location = _location(filename, row_number)
-    retrieval_status = _enum(
-        row, "retrieval_status", _RETRIEVAL_STATUSES, location
-    )
+    retrieval_status = _enum(row, "retrieval_status", _RETRIEVAL_STATUSES, location)
     access_class = _enum(row, "access_class", _ACCESS_CLASSES, location)
-    redistribution_status = _enum(
-        row, "redistribution_status", _REDISTRIBUTION_STATUSES, location
-    )
+    redistribution_status = _enum(row, "redistribution_status", _REDISTRIBUTION_STATUSES, location)
     notes = _optional(row, "notes")
     if (
         retrieval_status != "retrieved"
@@ -547,8 +525,7 @@ def _parse_source_document(
         or redistribution_status != "permitted"
     ) and not notes:
         raise PollSourceContractError(
-            f"{location}: notes are required for gaps, non-public, or "
-            "non-redistributable material"
+            f"{location}: notes are required for gaps, non-public, or non-redistributable material"
         )
 
     retrieval_url = _optional_url(row, "retrieval_url", location)
@@ -577,12 +554,8 @@ def _parse_source_document(
     byte_size = _optional_positive_int(row, "byte_size", location)
     page_count = _optional_positive_int(row, "page_count", location)
     sheet_count = _optional_positive_int(row, "sheet_count", location)
-    text_layer_status = _optional_enum(
-        row, "text_layer_status", _TEXT_LAYER_STATUSES, location
-    )
-    visual_qa_status = _enum(
-        row, "visual_qa_status", _VISUAL_QA_STATUSES, location
-    )
+    text_layer_status = _optional_enum(row, "text_layer_status", _TEXT_LAYER_STATUSES, location)
+    visual_qa_status = _enum(row, "visual_qa_status", _VISUAL_QA_STATUSES, location)
 
     if retrieval_status == "retrieved":
         required_artifact_fields = {
@@ -596,9 +569,7 @@ def _parse_source_document(
         }
         missing = [field for field, value in required_artifact_fields.items() if value is None]
         if missing:
-            raise PollSourceContractError(
-                f"{location}: retrieved artifact is missing {missing!r}"
-            )
+            raise PollSourceContractError(f"{location}: retrieved artifact is missing {missing!r}")
         if media_type == "application/pdf":
             if page_count is None or sheet_count is not None:
                 raise PollSourceContractError(
@@ -626,17 +597,14 @@ def _parse_source_document(
         "not_applicable",
     }:
         raise PollSourceContractError(
-            f"{location}: corrupt artifact visual_qa_status must be failed or "
-            "not_applicable"
+            f"{location}: corrupt artifact visual_qa_status must be failed or not_applicable"
         )
     elif retrieval_status != "corrupt" and visual_qa_status != "not_applicable":
         raise PollSourceContractError(
             f"{location}: unretrieved artifact visual_qa_status must be not_applicable"
         )
     if visual_qa_status == "failed" and not notes:
-        raise PollSourceContractError(
-            f"{location}: failed visual QA requires notes"
-        )
+        raise PollSourceContractError(f"{location}: failed visual QA requires notes")
 
     return SourceDocument(
         source_document_id=_identifier(row, "source_document_id", location),
@@ -672,9 +640,7 @@ def _parse_poll_sample_document(
     )
 
 
-def _parse_poll_sample(
-    row: dict[str, str], *, filename: str, row_number: int
-) -> PollSample:
+def _parse_poll_sample(row: dict[str, str], *, filename: str, row_number: int) -> PollSample:
     location = _location(filename, row_number)
     start = _date(row, "fieldwork_start", location)
     end = _date(row, "fieldwork_end", location)
@@ -682,13 +648,9 @@ def _parse_poll_sample(
     if start > end:
         raise PollSourceContractError(f"{location}: fieldwork_start follows fieldwork_end")
     if end > publication_date:
-        raise PollSourceContractError(
-            f"{location}: fieldwork_end follows publication_date"
-        )
+        raise PollSourceContractError(f"{location}: fieldwork_end follows publication_date")
 
-    precision = _enum(
-        row, "publication_time_precision", _PUBLICATION_PRECISIONS, location
-    )
+    precision = _enum(row, "publication_time_precision", _PUBLICATION_PRECISIONS, location)
     publication_at = _optional_datetime(row, "publication_at", location)
     evidence_at = _datetime(row, "evidence_available_at", location)
     if precision == "exact":
@@ -735,23 +697,15 @@ def _parse_poll_sample(
         publication_time_precision=precision,
         evidence_available_at=evidence_at,
         collection_mode=collection_mode,
-        recruited_sample_size=_optional_positive_int(
-            row, "recruited_sample_size", location
-        ),
-        extraction_status=_enum(
-            row, "extraction_status", _EXTRACTION_STATUSES, location
-        ),
+        recruited_sample_size=_optional_positive_int(row, "recruited_sample_size", location),
+        extraction_status=_enum(row, "extraction_status", _EXTRACTION_STATUSES, location),
         notes=_optional(row, "notes"),
     )
 
 
-def _parse_poll_reading(
-    row: dict[str, str], *, filename: str, row_number: int
-) -> PollReading:
+def _parse_poll_reading(row: dict[str, str], *, filename: str, row_number: int) -> PollReading:
     location = _location(filename, row_number)
-    question_order_status = _enum(
-        row, "question_order_status", _QUESTION_ORDER_STATUSES, location
-    )
+    question_order_status = _enum(row, "question_order_status", _QUESTION_ORDER_STATUSES, location)
     question_order = _optional_positive_int(row, "question_order", location)
     _validate_reported_value(
         status=question_order_status,
@@ -759,9 +713,7 @@ def _parse_poll_reading(
         field="question_order",
         location=location,
     )
-    question_text_status = _enum(
-        row, "question_text_status", _QUESTION_TEXT_STATUSES, location
-    )
+    question_text_status = _enum(row, "question_text_status", _QUESTION_TEXT_STATUSES, location)
     question_text = _optional(row, "question_text")
     _validate_reported_value(
         status=question_text_status,
@@ -777,22 +729,16 @@ def _parse_poll_reading(
             f"{location}: custom turnout_screen requires turnout_screen_text"
         )
 
-    denominator_type = _enum(
-        row, "denominator_type", _DENOMINATOR_TYPES, location
-    )
+    denominator_type = _enum(row, "denominator_type", _DENOMINATOR_TYPES, location)
     denominator_text = _optional(row, "denominator_text")
     if denominator_type == "not_reported" and denominator_text:
         raise PollSourceContractError(
             f"{location}: not_reported denominator must leave denominator_text blank"
         )
     if denominator_type != "not_reported" and not denominator_text:
-        raise PollSourceContractError(
-            f"{location}: reported denominator requires denominator_text"
-        )
+        raise PollSourceContractError(f"{location}: reported denominator requires denominator_text")
 
-    unweighted_status = _enum(
-        row, "unweighted_base_status", _BASE_STATUSES, location
-    )
+    unweighted_status = _enum(row, "unweighted_base_status", _BASE_STATUSES, location)
     unweighted_base = _optional_positive_int(row, "unweighted_base", location)
     _validate_reported_value(
         status=unweighted_status,
@@ -828,9 +774,7 @@ def _parse_poll_reading(
         contest_id=_identifier(row, "contest_id", location),
         question_order_status=question_order_status,
         question_order=question_order,
-        document_display_order=_optional_positive_int(
-            row, "document_display_order", location
-        ),
+        document_display_order=_optional_positive_int(row, "document_display_order", location),
         question_text_status=question_text_status,
         question_text=question_text,
         scenario_label=_optional(row, "scenario_label"),
@@ -848,25 +792,15 @@ def _parse_poll_reading(
         tested_choice_set_status=_enum(
             row, "tested_choice_set_status", _CHOICE_SET_STATUSES, location
         ),
-        response_coverage=_enum(
-            row, "response_coverage", _RESPONSE_COVERAGES, location
-        ),
-        reported_share_unit=_enum(
-            row, "reported_share_unit", _REPORTED_SHARE_UNITS, location
-        ),
-        reported_share_precision=_nonnegative_int(
-            row, "reported_share_precision", location
-        ),
+        response_coverage=_enum(row, "response_coverage", _RESPONSE_COVERAGES, location),
+        reported_share_unit=_enum(row, "reported_share_unit", _REPORTED_SHARE_UNITS, location),
+        reported_share_precision=_nonnegative_int(row, "reported_share_precision", location),
         notes=_optional(row, "notes"),
-        reading_purpose=_enum(
-            row, "reading_purpose", _READING_PURPOSES, location
-        ),
+        reading_purpose=_enum(row, "reading_purpose", _READING_PURPOSES, location),
     )
 
 
-def _parse_poll_response(
-    row: dict[str, str], *, filename: str, row_number: int
-) -> PollResponse:
+def _parse_poll_response(row: dict[str, str], *, filename: str, row_number: int) -> PollResponse:
     location = _location(filename, row_number)
     response_kind = _enum(row, "response_kind", _RESPONSE_KINDS, location)
     candidate_id = _optional_identifier(row, "candidate_id", location)
@@ -880,8 +814,7 @@ def _parse_poll_response(
     if response_kind == "candidate":
         if not candidate_id or not candidate_name or not status_text:
             raise PollSourceContractError(
-                f"{location}: candidate response requires candidate identity "
-                "and observation status"
+                f"{location}: candidate response requires candidate identity and observation status"
             )
         if status_text not in _CANDIDATE_OBSERVATION_STATUSES:
             raise PollSourceContractError(
@@ -934,12 +867,8 @@ def _parse_poll_response(
     )
 
 
-def _validate_relations(
-    bundle: PollSourceBundle, *, require_audited_sources: bool
-) -> None:
-    documents = _unique_index(
-        bundle.source_documents, "source_document_id", "source document"
-    )
+def _validate_relations(bundle: PollSourceBundle, *, require_audited_sources: bool) -> None:
+    documents = _unique_index(bundle.source_documents, "source_document_id", "source document")
     samples = _unique_index(bundle.poll_samples, "poll_sample_id", "poll sample")
     readings = _unique_index(bundle.poll_readings, "poll_reading_id", "poll reading")
 
@@ -951,15 +880,12 @@ def _validate_relations(
     for link in bundle.poll_sample_documents:
         key = (link.poll_sample_id, link.source_document_id)
         if key in document_links:
-            raise PollSourceContractError(
-                f"duplicate poll sample/source document link {key!r}"
-            )
+            raise PollSourceContractError(f"duplicate poll sample/source document link {key!r}")
         document_links.add(key)
         sample = samples.get(link.poll_sample_id)
         if sample is None:
             raise PollSourceContractError(
-                f"sample/document link references unknown poll sample "
-                f"{link.poll_sample_id!r}"
+                f"sample/document link references unknown poll sample {link.poll_sample_id!r}"
             )
         if link.source_document_id not in documents:
             raise PollSourceContractError(
@@ -971,9 +897,7 @@ def _validate_relations(
 
     for sample_id, count in documents_by_sample.items():
         if count == 0:
-            raise PollSourceContractError(
-                f"poll sample {sample_id!r} has no source document"
-            )
+            raise PollSourceContractError(f"poll sample {sample_id!r} has no source document")
     for document_id, linked_samples in samples_by_document.items():
         if not linked_samples:
             raise PollSourceContractError(
@@ -1054,8 +978,7 @@ def _validate_relations(
                     retrieved_too_early = document.retrieved_at < sample.publication_at
                 else:
                     retrieved_too_early = (
-                        document.retrieved_at.astimezone(_TORONTO).date()
-                        < sample.publication_date
+                        document.retrieved_at.astimezone(_TORONTO).date() < sample.publication_date
                     )
                 if retrieved_too_early:
                     raise PollSourceContractError(
@@ -1084,9 +1007,7 @@ def _validate_relations(
 
         if response.candidate_id is not None:
             candidate_name = response.candidate_name or ""
-            previous_name = candidate_names.setdefault(
-                response.candidate_id, candidate_name
-            )
+            previous_name = candidate_names.setdefault(response.candidate_id, candidate_name)
             if previous_name != candidate_name:
                 raise PollSourceContractError(
                     f"candidate_id {response.candidate_id!r} maps to conflicting "
@@ -1101,9 +1022,7 @@ def _validate_relations(
         _validate_reading_responses(readings[reading_id], reading_responses)
 
 
-def _validate_reading_responses(
-    reading: PollReading, responses: list[PollResponse]
-) -> None:
+def _validate_reading_responses(reading: PollReading, responses: list[PollResponse]) -> None:
     candidates = [response for response in responses if response.response_kind == "candidate"]
     if not candidates:
         raise PollSourceContractError(
@@ -1123,8 +1042,7 @@ def _validate_reading_responses(
         )
 
     if reading.tested_choice_set_status == "complete" and any(
-        response.candidate_observation_status == "tested_ballot_unknown"
-        for response in candidates
+        response.candidate_observation_status == "tested_ballot_unknown" for response in candidates
     ):
         raise PollSourceContractError(
             f"poll reading {reading.poll_reading_id!r} claims a complete choice set "
@@ -1132,8 +1050,7 @@ def _validate_reading_responses(
         )
 
     if reading.response_coverage == "complete" and any(
-        response.candidate_observation_status
-        == "offered_not_individually_published"
+        response.candidate_observation_status == "offered_not_individually_published"
         for response in candidates
     ):
         raise PollSourceContractError(
@@ -1265,26 +1182,18 @@ def _optional(row: dict[str, str], field: str) -> str | None:
 def _identifier(row: dict[str, str], field: str, location: str) -> str:
     value = _required(row, field, location)
     if not _ID_RE.fullmatch(value):
-        raise PollSourceContractError(
-            f"{location}: {field} must be a normalized identifier"
-        )
+        raise PollSourceContractError(f"{location}: {field} must be a normalized identifier")
     return value
 
 
-def _optional_identifier(
-    row: dict[str, str], field: str, location: str
-) -> str | None:
+def _optional_identifier(row: dict[str, str], field: str, location: str) -> str | None:
     value = _optional(row, field)
     if value is not None and not _ID_RE.fullmatch(value):
-        raise PollSourceContractError(
-            f"{location}: {field} must be a normalized identifier"
-        )
+        raise PollSourceContractError(f"{location}: {field} must be a normalized identifier")
     return value
 
 
-def _enum(
-    row: dict[str, str], field: str, allowed: frozenset[str], location: str
-) -> str:
+def _enum(row: dict[str, str], field: str, allowed: frozenset[str], location: str) -> str:
     value = _required(row, field, location)
     if value not in allowed:
         raise PollSourceContractError(
@@ -1309,9 +1218,7 @@ def _date(row: dict[str, str], field: str, location: str) -> date:
     try:
         parsed = date.fromisoformat(value)
     except ValueError as exc:
-        raise PollSourceContractError(
-            f"{location}: {field} must be YYYY-MM-DD"
-        ) from exc
+        raise PollSourceContractError(f"{location}: {field} must be YYYY-MM-DD") from exc
     if parsed.isoformat() != value:
         raise PollSourceContractError(f"{location}: {field} must be YYYY-MM-DD")
     return parsed
@@ -1322,9 +1229,7 @@ def _datetime(row: dict[str, str], field: str, location: str) -> datetime:
     return _parse_datetime(value, field=field, location=location)
 
 
-def _optional_datetime(
-    row: dict[str, str], field: str, location: str
-) -> datetime | None:
+def _optional_datetime(row: dict[str, str], field: str, location: str) -> datetime | None:
     value = _optional(row, field)
     return None if value is None else _parse_datetime(value, field=field, location=location)
 
@@ -1338,9 +1243,7 @@ def _parse_datetime(value: str, *, field: str, location: str) -> datetime:
             f"{location}: {field} must be an ISO 8601 timestamp with an offset"
         ) from exc
     if parsed.tzinfo is None or parsed.utcoffset() is None:
-        raise PollSourceContractError(
-            f"{location}: {field} must include a UTC offset"
-        )
+        raise PollSourceContractError(f"{location}: {field} must include a UTC offset")
     return parsed
 
 
@@ -1354,15 +1257,11 @@ def _positive_int(row: dict[str, str], field: str, location: str) -> int:
 def _nonnegative_int(row: dict[str, str], field: str, location: str) -> int:
     value = _required(row, field, location)
     if not re.fullmatch(r"0|[1-9][0-9]*", value):
-        raise PollSourceContractError(
-            f"{location}: {field} must be a non-negative integer"
-        )
+        raise PollSourceContractError(f"{location}: {field} must be a non-negative integer")
     return int(value)
 
 
-def _optional_positive_int(
-    row: dict[str, str], field: str, location: str
-) -> int | None:
+def _optional_positive_int(row: dict[str, str], field: str, location: str) -> int | None:
     value = _optional(row, field)
     if value is None:
         return None
@@ -1371,9 +1270,7 @@ def _optional_positive_int(
     return int(value)
 
 
-def _optional_positive_decimal(
-    row: dict[str, str], field: str, location: str
-) -> Decimal | None:
+def _optional_positive_decimal(row: dict[str, str], field: str, location: str) -> Decimal | None:
     value = _optional(row, field)
     if value is None:
         return None
@@ -1383,9 +1280,7 @@ def _optional_positive_decimal(
     return parsed
 
 
-def _optional_share(
-    row: dict[str, str], field: str, location: str
-) -> Decimal | None:
+def _optional_share(row: dict[str, str], field: str, location: str) -> Decimal | None:
     value = _optional(row, field)
     if value is None:
         return None
@@ -1421,6 +1316,4 @@ def _optional_url(row: dict[str, str], field: str, location: str) -> str | None:
 def _validate_url(value: str, *, field: str, location: str) -> None:
     parsed = urlsplit(value)
     if parsed.scheme not in {"http", "https"} or not parsed.netloc:
-        raise PollSourceContractError(
-            f"{location}: {field} must be an absolute HTTP(S) URL"
-        )
+        raise PollSourceContractError(f"{location}: {field} must be an absolute HTTP(S) URL")

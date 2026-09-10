@@ -23,9 +23,7 @@ import pandas as pd
 import requests
 from bs4 import BeautifulSoup
 
-WIKIPEDIA_URL = (
-    "https://en.wikipedia.org/api/rest_v1/page/html/2026_Toronto_mayoral_election"
-)
+WIKIPEDIA_URL = "https://en.wikipedia.org/api/rest_v1/page/html/2026_Toronto_mayoral_election"
 USER_AGENT = (
     "toronto-election-poll-tracker/1.0"
     " (https://github.com/alexwolson/toronto-election-poll-tracker-data)"
@@ -202,9 +200,7 @@ def _firm_slug(firm: str) -> str:
     """Map a Wikipedia firm name to its poll_id slug."""
     firm = firm.strip()
     if firm not in FIRM_SLUG:
-        raise ValueError(
-            f"Unknown polling firm: {firm!r}. Add it to FIRM_SLUG in fetch_polls.py."
-        )
+        raise ValueError(f"Unknown polling firm: {firm!r}. Add it to FIRM_SLUG in fetch_polls.py.")
     return FIRM_SLUG[firm]
 
 
@@ -245,9 +241,7 @@ def _normalise_methodology(s: str) -> str:
     return "IVR" if low == "ivr" else low
 
 
-def _resolve_header(
-    row_data: dict, variants: tuple[str, ...], default: str = ""
-) -> str:
+def _resolve_header(row_data: dict, variants: tuple[str, ...], default: str = "") -> str:
     """Return first matching value from row_data given a list of header name variants."""
     for v in variants:
         if v in row_data:
@@ -301,8 +295,7 @@ def _parse_table(table) -> list[dict]:
         total = sum(v for v in shares.values() if v is not None)
         if total > 1.0:
             shares = {
-                k: (round(v / total, 4) if v is not None else None)
-                for k, v in shares.items()
+                k: (round(v / total, 4) if v is not None else None) for k, v in shares.items()
             }
 
         field_tested = ",".join(sorted(s for s, v in shares.items() if v is not None))
@@ -313,14 +306,10 @@ def _parse_table(table) -> list[dict]:
         else:
             poll_id = f"{slug}-{date}"
 
-        raw_n = (
-            _resolve_header(row_data, _SAMPLE_HEADER_VARIANTS).replace(",", "").strip()
-        )
+        raw_n = _resolve_header(row_data, _SAMPLE_HEADER_VARIANTS).replace(",", "").strip()
         sample_size = int(raw_n) if raw_n.isdigit() else None
 
-        methodology_raw = _resolve_header(
-            row_data, _METHODOLOGY_HEADER_VARIANTS
-        ).strip()
+        methodology_raw = _resolve_header(row_data, _METHODOLOGY_HEADER_VARIANTS).strip()
 
         rows.append(
             {
@@ -355,8 +344,7 @@ def parse_polls(html: str) -> list[dict]:
                 continue
             if row["poll_id"] in seen_ids:
                 raise ValueError(
-                    f"Duplicate poll_id: {row['poll_id']!r} — "
-                    "two tables produced the same ID."
+                    f"Duplicate poll_id: {row['poll_id']!r} — two tables produced the same ID."
                 )
             seen_ids.add(row["poll_id"])
             all_rows.append(row)
@@ -386,9 +374,7 @@ def write_output(rows: list[dict], output_dir: Path) -> None:
         # Drop any rows from existing that are being superseded by Wikipedia
         existing = existing[~existing["poll_id"].isin(incoming["poll_id"])]
         merged = pd.concat([existing, incoming], ignore_index=True)
-        merged = merged.sort_values("date_published", ascending=False).reset_index(
-            drop=True
-        )
+        merged = merged.sort_values("date_published", ascending=False).reset_index(drop=True)
         print(
             f"  Preserved {len(existing)} historical polls, merged {len(incoming)} from Wikipedia"
         )

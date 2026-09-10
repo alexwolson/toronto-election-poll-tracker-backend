@@ -157,9 +157,7 @@ class SensitivityVariant:
             raise ValueError(f"probability {self.probability} is outside [0, 1]")
         if self.error_interval is None:
             raise ValueError("a runnable variant must carry an error interval")
-        if not (
-            self.error_interval.lower <= self.probability <= self.error_interval.upper
-        ):
+        if not (self.error_interval.lower <= self.probability <= self.error_interval.upper):
             raise ValueError("variant probability lies outside its own error interval")
 
     def can_run(self) -> bool:
@@ -191,16 +189,8 @@ def _interval_within_band(interval: ErrorInterval, band: ProbabilityBand) -> boo
     # Strict interior on inter-band boundaries; the outer probability limits
     # (0 and 1) are exempt because no adjacent band makes the assignment
     # ambiguous there (ADR 0018 "boundary touch").
-    lower_ok = (
-        interval.lower >= band.lower
-        if band.lower == _ZERO
-        else interval.lower > band.lower
-    )
-    upper_ok = (
-        interval.upper <= band.upper
-        if band.upper_inclusive
-        else interval.upper < band.upper
-    )
+    lower_ok = interval.lower >= band.lower if band.lower == _ZERO else interval.lower > band.lower
+    upper_ok = interval.upper <= band.upper if band.upper_inclusive else interval.upper < band.upper
     return lower_ok and upper_ok
 
 
@@ -214,16 +204,11 @@ def _consensus_on_grid(
     for variant in variants:
         band = band_for(variant.probability, grid)
         if band != consensus:
-            return None, (
-                f"variant {variant.label!r} lands in {band.label}, not "
-                f"{consensus.label}"
-            )
+            return None, (f"variant {variant.label!r} lands in {band.label}, not {consensus.label}")
     for variant in variants:
         assert variant.error_interval is not None  # runnable => interval present
         if not _interval_within_band(variant.error_interval, consensus):
-            return None, (
-                f"variant {variant.label!r} 95% error interval touches a band boundary"
-            )
+            return None, (f"variant {variant.label!r} 95% error interval touches a band boundary")
     return consensus, ""
 
 

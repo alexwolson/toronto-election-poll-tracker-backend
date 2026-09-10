@@ -1,6 +1,6 @@
 import math
 from dataclasses import dataclass, replace
-from datetime import datetime, timedelta, timezone
+from datetime import UTC, datetime, timedelta
 
 import pytest
 
@@ -8,9 +8,9 @@ from backend.model.mayoral_evaluation import (
     CLOSE_RESULT,
     INCUMBENT_DEFEAT,
     INCUMBENT_MARGIN,
-    MEAN_CANDIDATE_SHARE_CRPS,
     MAYORAL_MODEL_FAMILY_LOG_GUARD,
     MAYORAL_MODEL_FAMILY_PRIMARY,
+    MEAN_CANDIDATE_SHARE_CRPS,
     WINNER_LOG_SCORE,
     WINNING_MARGIN,
     ElectionCycle,
@@ -37,7 +37,7 @@ class _Evidence:
 
 
 def _analysis_cutoff(days_before_election: int) -> datetime:
-    election_day = datetime(2026, 10, 26, 12, tzinfo=timezone.utc)
+    election_day = datetime(2026, 10, 26, 12, tzinfo=UTC)
     return election_day - timedelta(days=days_before_election)
 
 
@@ -87,10 +87,7 @@ def _cycle(
 def _defeat_prediction(probability: float) -> EvaluationPrediction:
     losses = round(probability * 100)
     assert probability == pytest.approx(losses / 100)
-    draws = (
-        ((0.4, 0.6),) * losses
-        + ((0.6, 0.4),) * (100 - losses)
-    )
+    draws = ((0.4, 0.6),) * losses + ((0.6, 0.4),) * (100 - losses)
     return EvaluationPrediction(
         full_ballot_share_draws=FullBallotShareDraws(
             candidate_ids=("incumbent", "challenger"),
@@ -117,19 +114,15 @@ def test_scores_derive_from_one_full_ballot_artifact() -> None:
 
     assert scores[WINNER_LOG_SCORE] == pytest.approx(-math.log(0.5))
     assert scores[binary_brier_metric(INCUMBENT_DEFEAT)] == pytest.approx(0.25)
-    assert scores[binary_log_loss_metric(INCUMBENT_DEFEAT)] == pytest.approx(
-        -math.log(0.5)
-    )
+    assert scores[binary_log_loss_metric(INCUMBENT_DEFEAT)] == pytest.approx(-math.log(0.5))
     assert scores[binary_brier_metric(CLOSE_RESULT)] == pytest.approx(0.25)
-    assert scores[binary_log_loss_metric(CLOSE_RESULT)] == pytest.approx(
-        -math.log(0.5)
+    assert scores[binary_log_loss_metric(CLOSE_RESULT)] == pytest.approx(-math.log(0.5))
+    assert scores[scalar_crps_metric(candidate_share_quantity("incumbent"))] == pytest.approx(
+        0.06125
     )
-    assert scores[
-        scalar_crps_metric(candidate_share_quantity("incumbent"))
-    ] == pytest.approx(0.06125)
-    assert scores[
-        scalar_crps_metric(candidate_share_quantity("challenger"))
-    ] == pytest.approx(0.06125)
+    assert scores[scalar_crps_metric(candidate_share_quantity("challenger"))] == pytest.approx(
+        0.06125
+    )
     assert scores[MEAN_CANDIDATE_SHARE_CRPS] == pytest.approx(0.06125)
     assert scores[scalar_crps_metric(WINNING_MARGIN)] == pytest.approx(0.0825)
     assert scores[scalar_crps_metric(INCUMBENT_MARGIN)] == pytest.approx(0.1225)
@@ -255,9 +248,7 @@ def test_each_fold_holds_out_a_whole_cycle_at_the_same_fixed_lead_time() -> None
 
     assert len(calls) == 6
     for target_id, lead_time, training in calls:
-        assert target_id not in {
-            election_cycle_id for election_cycle_id, _ in training
-        }
+        assert target_id not in {election_cycle_id for election_cycle_id, _ in training}
         assert {days for _, days in training} == {lead_time}
     assert [cycle.election_cycle_id for cycle in report.cycles] == [
         "2014",
@@ -314,7 +305,7 @@ def test_analysis_cutoff_must_be_aware_and_follow_lead_time_order() -> None:
     with pytest.raises(ValueError, match="offset-aware"):
         LeadTimeSnapshot(
             7,
-            datetime(2026, 10, 19, 12),
+            datetime(2026, 10, 19, 12),  # noqa: DTZ001 - deliberately exercises rejection
             "naive:7:v1",
             _Evidence("naive"),
         )
@@ -354,27 +345,19 @@ def test_aggregate_scores_average_cutoffs_within_cycles_then_cycles_equally() ->
         cycles,
         lead_times=(30, 7),
         fit_predict=lambda training, target: _defeat_prediction(
-            probabilities[
-                (target.election_cycle_id, target.snapshot.days_before_election)
-            ]
+            probabilities[(target.election_cycle_id, target.snapshot.days_before_election)]
         ),
         model_name="endpoint",
     )
 
     metric = binary_brier_metric(INCUMBENT_DEFEAT)
-    by_cycle = {
-        cycle.election_cycle_id: cycle.metrics[metric]
-        for cycle in report.cycles
-    }
+    by_cycle = {cycle.election_cycle_id: cycle.metrics[metric] for cycle in report.cycles}
     assert by_cycle == pytest.approx({"2014": 0.02, "2018": 0.26})
     assert report.metrics[metric] == pytest.approx(0.14)
 
 
 def test_relative_comparison_counts_elections_not_repeated_cutoffs() -> None:
-    cycles = tuple(
-        _cycle(election_cycle_id)
-        for election_cycle_id in ("a", "b", "c")
-    )
+    cycles = tuple(_cycle(election_cycle_id) for election_cycle_id in ("a", "b", "c"))
     baseline = evaluate_mayoral_model(
         cycles,
         lead_times=(30, 7),
@@ -446,8 +429,7 @@ def test_relative_comparison_rejects_brier_gain_with_worse_log_loss() -> None:
 
 def test_relative_comparison_fails_closed_on_a_non_finite_score() -> None:
     cycles = tuple(
-        _cycle(election_cycle_id, lead_times=(14,))
-        for election_cycle_id in ("a", "b", "c")
+        _cycle(election_cycle_id, lead_times=(14,)) for election_cycle_id in ("a", "b", "c")
     )
     baseline = evaluate_mayoral_model(
         cycles,
@@ -478,8 +460,7 @@ def test_relative_comparison_fails_closed_on_a_non_finite_score() -> None:
 
 def test_ladder_blocks_richer_model_when_endpoint_absolute_checks_fail() -> None:
     cycles = tuple(
-        _cycle(election_cycle_id, lead_times=(14,))
-        for election_cycle_id in ("a", "b", "c")
+        _cycle(election_cycle_id, lead_times=(14,)) for election_cycle_id in ("a", "b", "c")
     )
 
     def report(name, probability):
@@ -525,8 +506,7 @@ def test_ladder_blocks_richer_model_when_endpoint_absolute_checks_fail() -> None
 
 def test_ladder_can_qualify_endpoint_and_richer_after_frozen_checks_pass() -> None:
     cycles = tuple(
-        _cycle(election_cycle_id, lead_times=(14,))
-        for election_cycle_id in ("a", "b", "c")
+        _cycle(election_cycle_id, lead_times=(14,)) for election_cycle_id in ("a", "b", "c")
     )
 
     def report(name, probability):
@@ -613,17 +593,12 @@ def test_regular_only_sensitivity_refits_without_the_by_election() -> None:
         "2022",
         "2023-by-election",
     }
-    assert {
-        cycle.election_cycle_id
-        for cycle in suite.regular_elections_only.cycles
-    } == {
+    assert {cycle.election_cycle_id for cycle in suite.regular_elections_only.cycles} == {
         "2018",
         "2022",
     }
     regular_fit_calls = [
-        training
-        for target, training in calls
-        if target in {"2018", "2022"} and len(training) == 1
+        training for target, training in calls if target in {"2018", "2022"} and len(training) == 1
     ]
     assert regular_fit_calls == [
         ("2022",),
@@ -711,10 +686,7 @@ def test_comparison_rejects_a_different_analysis_cutoff_manifest() -> None:
     baseline_cycles = (_cycle("2018"), _cycle("2022"))
     changed_snapshot = replace(
         baseline_cycles[1].snapshots[0],
-        analysis_cutoff=(
-            baseline_cycles[1].snapshots[0].analysis_cutoff
-            + timedelta(minutes=1)
-        ),
+        analysis_cutoff=(baseline_cycles[1].snapshots[0].analysis_cutoff + timedelta(minutes=1)),
     )
     changed_cycles = (
         baseline_cycles[0],

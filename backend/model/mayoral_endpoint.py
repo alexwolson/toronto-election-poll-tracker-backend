@@ -120,9 +120,7 @@ class SelectedMayoralPollReading:
             raise MayoralEndpointDataError(
                 "selected reading candidate shares must have positive total"
             )
-        normalized = {
-            candidate_id: share / total for candidate_id, share in shares.items()
-        }
+        normalized = {candidate_id: share / total for candidate_id, share in shares.items()}
         object.__setattr__(self, "candidate_shares", MappingProxyType(normalized))
 
 
@@ -218,9 +216,7 @@ def draws_from_point(
     point = np.asarray(tuple(share for _, share in canonical_point), dtype=float)
     parameters = np.maximum(point * concentration, _POINT_FLOOR)
     canonical_draws = rng.dirichlet(parameters, size=draw_count)
-    draw_index = {
-        candidate_id: index for index, candidate_id in enumerate(draw_candidate_ids)
-    }
+    draw_index = {candidate_id: index for index, candidate_id in enumerate(draw_candidate_ids)}
     columns = [draw_index[candidate_id] for candidate_id in candidate_ids]
     return canonical_draws[:, columns]
 
@@ -275,9 +271,7 @@ def fit_mayoral_endpoint(
         raise MayoralEndpointDataError(
             "target cycle contains no eligible poll evidence at this cutoff"
         )
-    tail_mass = (
-        _fit_tail_mass(training_cycles, training_selected) * tail_mass_multiplier
-    )
+    tail_mass = _fit_tail_mass(training_cycles, training_selected) * tail_mass_multiplier
     if not math.isfinite(tail_mass) or not 0.0 < tail_mass < 1.0:
         raise MayoralEndpointDataError(
             "fitted candidate-tail mass must lie in (0, 1) after any multiplier"
@@ -342,9 +336,7 @@ def select_mayoral_endpoint_readings(
         attribute="poll_reading_id",
         label="poll reading",
     )
-    readings_by_sample: dict[str, list[PollReading]] = {
-        sample_id: [] for sample_id in samples
-    }
+    readings_by_sample: dict[str, list[PollReading]] = {sample_id: [] for sample_id in samples}
     for reading in readings.values():
         if reading.poll_sample_id not in samples:
             raise MayoralEndpointDataError(
@@ -371,9 +363,7 @@ def select_mayoral_endpoint_readings(
         response_keys.add(key)
         responses_by_reading[response.poll_reading_id].append(response)
 
-    boundary_date = evidence.final_ballot_evidence_available_at.astimezone(
-        _TORONTO
-    ).date()
+    boundary_date = evidence.final_ballot_evidence_available_at.astimezone(_TORONTO).date()
     selected: list[SelectedMayoralPollReading] = []
     for sample in sorted(samples.values(), key=lambda row: row.poll_sample_id):
         if evidence.enforce_final_ballot_timing and sample.fieldwork_end < boundary_date:
@@ -395,10 +385,7 @@ def select_mayoral_endpoint_readings(
         maxima = tuple(
             candidate
             for candidate in candidates
-            if not any(
-                candidate.candidate_field < other.candidate_field
-                for other in candidates
-            )
+            if not any(candidate.candidate_field < other.candidate_field for other in candidates)
         )
         maximal_fields = {candidate.candidate_field for candidate in maxima}
         if len(maximal_fields) != 1:
@@ -407,9 +394,7 @@ def select_mayoral_endpoint_readings(
             )
         best_priority = max(candidate.denominator_priority for candidate in maxima)
         best = tuple(
-            candidate
-            for candidate in maxima
-            if candidate.denominator_priority == best_priority
+            candidate for candidate in maxima if candidate.denominator_priority == best_priority
         )
         if len(best) != 1:
             raise MayoralEndpointDataError(
@@ -464,8 +449,7 @@ def _selected_for_cycle(
     )
     if future_samples:
         raise MayoralEndpointDataError(
-            "endpoint evidence contains sample(s) unavailable at the cutoff: "
-            f"{future_samples}"
+            f"endpoint evidence contains sample(s) unavailable at the cutoff: {future_samples}"
         )
     return select_mayoral_endpoint_readings(
         raw_evidence,
@@ -512,9 +496,7 @@ def _fit_tail_mass(
 
 
 # Per-cycle (point, observed) pairs backing the concentration fit.
-_ConcentrationPairs = tuple[
-    tuple[tuple[tuple[float, ...], tuple[float, ...]], ...], ...
-]
+_ConcentrationPairs = tuple[tuple[tuple[tuple[float, ...], tuple[float, ...]], ...], ...]
 # The κ-calibration draw count. Deliberately its OWN, smaller constant — NOT
 # DRAW_COUNT — because calibration re-samples inside a 24-step bisection × a CRPS
 # guard × every LOOCV fold, so its cost scales ~linearly with the count (a single
@@ -609,8 +591,7 @@ def _moment_from_pairs(cycles: _ConcentrationPairs) -> float:
         numerators = [1.0 - sum(value * value for value in point) for point, _ in pairs]
         squared_errors = [
             sum(
-                (actual - predicted) ** 2
-                for actual, predicted in zip(observed, point, strict=True)
+                (actual - predicted) ** 2 for actual, predicted in zip(observed, point, strict=True)
             )
             for point, observed in pairs
         ]
@@ -641,9 +622,7 @@ def _margin(shares: tuple[float, ...]) -> float:
     return top[0] - top[1]
 
 
-def _calibration_draws(
-    point: tuple[float, ...], concentration: float, count: int
-) -> np.ndarray:
+def _calibration_draws(point: tuple[float, ...], concentration: float, count: int) -> np.ndarray:
     """Deterministic Dirichlet draws (count x k) aligned to point order."""
 
     canonical = tuple(sorted(point))
@@ -653,9 +632,7 @@ def _calibration_draws(
     ).encode("utf-8")
     seed = int.from_bytes(hashlib.sha256(seed_material).digest()[:8], "big")
     rng = np.random.default_rng(seed)
-    parameters = np.maximum(
-        np.asarray(point, dtype=float) * concentration, _POINT_FLOOR
-    )
+    parameters = np.maximum(np.asarray(point, dtype=float) * concentration, _POINT_FLOOR)
     return rng.dirichlet(parameters, size=count)
 
 
@@ -698,8 +675,7 @@ def _mean_candidate_crps(cycles: _ConcentrationPairs, concentration: float) -> f
         for point, observed in pairs:
             draws = _calibration_draws(point, concentration, _CALIBRATION_DRAW_COUNT)
             per_candidate = [
-                _sample_crps(draws[:, index], observed[index])
-                for index in range(len(observed))
+                _sample_crps(draws[:, index], observed[index]) for index in range(len(observed))
             ]
             snapshot_means.append(sum(per_candidate) / len(per_candidate))
         cycle_means.append(sum(snapshot_means) / len(snapshot_means))
@@ -766,9 +742,7 @@ def _point_estimate(
         for reading in effective
     }
     if variant == "latest-sample-comparator":
-        return _mean_vectors(
-            tuple(sample_points[reading.poll_sample_id] for reading in effective)
-        )
+        return _mean_vectors(tuple(sample_points[reading.poll_sample_id] for reading in effective))
     if variant != "firm-balanced-bridge":
         raise MayoralEndpointDataError("unknown Mayoral Endpoint variant")
     by_pollster: dict[str, list[SelectedMayoralPollReading]] = {}
@@ -776,9 +750,7 @@ def _point_estimate(
         by_pollster.setdefault(reading.pollster, []).append(reading)
     firm_points: list[tuple[float, ...]] = []
     for pollster in sorted(by_pollster):
-        newest = tuple(
-            sample_points[reading.poll_sample_id] for reading in by_pollster[pollster]
-        )
+        newest = tuple(sample_points[reading.poll_sample_id] for reading in by_pollster[pollster])
         firm_points.append(_mean_vectors(newest))
     return _mean_vectors(tuple(firm_points))
 
@@ -792,9 +764,7 @@ def _effective_readings(
         return ()
     if variant == "latest-sample-comparator":
         latest_end = max(reading.fieldwork_end for reading in selected)
-        return tuple(
-            reading for reading in selected if reading.fieldwork_end == latest_end
-        )
+        return tuple(reading for reading in selected if reading.fieldwork_end == latest_end)
     if variant != "firm-balanced-bridge":
         raise MayoralEndpointDataError("unknown Mayoral Endpoint variant")
     effective: list[SelectedMayoralPollReading] = []
@@ -802,9 +772,7 @@ def _effective_readings(
     for pollster in pollsters:
         firm = tuple(reading for reading in selected if reading.pollster == pollster)
         latest_end = max(reading.fieldwork_end for reading in firm)
-        effective.extend(
-            reading for reading in firm if reading.fieldwork_end == latest_end
-        )
+        effective.extend(reading for reading in firm if reading.fieldwork_end == latest_end)
     return tuple(
         sorted(
             effective,
@@ -826,8 +794,7 @@ def _reading_point(
     unmeasured_count = len(set(candidate_ids) - set(reading.candidate_shares))
     if unmeasured_count == 0:
         point = tuple(
-            float(reading.candidate_shares[candidate_id])
-            for candidate_id in candidate_ids
+            float(reading.candidate_shares[candidate_id]) for candidate_id in candidate_ids
         )
         return _normalize_point(point)
     per_candidate = tail_mass / unmeasured_count
@@ -850,10 +817,7 @@ def _mean_vectors(vectors: tuple[tuple[float, ...], ...]) -> tuple[float, ...]:
     if any(len(vector) != width for vector in vectors):
         raise MayoralEndpointDataError("endpoint vectors have inconsistent widths")
     return _normalize_point(
-        tuple(
-            sum(vector[index] for vector in vectors) / len(vectors)
-            for index in range(width)
-        )
+        tuple(sum(vector[index] for vector in vectors) / len(vectors) for index in range(width))
     )
 
 
@@ -911,8 +875,7 @@ def _eligible_reading(
         and reading.tested_choice_set_status == "complete"
         and all(
             response.share is not None
-            or response.candidate_observation_status
-            == "offered_not_individually_published"
+            or response.candidate_observation_status == "offered_not_individually_published"
             for response in candidate_rows
         )
     ):
@@ -968,16 +931,10 @@ def _validate_sensitivity_inputs(
     excluded_poll_sample_ids: frozenset[str],
     excluded_pollsters: frozenset[str],
 ) -> None:
-    if not isinstance(tail_mass_multiplier, (int, float)) or isinstance(
-        tail_mass_multiplier, bool
-    ):
-        raise MayoralEndpointDataError(
-            "tail_mass_multiplier must be a finite positive number"
-        )
+    if not isinstance(tail_mass_multiplier, (int, float)) or isinstance(tail_mass_multiplier, bool):
+        raise MayoralEndpointDataError("tail_mass_multiplier must be a finite positive number")
     if not math.isfinite(tail_mass_multiplier) or tail_mass_multiplier <= 0:
-        raise MayoralEndpointDataError(
-            "tail_mass_multiplier must be a finite positive number"
-        )
+        raise MayoralEndpointDataError("tail_mass_multiplier must be a finite positive number")
     for label, values in (
         ("excluded_poll_sample_ids", excluded_poll_sample_ids),
         ("excluded_pollsters", excluded_pollsters),
@@ -985,9 +942,7 @@ def _validate_sensitivity_inputs(
         if not isinstance(values, frozenset) or any(
             not isinstance(value, str) or not value.strip() for value in values
         ):
-            raise MayoralEndpointDataError(
-                f"{label} must be a frozenset of nonblank strings"
-            )
+            raise MayoralEndpointDataError(f"{label} must be a frozenset of nonblank strings")
 
 
 def _candidate_universe(candidate_ids: tuple[str, ...]) -> frozenset[str]:

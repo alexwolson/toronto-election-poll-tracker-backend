@@ -48,6 +48,16 @@ def main() -> None:
         [PYTHON, "-c", hydrate_code],
         dry_run=args.dry_run,
     )
+    _run(
+        "Run Ruff lint",
+        [PYTHON, "-m", "ruff", "check", "."],
+        dry_run=args.dry_run,
+    )
+    _run(
+        "Check Ruff formatting",
+        [PYTHON, "-m", "ruff", "format", "--check", "."],
+        dry_run=args.dry_run,
+    )
     if not args.skip_tests:
         _run("Run backend test suite", [PYTHON, "-m", "pytest", "-q"], dry_run=args.dry_run)
     _run(

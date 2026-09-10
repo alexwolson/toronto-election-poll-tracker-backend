@@ -73,9 +73,7 @@ def main() -> None:
         "incumbency-informed",
     )
 
-    print(
-        f"=== incumbency-informed vs firm-balanced bridge (w={DEFAULT_PRIOR_PSEUDOCOUNT}) ==="
-    )
+    print(f"=== incumbency-informed vs firm-balanced bridge (w={DEFAULT_PRIOR_PSEUDOCOUNT}) ===")
     for population_label, bridge_report, incumbency_report in (
         ("all_elections", bridge.all_elections, incumbency.all_elections),
         (
@@ -102,9 +100,7 @@ def main() -> None:
         print(
             f"  winner log score (guard):       bridge {bg:.5f} -> incumbency {ig:.5f}  ({ig - bg:+.5f})"
         )
-        print(
-            f"  incumbency-informed qualifies over bridge? -> {decision.endpoint_qualifies}"
-        )
+        print(f"  incumbency-informed qualifies over bridge? -> {decision.endpoint_qualifies}")
 
     print("\n=== per-cycle winning-margin CRPS (incumbent cycles only differ) ===")
     bridge_cycles = {c.election_cycle_id: c for c in bridge.all_elections.cycles}
@@ -127,9 +123,7 @@ def main() -> None:
         )
         value = suite.all_elections.metrics[MAYORAL_MODEL_FAMILY_PRIMARY]
         note = "  (w=0 reduces to the bridge)" if weight == 0.0 else ""
-        print(
-            f"  incumbency-informed  w={weight:<5}      {value:.5f}  ({value - base:+.5f}){note}"
-        )
+        print(f"  incumbency-informed  w={weight:<5}      {value:.5f}  ({value - base:+.5f}){note}")
 
 
 if __name__ == "__main__":

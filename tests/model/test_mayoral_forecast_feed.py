@@ -182,9 +182,7 @@ def test_live_selection_isolates_an_exact_field_from_dependent_alternates() -> N
     sample_id = "forum-2026-07-29"
     sample = next(row for row in bundle.poll_samples if row.poll_sample_id == sample_id)
     head_to_head = next(
-        row
-        for row in bundle.poll_readings
-        if row.poll_reading_id == "forum_20260729_mayor_primary"
+        row for row in bundle.poll_readings if row.poll_reading_id == "forum_20260729_mayor_primary"
     )
     exact = next(
         row
@@ -221,11 +219,7 @@ def test_live_selection_isolates_an_exact_field_from_dependent_alternates() -> N
         poll_samples=(sample,),
         poll_readings=(head_to_head, exact, broader),
         poll_responses=(
-            *(
-                row
-                for row in bundle.poll_responses
-                if row.poll_reading_id in reading_ids
-            ),
+            *(row for row in bundle.poll_responses if row.poll_reading_id in reading_ids),
             *broader_responses,
             extra,
         ),

@@ -63,10 +63,7 @@ def parse_new_voter_margin(notes: str) -> int | None:
 def exposure_triggers(incumbent: WardIncumbent) -> tuple[ExposureTrigger, ...]:
     """The CDI watch-list triggers an incumbent's own numbers fire (ungated)."""
     triggers: list[ExposureTrigger] = []
-    if (
-        incumbent.vote_share is not None
-        and incumbent.vote_share < _NARROW_WIN_MAX_SHARE
-    ):
+    if incumbent.vote_share is not None and incumbent.vote_share < _NARROW_WIN_MAX_SHARE:
         triggers.append(_NARROW_PRIOR_WIN)
     new_voter_margin = parse_new_voter_margin(incumbent.notes)
     if new_voter_margin is not None and new_voter_margin > 0:
@@ -239,9 +236,7 @@ def load_ward_poll_readings(path: str | Path) -> dict[str, tuple[WardPollReading
                 firm=head["firm"],
                 date_conducted=head["date_conducted"],
                 date_published=head["date_published"],
-                sample_size=int(head["sample_size"])
-                if head["sample_size"].strip()
-                else None,
+                sample_size=int(head["sample_size"]) if head["sample_size"].strip() else None,
                 methodology=head.get("methodology", ""),
                 denominator=head.get("denominator", ""),
                 ballot_status=head.get("ballot_status", ""),

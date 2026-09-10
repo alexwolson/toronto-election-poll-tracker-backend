@@ -450,9 +450,7 @@ def _fire(
         fired = fields.get(hint.trigger_field) is True
     elif hint.trigger_operator == "contains_office_type":
         office_types = fields.get(hint.trigger_field)
-        fired = (
-            isinstance(office_types, frozenset) and hint.trigger_value in office_types
-        )
+        fired = isinstance(office_types, frozenset) and hint.trigger_value in office_types
     elif hint.trigger_operator == "continuous":
         candidate_value = fields.get(hint.trigger_field)
         fired = candidate_value is not None
@@ -462,10 +460,7 @@ def _fire(
         fired = features.all_prior_candidacy_count > 0 and candidate_value is not None
         value = candidate_value if fired else None  # type: ignore[assignment]
     elif hint.trigger_operator == "equals_all_history_only":
-        fired = (
-            features.all_prior_candidacy_count > 0
-            and fields.get(hint.trigger_field) is True
-        )
+        fired = features.all_prior_candidacy_count > 0 and fields.get(hint.trigger_field) is True
     elif hint.trigger_operator == "greater_than_zero":
         field_value = fields.get(hint.trigger_field)
         fired = isinstance(field_value, int) and field_value > 0
@@ -476,10 +471,7 @@ def _fire(
         "equals_vs_no_all_history",
         "equals_vs_other_all_history",
     }:
-        fired = (
-            features.all_prior_candidacy_count > 0
-            and fields.get(hint.trigger_field) is True
-        )
+        fired = features.all_prior_candidacy_count > 0 and fields.get(hint.trigger_field) is True
     else:
         return None
     if not fired:
@@ -506,13 +498,9 @@ def fire_candidate_hints(
     hints: tuple[SupportedHint, ...],
 ) -> tuple[FiredHint, ...]:
     """Fire the supported public hints for one candidate."""
-    opponent_history_complete = all(
-        opponent.history_confirmed for opponent in opponents
-    )
+    opponent_history_complete = all(opponent.history_confirmed for opponent in opponents)
     opponents_with_margin = [
-        opponent
-        for opponent in opponents
-        if opponent.most_recent_all_prior_margin is not None
+        opponent for opponent in opponents if opponent.most_recent_all_prior_margin is not None
     ]
     strongest_margin_opponent = max(
         opponents_with_margin,
@@ -526,12 +514,8 @@ def fire_candidate_hints(
         "all_prior_victory_count": features.all_prior_victory_count,
         "has_all_prior_victory": features.has_all_prior_victory,
         "most_recent_all_prior_margin": features.most_recent_all_prior_margin,
-        "most_recent_all_prior_was_victory": (
-            features.most_recent_all_prior_was_victory
-        ),
-        "prior_council_run_without_victory": (
-            features.prior_council_run_without_victory
-        ),
+        "most_recent_all_prior_was_victory": (features.most_recent_all_prior_was_victory),
+        "prior_council_run_without_victory": (features.prior_council_run_without_victory),
         "returning_councillor": features.returning_councillor,
         "any_returning_councillor_opponent": any(
             opponent.returning_councillor for opponent in opponents
@@ -565,11 +549,7 @@ def fire_candidate_hints(
     own_wins = [r for r in features.all_prior_records if r.is_win]
     most_recent_own_win = max(own_wins, key=lambda r: r.election_date, default=None)
     trustee_win = max(
-        (
-            r
-            for r in features.all_prior_records
-            if r.is_win and r.office_type == "trustee"
-        ),
+        (r for r in features.all_prior_records if r.is_win and r.office_type == "trustee"),
         key=lambda r: r.election_date,
         default=None,
     )
@@ -578,9 +558,7 @@ def fire_candidate_hints(
         key=lambda r: r.election_date,
         default=None,
     )
-    council_runs = [
-        r for r in features.all_prior_records if r.office_type == _COUNCIL_OFFICE
-    ]
+    council_runs = [r for r in features.all_prior_records if r.office_type == _COUNCIL_OFFICE]
     most_recent_council_loss = max(
         (r for r in council_runs if not r.is_win),
         key=lambda r: r.election_date,
@@ -591,9 +569,7 @@ def fire_candidate_hints(
         key=lambda r: r.election_date,
         default=None,
     )
-    returning_opponents = [
-        opponent for opponent in opponents if opponent.returning_councillor
-    ]
+    returning_opponents = [opponent for opponent in opponents if opponent.returning_councillor]
     returning_opponent = max(
         returning_opponents,
         key=lambda opponent: max(
@@ -654,9 +630,7 @@ def fire_candidate_hints(
         if hint_id == "opponent_returning_councillor__open_contest":
             return _source_from_record(
                 latest_council_win(returning_opponent),
-                opponent_name=(
-                    returning_opponent.candidate_name if returning_opponent else None
-                ),
+                opponent_name=(returning_opponent.candidate_name if returning_opponent else None),
             )
         if hint_id == _OPPONENT_MARGIN_HINT and strongest_margin_opponent is not None:
             opponent_record = max(

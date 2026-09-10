@@ -58,9 +58,7 @@ def incumbency_prior_share(
     trials = tuple(
         trial
         for trial in population.v1_trials
-        if not (
-            trial.city_id == exclude_city and trial.election_date.year == exclude_year
-        )
+        if not (trial.city_id == exclude_city and trial.election_date.year == exclude_year)
     )
     if not trials:
         raise IncumbencyEndpointError(
@@ -124,22 +122,14 @@ def apply_incumbency_prior(
             f"incumbent {incumbent_candidate_id!r} is not on the Final Ballot"
         )
     if not math.isfinite(prior_pseudocount) or prior_pseudocount < 0.0:
-        raise IncumbencyEndpointError(
-            "prior_pseudocount must be a finite non-negative number"
-        )
+        raise IncumbencyEndpointError("prior_pseudocount must be a finite non-negative number")
 
     city, year = _target_city_year(election_cycle_id)
-    prior_mean = incumbency_prior_share(
-        population, exclude_city=city, exclude_year=year
-    )
+    prior_mean = incumbency_prior_share(population, exclude_city=city, exclude_year=year)
     poll_share = fit.point_shares[fit.candidate_ids.index(incumbent_candidate_id)]
     weight = prior_pseudocount + fit.concentration
-    posterior = (
-        prior_pseudocount * prior_mean + fit.concentration * poll_share
-    ) / weight
-    return _reallocate(
-        fit.candidate_ids, fit.point_shares, incumbent_candidate_id, posterior
-    )
+    posterior = (prior_pseudocount * prior_mean + fit.concentration * poll_share) / weight
+    return _reallocate(fit.candidate_ids, fit.point_shares, incumbent_candidate_id, posterior)
 
 
 @dataclass(frozen=True, slots=True)
@@ -170,9 +160,7 @@ class IncumbencyInformedPredictor:
             population=self.population,
             prior_pseudocount=self.prior_pseudocount,
         )
-        draws = draws_from_point(
-            fit.candidate_ids, point, fit.concentration, self.draw_count
-        )
+        draws = draws_from_point(fit.candidate_ids, point, fit.concentration, self.draw_count)
         return EvaluationPrediction(
             FullBallotShareDraws(candidate_ids=fit.candidate_ids, draws=draws)
         )

@@ -187,9 +187,7 @@ def build_council_races(
             ward=ward,
             name=row["councillor_name"],
             is_running=is_running,
-            is_byelection_incumbent=row.get("is_byelection_incumbent", "")
-            .strip()
-            .lower()
+            is_byelection_incumbent=row.get("is_byelection_incumbent", "").strip().lower()
             == "true",
             defeatability_score=_to_int(row.get("defeatability_score", "")),
             vote_share=_to_float(row.get("vote_share", "")),
@@ -223,9 +221,7 @@ def build_council_races(
         incumbent_in_field = (
             any(candidate.candidate_id == incumbent_id for candidate in candidates)
             if incumbent_id is not None and any(candidate.candidacy_id for candidate in candidates)
-            else any(
-                len(_name_tokens(incumbent.name) & tokens) >= 2 for tokens in field_token_sets
-            )
+            else any(len(_name_tokens(incumbent.name) & tokens) >= 2 for tokens in field_token_sets)
         )
         races[ward] = CouncilRace(
             ward=ward,

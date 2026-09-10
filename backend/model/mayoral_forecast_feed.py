@@ -305,10 +305,7 @@ def _select_live_final_field_readings(
         reading
         for reading in bundle.poll_readings
         if reading.poll_sample_id in sample_ids
-        and measured_candidate_field(
-            tuple(responses_by_reading[reading.poll_reading_id])
-        )
-        == viable
+        and measured_candidate_field(tuple(responses_by_reading[reading.poll_reading_id])) == viable
     )
     reading_ids = {reading.poll_reading_id for reading in readings}
     responses = tuple(
@@ -316,9 +313,7 @@ def _select_live_final_field_readings(
     )
     evidence = MayoralEndpointEvidence(
         election_cycle_id=endpoint_cycle,
-        final_ballot_evidence_available_at=min(
-            sample.evidence_available_at for sample in citywide
-        ),
+        final_ballot_evidence_available_at=min(sample.evidence_available_at for sample in citywide),
         poll_samples=tuple(
             replace(sample, election_cycle_id=endpoint_cycle) for sample in citywide
         ),
@@ -418,9 +413,7 @@ def load_live_forecast_inputs(
         reading for reading in bundle.poll_readings if reading.poll_reading_id in reading_ids
     )
     responses = tuple(
-        response
-        for response in bundle.poll_responses
-        if response.poll_reading_id in reading_ids
+        response for response in bundle.poll_responses if response.poll_reading_id in reading_ids
     )
     if not final_field_samples:
         raise ValueError("no final-field samples to forecast from")

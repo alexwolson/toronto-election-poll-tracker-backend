@@ -1,5 +1,6 @@
 # tests/model/test_fetch_candidates.py
 """Tests for fetch_candidates.py parsing logic."""
+
 from __future__ import annotations
 
 import importlib.util

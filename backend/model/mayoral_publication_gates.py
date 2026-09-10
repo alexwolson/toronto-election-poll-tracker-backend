@@ -85,10 +85,7 @@ def mayoral_quantity_gate_status(
         return QuantityGateStatus.NOT_APPLICABLE
 
     required = MAYORAL_QUANTITY_REQUIRED_TIER[quantity]
-    if (
-        MAYORAL_TIER_HISTORICAL_CYCLE_COUNTS.get(required, 0)
-        < MAYORAL_TIER_UNLOCK_MINIMUM_CYCLES
-    ):
+    if MAYORAL_TIER_HISTORICAL_CYCLE_COUNTS.get(required, 0) < MAYORAL_TIER_UNLOCK_MINIMUM_CYCLES:
         return QuantityGateStatus.HISTORY_BLOCKED
 
     if quantity == CHALLENGER_WIN:
