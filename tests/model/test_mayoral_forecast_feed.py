@@ -1,3 +1,5 @@
+from dataclasses import replace
+from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -5,10 +7,12 @@ import numpy as np
 
 from backend.model.mayoral_evaluation import FullBallotShareDraws
 from backend.model.mayoral_forecast_feed import (
+    _select_live_final_field_readings,
     _variant_predictors,
     build_mayoral_forecast_feed,
     forecast_quantities,
 )
+from backend.model.poll_sources import load_poll_source_bundle
 from backend.model.publication_manifest import load_live_cycle
 
 ROOT = Path(__file__).resolve().parents[2]
@@ -169,3 +173,70 @@ def test_uncertified_forecast_is_unavailable_at_tier_m1() -> None:
     # Respect the gate: when the close-result summary is withheld, we do not leak
     # the margin distribution's shape either.
     assert feed["margin_distribution"] is None
+    assert len(feed["final_field_readings"]) == len(feed["final_field_samples"])
+    assert "forum_20260729_mayor_alexander" in feed["final_field_readings"]
+
+
+def test_live_selection_isolates_an_exact_field_from_dependent_alternates() -> None:
+    bundle = load_poll_source_bundle(ROOT / "data/raw/polls")
+    sample_id = "forum-2026-07-29"
+    sample = next(row for row in bundle.poll_samples if row.poll_sample_id == sample_id)
+    head_to_head = next(
+        row
+        for row in bundle.poll_readings
+        if row.poll_reading_id == "forum_20260729_mayor_primary"
+    )
+    exact = next(
+        row
+        for row in bundle.poll_readings
+        if row.poll_reading_id == "forum_20260729_mayor_alexander"
+    )
+    source_responses = tuple(
+        row for row in bundle.poll_responses if row.poll_reading_id == exact.poll_reading_id
+    )
+    viable = frozenset(
+        row.candidate_id
+        for row in source_responses
+        if row.response_kind == "candidate" and row.candidate_id is not None
+    )
+    broader = replace(exact, poll_reading_id="forum_20260729_mayor_hypothetical_broader")
+    broader_responses = tuple(
+        replace(row, poll_reading_id=broader.poll_reading_id) for row in source_responses
+    )
+    template = next(row for row in source_responses if row.response_kind == "candidate")
+    extra = replace(
+        template,
+        poll_reading_id=broader.poll_reading_id,
+        response_option_id="hypothetical-extra",
+        candidate_id="hypothetical-extra",
+        candidate_name="Hypothetical Extra",
+        response_label="Hypothetical Extra",
+        option_order=99,
+        reported_value="10",
+        share=Decimal("0.10"),
+    )
+    reading_ids = {head_to_head.poll_reading_id, exact.poll_reading_id}
+    test_bundle = replace(
+        bundle,
+        poll_samples=(sample,),
+        poll_readings=(head_to_head, exact, broader),
+        poll_responses=(
+            *(
+                row
+                for row in bundle.poll_responses
+                if row.poll_reading_id in reading_ids
+            ),
+            *broader_responses,
+            extra,
+        ),
+    )
+
+    selected = _select_live_final_field_readings(
+        test_bundle,
+        (sample,),
+        viable,
+        endpoint_cycle="toronto_2026",
+    )
+
+    assert [row.poll_reading_id for row in selected] == [exact.poll_reading_id]
+    assert selected[0].candidate_field == tuple(sorted(viable))

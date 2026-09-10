@@ -106,6 +106,31 @@ def test_selector_uses_one_post_final_reading_per_respondent_sample() -> None:
     }
 
 
+def test_selector_can_apply_field_consistency_without_the_date_proxy() -> None:
+    cycle, _ = _cycle("toronto_2014", 1)
+    evidence = cycle.snapshots[0].evidence
+    future_boundary = replace(
+        evidence,
+        final_ballot_evidence_available_at=(
+            evidence.final_ballot_evidence_available_at + timedelta(days=365)
+        ),
+    )
+    assert (
+        select_mayoral_endpoint_readings(
+            future_boundary,
+            final_candidate_ids=cycle.outcome.candidate_ids,
+        )
+        == ()
+    )
+
+    selected = select_mayoral_endpoint_readings(
+        replace(future_boundary, enforce_final_ballot_timing=False),
+        final_candidate_ids=cycle.outcome.candidate_ids,
+    )
+
+    assert selected
+
+
 def test_qualification_grid_is_the_common_poll_backed_grid() -> None:
     assert MAYORAL_ENDPOINT_EVALUATION_LEAD_TIMES == (12, 7, 3, 1)
     assert MAYORAL_ENDPOINT_ANALYSIS_TIME_LOCAL == time(12)
