@@ -7,7 +7,6 @@ from zoneinfo import ZoneInfo
 
 import numpy as np
 
-from backend.model.mayoral_correlated_endpoint import prepare_mayoral_poll_observations
 from backend.model.mayoral_evaluation import FullBallotShareDraws
 from backend.model.mayoral_forecast_feed import (
     QuantityEstimate,
@@ -274,10 +273,12 @@ def test_live_target_uses_real_cutoff_and_excludes_later_polls(monkeypatch):
     assert all(
         s.evidence_available_at <= cutoff for s in inputs.target.snapshot.evidence.poll_samples
     )
-    observations = prepare_mayoral_poll_observations(inputs.target)
-    forum = next(row for row in observations if row.sample_id == "forum-2026-07-29")
-    assert forum.reading_base == 889
-    assert forum.base_kind == "unweighted"
+    forum = next(
+        row
+        for row in inputs.target.snapshot.evidence.poll_readings
+        if row.poll_sample_id == "forum-2026-07-29"
+    )
+    assert forum.unweighted_base == 889
 
 
 def test_live_selection_isolates_an_exact_field_from_dependent_alternates() -> None:
