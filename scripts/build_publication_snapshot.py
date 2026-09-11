@@ -62,12 +62,21 @@ def main() -> None:
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--input-manifest", type=Path, required=True)
     parser.add_argument("--output-dir", type=Path, required=True)
+    parser.add_argument("--analysis-cutoff", type=datetime.fromisoformat)
     args = parser.parse_args()
     inputs = load_release_input_paths(args.input_manifest)
-    as_of = datetime.now(ZoneInfo("America/Toronto")).date().isoformat()
+    cutoff = args.analysis_cutoff or datetime.now(ZoneInfo("America/Toronto"))
+    if cutoff.utcoffset() is None:
+        parser.error("--analysis-cutoff requires an offset-aware timestamp")
+    as_of = cutoff.astimezone(ZoneInfo("America/Toronto")).date().isoformat()
 
     live_cycle = load_live_cycle(RAW / "elections" / "live_cycle.json")
-    forecast = build_mayoral_forecast_feed(ROOT, live_cycle, polls_dir=inputs.model_polls)
+    forecast = build_mayoral_forecast_feed(
+        ROOT,
+        live_cycle,
+        polls_dir=inputs.model_polls,
+        analysis_cutoff=cutoff,
+    )
     _write(args.output_dir, "mayoral_forecast.json", forecast)
 
     manifest = build_publication_manifest(

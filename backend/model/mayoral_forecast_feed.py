@@ -19,8 +19,8 @@ from __future__ import annotations
 import math
 from collections import defaultdict
 from dataclasses import dataclass, replace
-from datetime import datetime
-from decimal import Decimal
+from datetime import date, datetime
+from decimal import ROUND_CEILING, ROUND_FLOOR, Decimal
 from pathlib import Path
 from zoneinfo import ZoneInfo
 
@@ -81,7 +81,7 @@ from backend.model.publication import (
     unavailable_variant,
 )
 
-MAYORAL_FORECAST_FEED_SCHEMA_VERSION = 2
+MAYORAL_FORECAST_FEED_SCHEMA_VERSION = 3
 _TORONTO = ZoneInfo("America/Toronto")
 _CLOSE_THRESHOLD = 0.05
 # Tail-mass sensitivity: halve and double the fitted candidate-tail mass (ADR 0018).
@@ -408,11 +408,17 @@ class LiveForecastInputs:
 
 
 def load_live_forecast_inputs(
-    root: str | Path, live_cycle: dict, *, polls_dir: str | Path
+    root: str | Path, live_cycle: dict, *, polls_dir: str | Path, analysis_cutoff: datetime
 ) -> LiveForecastInputs:
     """Build the training corpus, the live target, and the evidence tier from the
     current-cycle bundle, restricted to the field-consistency selection (ADR 0046)."""
     root = Path(root)
+    if analysis_cutoff.utcoffset() is None:
+        raise ValueError("analysis_cutoff must be offset-aware")
+    election_date = date.fromisoformat(live_cycle["election_date"])
+    days_before_election = (election_date - analysis_cutoff.astimezone(_TORONTO).date()).days
+    if days_before_election < 0:
+        raise ValueError("analysis_cutoff must not follow election day")
     cycle_id = live_cycle["election_cycle_id"]
     viable = frozenset(live_cycle["viable_field"])
     incumbent = live_cycle["incumbent_candidate_id"]
@@ -425,6 +431,7 @@ def load_live_forecast_inputs(
         if sample.election_cycle_id == cycle_id
         and sample.geography_type == "citywide"
         and sample.extraction_status == "extracted"
+        and sample.evidence_available_at <= analysis_cutoff
     )
     endpoint_cycle = cycle_id.replace("-", "_")
     selected = _select_live_final_field_readings(
@@ -502,10 +509,8 @@ def load_live_forecast_inputs(
         enforce_final_ballot_timing=False,
     )
     snapshot = LeadTimeSnapshot(
-        days_before_election=0,
-        analysis_cutoff=datetime.fromisoformat(f"{live_cycle['election_date']}T12:00:00").replace(
-            tzinfo=_TORONTO
-        ),
+        days_before_election=days_before_election,
+        analysis_cutoff=analysis_cutoff,
         evidence_revision=f"live-{cycle_id}",
         evidence=evidence,
     )
@@ -654,12 +659,17 @@ def _variant_row(label: str, estimate: QuantityEstimate) -> SensitivityVariant:
 
 
 def build_mayoral_forecast_feed(
-    root: str | Path, live_cycle: dict, *, polls_dir: str | Path
+    root: str | Path, live_cycle: dict, *, polls_dir: str | Path, analysis_cutoff: datetime
 ) -> dict:
     """Assemble the per-candidate forecast feed: each quantity's evidence tier,
     availability, published band, and (when Available) point estimate."""
     root = Path(root)
-    inputs = load_live_forecast_inputs(root, live_cycle, polls_dir=polls_dir)
+    inputs = load_live_forecast_inputs(
+        root,
+        live_cycle,
+        polls_dir=polls_dir,
+        analysis_cutoff=analysis_cutoff,
+    )
     tier = inputs.tier_result
     has_incumbent = inputs.incumbent_candidate_id is not None
     # The variant suite is only needed when the tier could unlock a quantity;
@@ -688,6 +698,7 @@ def build_mayoral_forecast_feed(
             race_has_incumbent=has_incumbent,
             candidate_id=candidate_id,
             variants=variants or None,
+            central_variant_label="bridge-base",
         )
         point = per_variant["bridge-base"] if publication.is_published else None
         estimate = estimate_of(point) if point is not None else None
@@ -702,6 +713,32 @@ def build_mayoral_forecast_feed(
             ),
             "probability": estimate.probability if estimate else None,
             "reason": publication.reason,
+            "sensitivity": (
+                {
+                    "kind": "model_assumptions",
+                    "lower": float(
+                        publication.sensitivity_range[0].quantize(
+                            Decimal(".01"), rounding=ROUND_FLOOR
+                        )
+                    ),
+                    "upper": float(
+                        publication.sensitivity_range[1].quantize(
+                            Decimal(".01"), rounding=ROUND_CEILING
+                        )
+                    ),
+                    "includes_monte_carlo_error": True,
+                    "scenarios": [
+                        {
+                            "label": v.label,
+                            "role": "authoritative" if v.label == "bridge-base" else "stress_test",
+                            "probability": float(v.probability),
+                        }
+                        for v in variants
+                    ],
+                }
+                if publication.sensitivity_range is not None
+                else None
+            ),
         }
 
     candidate_win = {
@@ -764,6 +801,9 @@ def build_mayoral_forecast_feed(
 
     return {
         "schema_version": MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
+        "publication_policy": "central-band-with-sensitivity-v1",
+        "sensitivity_variant_labels": list(per_variant),
+        "analysis_cutoff": analysis_cutoff.isoformat(),
         "election_cycle_id": inputs.target.election_cycle_id,
         "evidence_tier": tier.tier.label,
         "final_field_samples": list(inputs.final_field_sample_ids),

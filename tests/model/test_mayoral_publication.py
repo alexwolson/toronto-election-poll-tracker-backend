@@ -1,5 +1,7 @@
 from decimal import Decimal
 
+import pytest
+
 from backend.model.mayoral_evidence_tier import (
     MayoralEvidenceTier,
     MayoralPollSampleEvidence,
@@ -45,6 +47,69 @@ def _agreeing():
         _variant("base", "0.50", "0.47", "0.53"),
         _variant("tail-high", "0.51", "0.48", "0.54"),
     ]
+
+
+def test_central_band_remains_available_across_boundaries_and_reports_full_range():
+    pub = compose_mayoral_quantity_publication(
+        CLOSE_RESULT,
+        _tier([_s("a", "Forum")]),
+        race_has_incumbent=True,
+        central_variant_label="base",
+        variants=[
+            _variant("base", "0.869", "0.867", "0.871"),
+            _variant("tail-high", "0.748", "0.745", "0.751"),
+            _variant("incumbency", "0.904", "0.902", "0.906"),
+        ],
+    )
+    assert pub.is_published
+    assert pub.band.frequency_statement == "about 4 in 5"
+    assert pub.sensitivity_range == (D("0.745"), D("0.906"))
+
+
+@pytest.mark.parametrize("point", ["0", ".1", ".3", ".5", ".7", ".9", "1"])
+def test_central_band_boundary_never_suppresses_a_valid_summary(point):
+    pub = compose_mayoral_quantity_publication(
+        CLOSE_RESULT,
+        _tier([_s("a", "Forum")]),
+        race_has_incumbent=True,
+        central_variant_label="base",
+        variants=[_variant("base", point, point, point), _variant("stress", ".49", ".48", ".50")],
+    )
+    assert pub.is_published
+
+
+@pytest.mark.parametrize(
+    "point,phrase", [(".01", "less than 1 in 10"), (".99", "more than 9 in 10")]
+)
+def test_central_summary_preserves_existing_rare_event_wording(point, phrase):
+    pub = compose_mayoral_quantity_publication(
+        CLOSE_RESULT,
+        _tier([_s("a", "Forum")]),
+        race_has_incumbent=True,
+        central_variant_label="base",
+        variants=[_variant("base", point, point, point)],
+    )
+    assert pub.band.frequency_statement == phrase
+
+
+@pytest.mark.parametrize(
+    "variants",
+    [
+        [_variant("stress", ".5", ".49", ".51")],
+        [_variant("base", ".5", ".49", ".51"), unavailable_variant("stress")],
+        [_variant("base", ".5", ".49", ".51"), _variant("base", ".6", ".59", ".61")],
+    ],
+)
+def test_central_range_fails_closed_on_missing_or_ambiguous_computations(variants):
+    pub = compose_mayoral_quantity_publication(
+        CLOSE_RESULT,
+        _tier([_s("a", "Forum")]),
+        race_has_incumbent=True,
+        central_variant_label="base",
+        variants=variants,
+    )
+    assert not pub.is_published
+    assert pub.sensitivity_range is None
 
 
 def test_pre_final_close_result_is_unavailable_and_shows_m1() -> None:

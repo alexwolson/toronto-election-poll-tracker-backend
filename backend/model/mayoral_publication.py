@@ -16,6 +16,7 @@ from __future__ import annotations
 
 from collections.abc import Iterable
 from dataclasses import dataclass
+from decimal import Decimal
 from enum import Enum
 
 from backend.model.mayoral_evidence_tier import (
@@ -27,8 +28,10 @@ from backend.model.mayoral_publication_gates import (
     mayoral_quantity_gate_status,
 )
 from backend.model.publication import (
+    PROBABILITY_BAND_GRID_FIVE,
     ProbabilityBand,
     SensitivityVariant,
+    band_for,
     evaluate_band_stability,
 )
 
@@ -51,6 +54,7 @@ class MayoralQuantityPublication:
     availability: Availability
     band: ProbabilityBand | None
     reason: str
+    sensitivity_range: tuple[Decimal, Decimal] | None = None
 
     @property
     def is_published(self) -> bool:
@@ -64,6 +68,7 @@ def compose_mayoral_quantity_publication(
     race_has_incumbent: bool,
     candidate_id: str | None = None,
     variants: Iterable[SensitivityVariant] | None = None,
+    central_variant_label: str | None = None,
 ) -> MayoralQuantityPublication:
     """Resolve one public mayoral quantity to Available / Unavailable / N/A."""
 
@@ -111,6 +116,35 @@ def compose_mayoral_quantity_publication(
             Availability.UNAVAILABLE,
             None,
             "no sensitivity variants were computed",
+        )
+
+    if central_variant_label is not None:
+        # ADR 0053: show central rounding and sensitivity separately. Tier and
+        # integrity checks remain; agreement on a rounding bin is not required.
+        labels = [v.label for v in variant_tuple]
+        if len(set(labels)) != len(labels):
+            return result(Availability.UNAVAILABLE, None, "duplicate sensitivity variant labels")
+        failed = [v.label for v in variant_tuple if not v.can_run()]
+        if failed:
+            return result(Availability.UNAVAILABLE, None, f"unrunnable variants: {failed}")
+        central = next((v for v in variant_tuple if v.label == central_variant_label), None)
+        if central is None:
+            return result(Availability.UNAVAILABLE, None, "central sensitivity variant is missing")
+        return MayoralQuantityPublication(
+            quantity,
+            candidate_id,
+            tier,
+            Availability.AVAILABLE,
+            (
+                band_for(central.probability)
+                if central.probability < Decimal(".05") or central.probability >= Decimal(".95")
+                else band_for(central.probability, PROBABILITY_BAND_GRID_FIVE)
+            ),
+            "",
+            (
+                min(v.error_interval.lower for v in variant_tuple),
+                max(v.error_interval.upper for v in variant_tuple),
+            ),
         )
 
     decision = evaluate_band_stability(variant_tuple)

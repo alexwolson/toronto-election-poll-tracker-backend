@@ -1,10 +1,13 @@
 from dataclasses import replace
+from datetime import datetime
 from decimal import Decimal
 from pathlib import Path
 from types import SimpleNamespace
+from zoneinfo import ZoneInfo
 
 import numpy as np
 
+from backend.model.mayoral_correlated_endpoint import prepare_mayoral_poll_observations
 from backend.model.mayoral_evaluation import FullBallotShareDraws
 from backend.model.mayoral_forecast_feed import (
     QuantityEstimate,
@@ -13,6 +16,7 @@ from backend.model.mayoral_forecast_feed import (
     _variant_predictors,
     build_mayoral_forecast_feed,
     forecast_quantities,
+    load_live_forecast_inputs,
 )
 from backend.model.poll_sources import load_poll_source_bundle
 from backend.model.publication_manifest import load_live_cycle
@@ -224,8 +228,14 @@ def test_uncertified_forecast_is_unavailable_at_tier_m1(monkeypatch) -> None:
         "backend.model.mayoral_forecast_feed.load_canonical_mayoral_candidate_ids",
         lambda _: CANDS,
     )
-    feed = build_mayoral_forecast_feed(ROOT, live_cycle, polls_dir=ROOT / "data/raw/polls")
+    feed = build_mayoral_forecast_feed(
+        ROOT,
+        live_cycle,
+        polls_dir=ROOT / "data/raw/polls",
+        analysis_cutoff=datetime(2026, 9, 11, 12, tzinfo=ZoneInfo("America/Toronto")),
+    )
     assert feed["evidence_tier"] == "M1 — Pre-Final Polling"
+    assert feed["analysis_cutoff"] == "2026-09-11T12:00:00-04:00"
     assert feed["close_result"]["availability"] == "Forecast Unavailable"
     assert feed["forecast_favourite"]["availability"] == "Forecast Unavailable"
     assert feed["forecast_favourite"]["candidate_id"] is None
@@ -237,6 +247,37 @@ def test_uncertified_forecast_is_unavailable_at_tier_m1(monkeypatch) -> None:
     assert feed["margin_distribution"] is None
     assert len(feed["final_field_readings"]) == len(feed["final_field_samples"])
     assert "forum_20260729_mayor_alexander" in feed["final_field_readings"]
+
+
+def test_live_target_uses_real_cutoff_and_excludes_later_polls(monkeypatch):
+    monkeypatch.setattr(
+        "backend.model.mayoral_forecast_feed.load_canonical_mayoral_candidate_ids",
+        lambda _: CANDS,
+    )
+    config = {
+        **load_live_cycle(ROOT / "data/raw/elections/live_cycle.json"),
+        "viable_field": list(CANDS),
+        "incumbent_candidate_id": "chow",
+        "field_certified": False,
+    }
+    cutoff = datetime(2026, 8, 10, 12, tzinfo=ZoneInfo("America/Toronto"))
+    inputs = load_live_forecast_inputs(
+        ROOT,
+        config,
+        polls_dir=ROOT / "data/raw/polls",
+        analysis_cutoff=cutoff,
+    )
+    assert inputs.target.snapshot.analysis_cutoff == cutoff
+    assert inputs.target.snapshot.days_before_election == 77
+    assert "liaison-2026-08-16" not in inputs.final_field_sample_ids
+    assert "forum-2026-07-29" in inputs.final_field_sample_ids
+    assert all(
+        s.evidence_available_at <= cutoff for s in inputs.target.snapshot.evidence.poll_samples
+    )
+    observations = prepare_mayoral_poll_observations(inputs.target)
+    forum = next(row for row in observations if row.sample_id == "forum-2026-07-29")
+    assert forum.reading_base == 889
+    assert forum.base_kind == "unweighted"
 
 
 def test_live_selection_isolates_an_exact_field_from_dependent_alternates() -> None:
