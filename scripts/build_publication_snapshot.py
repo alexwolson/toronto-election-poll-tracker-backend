@@ -37,6 +37,7 @@ from backend.release_inputs import load_release_input_paths
 def _publication_summary(forecast: dict) -> dict:
     return {
         "evidence_tier": forecast["evidence_tier"],
+        "forecast_favourite": forecast["forecast_favourite"]["availability"],
         "candidate_win": {
             candidate_id: card["availability"]
             for candidate_id, card in forecast["candidate_win"].items()

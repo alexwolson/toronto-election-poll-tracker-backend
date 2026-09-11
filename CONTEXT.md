@@ -164,6 +164,10 @@ _Avoid_: Competitiveness score, toss-up rating
 The probability that a named candidate wins the election, published only when its own applicable Publication Gates pass.
 _Avoid_: Competitiveness score, candidate rating
 
+**Forecast Favourite**:
+The named candidate with the highest Candidate Win Probability when every Mandatory Sensitivity Variant identifies the same unique leader and numerical error cannot reverse that ordering. It may be available when the leader's Probability Band is unavailable because rank stability and band stability are distinct claims.
+_Avoid_: Polling leader, published odds
+
 **Probability Band**:
 A fixed, pre-declared interval containing an exact internal forecast probability. The public grid is 0–<5%, 5–<15%, successive centred ten-point bands through 85–<95%, and 95–100%. It is the most precise form of that probability released publicly, not a claim that each band's realized frequency has been independently demonstrated from Toronto's small historical sample.
 _Avoid_: Rounded probability, confidence interval

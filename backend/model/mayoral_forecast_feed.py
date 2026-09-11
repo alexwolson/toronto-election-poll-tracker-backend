@@ -66,6 +66,8 @@ from backend.model.mayoral_publication_gates import (
     CHALLENGER_WIN,
     CLOSE_RESULT,
     INCUMBENT_DEFEAT,
+    QuantityGateStatus,
+    mayoral_quantity_gate_status,
 )
 from backend.model.poll_sources import (
     PollResponse,
@@ -101,6 +103,14 @@ class QuantityEstimate:
     probability: float
     interval_lower: float
     interval_upper: float
+
+
+@dataclass(frozen=True, slots=True)
+class FavouriteStabilityDecision:
+    """A categorical favourite that is stable across every model variant."""
+
+    candidate_id: str | None
+    reason: str
 
 
 def _wilson_interval(p: float, n: int) -> tuple[float, float]:
@@ -234,6 +244,64 @@ class MayoralForecastQuantities:
     close_result: QuantityEstimate
     incumbent_defeat: QuantityEstimate | None  # None in an open race
     margin_distribution: MarginDistribution
+
+
+def _evaluate_favourite_stability(
+    per_variant: dict[str, MayoralForecastQuantities | None],
+    *,
+    candidate_ids: tuple[str, ...],
+) -> FavouriteStabilityDecision:
+    """Publish a favourite only when every variant has the same separated leader.
+
+    This gate is deliberately independent of Probability Bands. A variant may
+    move the favourite across a band boundary without changing which candidate
+    has the highest win probability. Numerical error intervals must still leave
+    the leader strictly above every rival in every variant.
+    """
+
+    expected = set(candidate_ids)
+    if len(expected) < 2 or len(expected) != len(candidate_ids):
+        return FavouriteStabilityDecision(None, "the candidate field is incomplete")
+    if not per_variant:
+        return FavouriteStabilityDecision(None, "no sensitivity variants were computed")
+
+    consensus: str | None = None
+    for label, quantities in per_variant.items():
+        if quantities is None:
+            return FavouriteStabilityDecision(None, f"variant {label!r} could not be computed")
+        estimates = quantities.candidate_win
+        if set(estimates) != expected:
+            return FavouriteStabilityDecision(
+                None,
+                f"variant {label!r} does not cover the complete candidate field",
+            )
+        ranked = sorted(expected, key=lambda candidate_id: estimates[candidate_id].probability)
+        leader = ranked[-1]
+        runner_up = ranked[-2]
+        if estimates[leader].probability <= estimates[runner_up].probability:
+            return FavouriteStabilityDecision(
+                None,
+                f"variant {label!r} has no unique favourite",
+            )
+        rival_upper = max(
+            estimate.interval_upper
+            for candidate_id, estimate in estimates.items()
+            if candidate_id != leader
+        )
+        if estimates[leader].interval_lower <= rival_upper:
+            return FavouriteStabilityDecision(
+                None,
+                f"variant {label!r} favourite and rival error intervals overlap",
+            )
+        if consensus is None:
+            consensus = leader
+        elif leader != consensus:
+            return FavouriteStabilityDecision(
+                None,
+                f"variant {label!r} has a different favourite",
+            )
+
+    return FavouriteStabilityDecision(consensus, "")
 
 
 def forecast_quantities(
@@ -644,6 +712,40 @@ def build_mayoral_forecast_feed(
         )
         for candidate_id in inputs.viable_field
     }
+    favourite_gate_open = all(
+        mayoral_quantity_gate_status(
+            CHALLENGER_WIN,
+            tier,
+            race_has_incumbent=has_incumbent,
+            candidate_id=candidate_id,
+        )
+        is QuantityGateStatus.UNLOCKED
+        for candidate_id in inputs.viable_field
+    )
+    favourite = (
+        _evaluate_favourite_stability(
+            per_variant,
+            candidate_ids=inputs.target.candidate_ids,
+        )
+        if favourite_gate_open
+        else FavouriteStabilityDecision(
+            None,
+            "candidate win tier is not available for the complete field",
+        )
+    )
+    if favourite.candidate_id is not None and favourite.candidate_id not in inputs.viable_field:
+        favourite = FavouriteStabilityDecision(
+            None,
+            "the stable favourite is not individually measured in the final-field readings",
+        )
+    forecast_favourite = {
+        "tier": tier.tier.label,
+        "availability": (
+            "Forecast Available" if favourite.candidate_id is not None else "Forecast Unavailable"
+        ),
+        "candidate_id": favourite.candidate_id,
+        "reason": favourite.reason,
+    }
     close_result = quantity_card(CLOSE_RESULT, lambda q: q.close_result)
     incumbent_defeat = quantity_card(INCUMBENT_DEFEAT, lambda q: q.incumbent_defeat)
 
@@ -667,6 +769,7 @@ def build_mayoral_forecast_feed(
         "final_field_samples": list(inputs.final_field_sample_ids),
         "final_field_readings": list(inputs.final_field_reading_ids),
         "incumbent_candidate_id": inputs.incumbent_candidate_id,
+        "forecast_favourite": forecast_favourite,
         "candidate_win": candidate_win,
         "close_result": close_result,
         "incumbent_defeat": incumbent_defeat,

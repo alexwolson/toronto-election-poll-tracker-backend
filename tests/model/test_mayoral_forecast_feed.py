@@ -7,6 +7,8 @@ import numpy as np
 
 from backend.model.mayoral_evaluation import FullBallotShareDraws
 from backend.model.mayoral_forecast_feed import (
+    QuantityEstimate,
+    _evaluate_favourite_stability,
     _select_live_final_field_readings,
     _variant_predictors,
     build_mayoral_forecast_feed,
@@ -27,6 +29,60 @@ DRAWS = FullBallotShareDraws(
         (0.50, 0.25, 0.25),  # chow wins, margin 0.25 (not close)
     ),
 )
+
+
+def _favourite_variant(
+    chow: tuple[float, float, float],
+    bradford: tuple[float, float, float],
+    alexander: tuple[float, float, float] = (0.0, 0.0, 0.01),
+):
+    return SimpleNamespace(
+        candidate_win={
+            "chow": QuantityEstimate(*chow),
+            "bradford": QuantityEstimate(*bradford),
+            "alexander": QuantityEstimate(*alexander),
+        }
+    )
+
+
+def test_favourite_publishes_when_rank_is_stable_across_different_bands() -> None:
+    decision = _evaluate_favourite_stability(
+        {
+            "bridge-base": _favourite_variant(
+                (0.869, 0.866, 0.872),
+                (0.131, 0.128, 0.134),
+            ),
+            "incumbency-prior": _favourite_variant(
+                (0.92, 0.917, 0.923),
+                (0.08, 0.077, 0.083),
+            ),
+        },
+        candidate_ids=CANDS,
+    )
+
+    assert decision.candidate_id == "chow"
+    assert decision.reason == ""
+
+
+def test_favourite_is_unavailable_when_variants_disagree_or_intervals_overlap() -> None:
+    disagreement = _evaluate_favourite_stability(
+        {
+            "bridge-base": _favourite_variant((0.55, 0.53, 0.57), (0.45, 0.43, 0.47)),
+            "challenger": _favourite_variant((0.45, 0.43, 0.47), (0.55, 0.53, 0.57)),
+        },
+        candidate_ids=CANDS,
+    )
+    overlap = _evaluate_favourite_stability(
+        {
+            "bridge-base": _favourite_variant((0.51, 0.48, 0.54), (0.49, 0.46, 0.52)),
+        },
+        candidate_ids=CANDS,
+    )
+
+    assert disagreement.candidate_id is None
+    assert "different favourite" in disagreement.reason
+    assert overlap.candidate_id is None
+    assert "error intervals overlap" in overlap.reason
 
 
 def test_candidate_win_probabilities_are_draw_fractions_summing_to_one() -> None:
@@ -171,6 +227,8 @@ def test_uncertified_forecast_is_unavailable_at_tier_m1(monkeypatch) -> None:
     feed = build_mayoral_forecast_feed(ROOT, live_cycle, polls_dir=ROOT / "data/raw/polls")
     assert feed["evidence_tier"] == "M1 — Pre-Final Polling"
     assert feed["close_result"]["availability"] == "Forecast Unavailable"
+    assert feed["forecast_favourite"]["availability"] == "Forecast Unavailable"
+    assert feed["forecast_favourite"]["candidate_id"] is None
     assert all(
         card["availability"] == "Forecast Unavailable" for card in feed["candidate_win"].values()
     )
