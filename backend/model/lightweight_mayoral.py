@@ -29,9 +29,7 @@ class Poll:
 
 @dataclass(frozen=True)
 class ForecastConfig:
-    field: tuple[
-        str, ...
-    ]  # viable named candidates; field[0] is the leader/incumbent frame
+    field: tuple[str, ...]  # viable named candidates; field[0] is the leader/incumbent frame
     election_date: date
     asof: date
     half_life_days: float = 21.0
@@ -95,21 +93,15 @@ def _simulate(mean, labels, cfg, *, polling, drift, consolidation, seed):
         ci = labels.index(cfg.consolidation_incumbent)
         lo, hi = cfg.soft_fraction_range
         soft = rng.uniform(lo, hi, size=n)
-        soft = np.where(
-            rng.random(n) < cfg.dropout_prob, hi, soft
-        )  # dropout -> top of range
+        soft = np.where(rng.random(n) < cfg.dropout_prob, hi, soft)  # dropout -> top of range
         moved = soft * centre[:, ai]
         stay_home = moved * (1.0 - cfg.split_to_target - cfg.split_to_incumbent)
         centre[:, ai] -= moved
         centre[:, ti] += moved * cfg.split_to_target
         centre[:, ci] += moved * cfg.split_to_incumbent
-        centre /= (1.0 - stay_home)[
-            :, None
-        ]  # those who stay home leave the voting electorate
+        centre /= (1.0 - stay_home)[:, None]  # those who stay home leave the voting electorate
 
-    var = (cfg.polling_error_sd**2 if polling else 0.0) + (
-        cfg.drift_sd**2 if drift else 0.0
-    )
+    var = (cfg.polling_error_sd**2 if polling else 0.0) + (cfg.drift_sd**2 if drift else 0.0)
     sd = np.sqrt(var)
     if sd > 0:
         log_sd = sd / np.maximum(mean, 0.08)  # per-candidate share-SD -> log-space
