@@ -41,6 +41,9 @@ TIER = "Compact joint model — certified field"
 INTERVAL_MASS = 0.8
 BIN_WIDTH = 5
 BIN_RANGE = (-100, 100)
+# The published three-outcome summary of the leader-minus-challenger margin: "ahead
+# by at least this many points" on either side, and "within this many points" between.
+CLOSE_THRESHOLD_POINTS = 2.0
 SPECIFICATION = {
     "discrepancy": "isotropic",
     "innovations": "gaussian",
@@ -164,6 +167,17 @@ def assemble_forecast_feed(
                 "unit": "vote_share_points",
                 **_quantiles(margins),
                 "probability_challenger_ahead": _r((margins < 0).mean()),
+                # Exact three-way summary computed from the draws, not from the bins.
+                "outcomes": {
+                    "close_threshold_points": CLOSE_THRESHOLD_POINTS,
+                    "leader_ahead": _r((margins >= CLOSE_THRESHOLD_POINTS).mean()),
+                    "close": _r(
+                        (
+                            (margins > -CLOSE_THRESHOLD_POINTS) & (margins < CLOSE_THRESHOLD_POINTS)
+                        ).mean()
+                    ),
+                    "challenger_ahead": _r((margins <= -CLOSE_THRESHOLD_POINTS).mean()),
+                },
                 "bin_width": BIN_WIDTH,
                 "range": list(BIN_RANGE),
                 "bins": margin_bins(margins),

@@ -145,6 +145,35 @@ def test_assembled_feed_is_schema_4_and_internally_coherent() -> None:
     json.dumps(feed, allow_nan=False)  # serializable, no NaN
 
 
+def test_pairwise_margin_carries_three_exact_outcomes_at_a_two_point_threshold() -> None:
+    draws = _draws()
+    feed = assemble_forecast_feed(
+        campaign=_campaign(),
+        draws=draws,
+        live_cycle=LIVE,
+        analysis_cutoff=CUTOFF,
+        model_record={"name": "compact_mayoral", "qualification_passed": True},
+        sensitivity=[],
+        residual_named=[],
+        residual_candidate_count=50,
+    )
+    m = feed["election_day"]["pairwise_margin"]
+    outcomes = m["outcomes"]
+    full = draws["toronto-2026/full_ballot"]
+    margins = 100 * (full[:, 0] - full[:, 1])
+    assert outcomes["close_threshold_points"] == 2
+    assert outcomes["leader_ahead"] == pytest.approx(float((margins >= 2).mean()), abs=1e-6)
+    assert outcomes["close"] == pytest.approx(
+        float(((margins > -2) & (margins < 2)).mean()), abs=1e-6
+    )
+    assert outcomes["challenger_ahead"] == pytest.approx(float((margins <= -2).mean()), abs=1e-6)
+    assert outcomes["leader_ahead"] + outcomes["close"] + outcomes[
+        "challenger_ahead"
+    ] == pytest.approx(1.0, abs=1e-5)
+    # The pairwise probability still counts every draw by who is ahead.
+    assert m["probability_challenger_ahead"] >= outcomes["challenger_ahead"]
+
+
 def _fixture_root(tmp_path: Path) -> Path:
     results = tmp_path / "data/upstream/results"
     results.mkdir(parents=True)

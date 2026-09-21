@@ -19,7 +19,7 @@ Steps 1 to 4 are combined into 16,000 simulated elections. Every number on the p
 
 ## What the numbers mean
 
-- **The margin chart** shows how often the simulations land at each gap between the two poll leaders. The share to the left of the tie line is how often the challenger finishes ahead of the leader, which is not the same as winning the race.
+- **The margin bars** sort the simulations into three outcomes: the poll leader ahead by two points or more, the two within two points of each other, and the challenger ahead by two or more. Each bar carries its share of the simulations. Finishing ahead of one rival is not the same as winning the race.
 - **The vote ranges** are the middle 80% of simulated outcomes for each candidate's share of all votes cast. Ranges can overlap; they are not chances of winning.
 - **The win probabilities** are the fraction of simulated elections each candidate wins outright. They are rounded to whole percentages, with "<1%" and ">99%" at the extremes.
 
