@@ -108,3 +108,27 @@ def test_margin_distribution_is_nonnegative_over_a_nonnegative_gap(tmp_path: Pat
     assert md["unit"] == "share_gap"
     assert all(x >= 0 for x in md["x"])
     assert all(d >= 0 for d in md["density"])
+
+
+def test_margin_distribution_decomposes_by_winner_for_the_stacked_chart(tmp_path: Path) -> None:
+    # The frontend margin chart stacks each band by the forecast winner, reading
+    # margin_distribution.by_winner keyed by canonical person IDs. Without it the
+    # Chow/Bradford division collapses to a single "All results" segment.
+    md = _build(tmp_path)["margin_distribution"]
+    by_winner = md["by_winner"]
+    assert set(by_winner) <= {CHOW, BRAD, ALEX}
+    assert CHOW in by_winner and BRAD in by_winner  # both top-two must be present
+    n = len(md["x"])
+    agg = md["density"]
+    stacked = [0.0] * n
+    total_weight = 0.0
+    for comp in by_winner.values():
+        assert 0.0 < comp["draw_weight"] <= 1.0
+        assert len(comp["density"]) == n
+        assert all(d >= 0 for d in comp["density"])
+        stacked = [a + b for a, b in zip(stacked, comp["density"])]
+        total_weight += comp["draw_weight"]
+    assert abs(total_weight - 1.0) < 1e-5  # every draw is won by a named candidate
+    # Per-winner components are the aggregate split by winner, so they sum back to it
+    # (exactly before the feed rounds each value to 6 decimals).
+    assert max(abs(a - s) for a, s in zip(agg, stacked)) < 1e-5

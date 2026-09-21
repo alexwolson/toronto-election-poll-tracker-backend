@@ -131,6 +131,9 @@ def forecast(polls, cfg: ForecastConfig):
     win_prob, winner_gap, sims = _simulate(
         mean, labels, cfg, polling=True, drift=True, consolidation=True, seed=cfg.seed
     )
+    # Per-draw winning candidate (local label), aligned row-for-row with
+    # winner_gap_samples so the feed can split the gap density by winner.
+    winner_samples = np.array(cfg.field)[sims[:, : len(cfg.field)].argmax(axis=1)]
 
     # Decomposition of the challenger's win probability (common random seed per stage).
     tgt = cfg.consolidation_target
@@ -178,6 +181,7 @@ def forecast(polls, cfg: ForecastConfig):
             "p_positive": float((margin > 0).mean()),
         },
         "winner_gap_samples": winner_gap,
+        "winner_samples": winner_samples,
         "close_prob": float((winner_gap < 0.05).mean()),
         "n_polls_used": len(kept),
         "days_to_election": days_to,

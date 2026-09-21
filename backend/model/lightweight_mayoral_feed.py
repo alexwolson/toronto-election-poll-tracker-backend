@@ -125,22 +125,59 @@ def _card(quantity, candidate_id, central_p, variant_ps):
     }
 
 
-def _margin_distribution(samples):
-    """Reflected (at 0) Gaussian KDE of the winner-minus-runner-up gap, numpy-only."""
-    s = np.asarray(samples)
-    if s.size > 20000:
-        s = np.random.default_rng(0).choice(s, 20000, replace=False)
-    data = np.concatenate([s, -s])
-    iqr = np.subtract(*np.percentile(data, [75, 25]))
-    bw = max(0.9 * min(data.std(), iqr / 1.34) * data.size ** (-0.2), 1e-3)
-    x = np.linspace(0.0, min(0.6, float(s.max()) * 1.1 + 0.05), 120)
+def _reflected_kde(gaps, x, bw):
+    """Reflected (at 0) Gaussian KDE of ``gaps`` on grid ``x``, normalized over the
+    FULL sample count so per-winner sub-densities sum back to the aggregate."""
+    data = np.concatenate([gaps, -gaps])
     z = (x[:, None] - data[None, :]) / bw
-    dens = 2.0 * np.exp(-0.5 * z**2).sum(axis=1) / (data.size * bw * np.sqrt(2 * np.pi))
+    return 2.0 * np.exp(-0.5 * z**2).sum(axis=1) / (len(data) * bw * np.sqrt(2 * np.pi))
+
+
+def _margin_distribution(samples, winner_samples, field_local, local_to_person):
+    """Reflected (at 0) Gaussian KDE of the winner-minus-runner-up gap, plus a
+    per-winner decomposition (``by_winner``) the frontend stacks into the chart.
+
+    Every draw is won by a named candidate, so each winner contributes the KDE of
+    its own winning gaps scaled by its win fraction; on a shared grid and bandwidth
+    these sub-densities sum exactly to the aggregate density. numpy-only."""
+    s = np.asarray(samples)
+    w = np.asarray(winner_samples)
+    if s.size > 20000:
+        idx = np.random.default_rng(0).choice(s.size, 20000, replace=False)
+        s, w = s[idx], w[idx]
+    reflected = np.concatenate([s, -s])
+    iqr = np.subtract(*np.percentile(reflected, [75, 25]))
+    bw = max(0.9 * min(reflected.std(), iqr / 1.34) * reflected.size ** (-0.2), 1e-3)
+    x = np.linspace(0.0, min(0.6, float(s.max()) * 1.1 + 0.05), 120)
+
+    # Aggregate density normalized over the full sample count.
+    dens = _reflected_kde(s, x, bw)
+
+    by_winner = {}
+    n = s.size
+    for loc in field_local:
+        mask = w == loc
+        count = int(mask.sum())
+        if count == 0:
+            continue
+        # KDE over the full count → already scaled by count/n, so components stack.
+        comp = (
+            2.0
+            * np.exp(
+                -0.5 * ((x[:, None] - np.concatenate([s[mask], -s[mask]])[None, :]) / bw) ** 2
+            ).sum(axis=1)
+            / (n * 2 * bw * np.sqrt(2 * np.pi))
+        )
+        by_winner[local_to_person[loc]] = {
+            "draw_weight": round(count / n, 6),
+            "density": [round(float(d), 6) for d in comp],
+        }
     return {
         "unit": "share_gap",
         "x": [round(float(v), 6) for v in x],
         "density": [round(float(d), 6) for d in dens],
         "close_threshold": 0.05,
+        "by_winner": by_winner,
     }
 
 
@@ -241,7 +278,12 @@ def build_lightweight_mayoral_forecast_feed(
         "candidate_win": candidate_win,
         "close_result": close,
         "incumbent_defeat": defeat,
-        "margin_distribution": _margin_distribution(central["winner_gap_samples"]),
+        "margin_distribution": _margin_distribution(
+            central["winner_gap_samples"],
+            central["winner_samples"],
+            field_local,
+            local_to_person,
+        ),
         "challenger_chance_decomposition": {
             k: round(float(v), 6) if isinstance(v, float) else v
             for k, v in central["decomposition"].items()
