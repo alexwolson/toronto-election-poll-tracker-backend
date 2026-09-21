@@ -2,7 +2,9 @@
 """Build the frontend publication package (INT).
 
 Emits the typed data feeds the frontend ingests into an explicit output directory:
-  - mayoral_forecast.json  per-quantity evidence tier, availability, published band
+  - mayoral_forecast.json  schema 4: joint election-day distributions from the
+                           compact model (ADR 0054); the fit must pass the
+                           numerical qualification gate or this build fails
   - manifest.json          model index + live-cycle Final-Ballot state
 The council feed (council_race_cards.json) is produced by build_council_snapshot.py.
 
@@ -21,11 +23,11 @@ from zoneinfo import ZoneInfo
 ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
-from backend.model.council_snapshot import COUNCIL_RACE_CARD_SCHEMA_VERSION
-from backend.model.lightweight_mayoral_feed import (
+from backend.model.compact_mayoral_feed import (
     MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
-    build_lightweight_mayoral_forecast_feed,
+    build_compact_mayoral_forecast_feed,
 )
+from backend.model.council_snapshot import COUNCIL_RACE_CARD_SCHEMA_VERSION
 from backend.model.publication_manifest import (
     build_publication_manifest,
     load_live_cycle,
@@ -35,15 +37,20 @@ from backend.release_inputs import load_release_input_paths
 
 
 def _publication_summary(forecast: dict) -> dict:
+    margin = forecast["election_day"]["pairwise_margin"]
     return {
         "evidence_tier": forecast["evidence_tier"],
+        "publication_policy": forecast["publication_policy"],
         "forecast_favourite": forecast["forecast_favourite"]["availability"],
         "candidate_win": {
             candidate_id: card["availability"]
             for candidate_id, card in forecast["candidate_win"].items()
         },
-        "close_result": forecast["close_result"]["availability"],
-        "incumbent_defeat": forecast["incumbent_defeat"]["availability"],
+        "pairwise_margin": {
+            "leader_candidate_id": margin["leader_candidate_id"],
+            "challenger_candidate_id": margin["challenger_candidate_id"],
+        },
+        "qualification_passed": forecast["model"]["qualification_passed"],
     }
 
 
@@ -55,7 +62,8 @@ def _write(output_dir: Path, name: str, payload: dict) -> None:
     path.parent.mkdir(parents=True, exist_ok=True)
     with path.open("w", encoding="utf-8") as handle:
         json.dump(payload, handle, allow_nan=False, indent=None)
-    print(f"  wrote {path.relative_to(ROOT)}")
+    shown = path.relative_to(ROOT) if path.is_relative_to(ROOT) else path
+    print(f"  wrote {shown}")
 
 
 def main() -> None:
@@ -71,12 +79,12 @@ def main() -> None:
     as_of = cutoff.astimezone(ZoneInfo("America/Toronto")).date().isoformat()
 
     live_cycle = load_live_cycle(RAW / "elections" / "live_cycle.json")
-    forecast = build_lightweight_mayoral_forecast_feed(
+    # The compact model reads the release's descriptive polls.csv for the current
+    # campaign (hydrated into the polling bundle dir) and the backend-tracked audited
+    # corpus for history; it fits, qualifies (fail closed) and assembles schema 4.
+    forecast = build_compact_mayoral_forecast_feed(
         ROOT,
         live_cycle,
-        # The lightweight model reads the descriptive polls.csv (representative
-        # readings), which the release hydrates into the polling bundle dir, not
-        # the endpoint model_polls dir (poll_readings/responses).
         polls_dir=inputs.polling_dir,
         analysis_cutoff=cutoff,
     )
