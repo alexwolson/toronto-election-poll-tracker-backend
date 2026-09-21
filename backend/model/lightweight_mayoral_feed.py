@@ -225,7 +225,10 @@ def build_lightweight_mayoral_forecast_feed(
         "publication_policy": "central-band-with-sensitivity-v1",
         "analysis_cutoff": analysis_cutoff.isoformat(),
         "sensitivity_variant_labels": LABELS,
-        "election_cycle_id": live_cycle["election_cycle_id"],
+        # The frontend feed contract keys the cycle with an underscore
+        # (``toronto_2026``); ``live_cycle.json`` carries the Results canonical
+        # hyphen form (``toronto-2026``). Normalize to the feed contract.
+        "election_cycle_id": live_cycle["election_cycle_id"].replace("-", "_"),
         "evidence_tier": TIER,
         "final_field_samples": covered,
         "incumbent_candidate_id": incumbent_pid,

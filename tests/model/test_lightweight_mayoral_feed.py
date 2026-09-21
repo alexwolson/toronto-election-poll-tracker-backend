@@ -69,6 +69,9 @@ def test_feed_is_schema_v3_keyed_by_canonical_person_ids(tmp_path: Path) -> None
     feed = _build(tmp_path)
     assert feed["schema_version"] == MAYORAL_FORECAST_FEED_SCHEMA_VERSION == 3
     assert feed["publication_policy"] == "central-band-with-sensitivity-v1"
+    # The frontend feed contract keys the cycle with an underscore; the fixture's
+    # live_cycle carries the Results canonical hyphen form (see LIVE above).
+    assert feed["election_cycle_id"] == "toronto_2026"
     assert set(feed["candidate_win"]) == set(LIVE["viable_field"])
     assert feed["incumbent_candidate_id"] == LIVE["incumbent_candidate_id"]
     assert feed["forecast_favourite"]["candidate_id"] in LIVE["viable_field"]
