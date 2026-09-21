@@ -22,9 +22,9 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from backend.model.council_snapshot import COUNCIL_RACE_CARD_SCHEMA_VERSION
-from backend.model.mayoral_forecast_feed import (
+from backend.model.lightweight_mayoral_feed import (
     MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
-    build_mayoral_forecast_feed,
+    build_lightweight_mayoral_forecast_feed,
 )
 from backend.model.publication_manifest import (
     build_publication_manifest,
@@ -71,7 +71,7 @@ def main() -> None:
     as_of = cutoff.astimezone(ZoneInfo("America/Toronto")).date().isoformat()
 
     live_cycle = load_live_cycle(RAW / "elections" / "live_cycle.json")
-    forecast = build_mayoral_forecast_feed(
+    forecast = build_lightweight_mayoral_forecast_feed(
         ROOT,
         live_cycle,
         polls_dir=inputs.model_polls,
