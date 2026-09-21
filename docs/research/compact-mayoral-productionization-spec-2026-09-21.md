@@ -59,8 +59,9 @@ election_day:
     unit: "vote_share_points"
     median, lower, upper
     probability_challenger_ahead
+    outcomes: {close_threshold_points: 2, leader_ahead, close, challenger_ahead}  # exact, from draws; the published view
     bin_width: 5, range: [-100, 100]
-    bins: [ {left, right, probability} × 40 ]   # sums to 1
+    bins: [ {left, right, probability} × 40 ]   # sums to 1; audit metadata after the 2026-09-21 review
 model:
   name: "compact_mayoral", version: <git short sha of the builder>
   specification: {discrepancy:"isotropic", innovations:"gaussian",
