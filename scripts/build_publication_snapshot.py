@@ -74,7 +74,10 @@ def main() -> None:
     forecast = build_lightweight_mayoral_forecast_feed(
         ROOT,
         live_cycle,
-        polls_dir=inputs.model_polls,
+        # The lightweight model reads the descriptive polls.csv (representative
+        # readings), which the release hydrates into the polling bundle dir, not
+        # the endpoint model_polls dir (poll_readings/responses).
+        polls_dir=inputs.polling_dir,
         analysis_cutoff=cutoff,
     )
     _write(args.output_dir, "mayoral_forecast.json", forecast)
