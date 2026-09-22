@@ -22,6 +22,7 @@ Steps 1 to 4 are combined into 16,000 simulated elections. Every number on the p
 - **The margin bars** sort the simulations into three outcomes: the poll leader ahead by two points or more, the two within two points of each other, and the challenger ahead by two or more. Each bar carries its share of the simulations. Finishing ahead of one rival is not the same as winning the race.
 - **The vote ranges** are the middle 80% of simulated outcomes for each candidate's share of all votes cast. Ranges can overlap; they are not chances of winning.
 - **The win probabilities** are the fraction of simulated elections each candidate wins outright. They are rounded to whole percentages, with "<1%" and ">99%" at the extremes.
+- **Where the uncertainty comes from** shows the gap between the two leaders at three points in the same simulations: what the polls say today, after the rest of the campaign, and on election day allowing for how far results have landed from final polls. The range widens at each step while its middle barely moves; the chance printed at the right is how often the challenger is ahead at that point. The last row is the published forecast.
 
 ## What the model does not know
 

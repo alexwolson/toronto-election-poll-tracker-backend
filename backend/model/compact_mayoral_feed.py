@@ -5,7 +5,10 @@ from one set of joint election-day draws. The feed carries full-ballot
 vote-share medians with central 80% intervals for the named candidates and the
 residual pool, the signed leader-minus-challenger margin as fixed five-point
 bins, full-race win probabilities, the polls used, the analysis cutoff, a model
-record, and two prespecified sensitivity refits as audit metadata.
+record, two prespecified sensitivity refits as audit metadata, and an
+uncertainty ladder: the leader margin at three snapshots of the same draws
+(what the polls say now, support at election day before the election-day
+error, the result), so readers can see where the doubt comes from (ADR 0056).
 """
 
 from __future__ import annotations
@@ -124,6 +127,20 @@ def assemble_forecast_feed(
     order = sorted(range(len(win)), key=lambda i: (-win[i], i))
     leader, challenger = order[0], order[1]
     margins = 100.0 * (full[:, leader] - full[:, challenger])
+    scale = (1.0 - tail)[:, None]
+
+    def uncertainty_step(key: str, site: str) -> dict:
+        # One snapshot of the same simulations, in full-ballot points like the
+        # published margin; the election-day step reproduces it exactly.
+        shares = np.asarray(draws[prefix + site]) * scale
+        gap = 100.0 * (shares[:, leader] - shares[:, challenger])
+        return {
+            "key": key,
+            **_quantiles(gap),
+            "probability_leader_ahead": _r((gap > 0).mean()),
+            "probability_challenger_ahead": _r((gap < 0).mean()),
+        }
+
     return {
         "schema_version": MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
         "publication_policy": PUBLICATION_POLICY,
@@ -182,6 +199,23 @@ def assemble_forecast_feed(
                 "range": list(BIN_RANGE),
                 "bins": margin_bins(margins),
             },
+        },
+        "uncertainty": {
+            "leader_candidate_id": campaign.candidates[leader],
+            "challenger_candidate_id": campaign.candidates[challenger],
+            "unit": "vote_share_points",
+            "interval_mass": INTERVAL_MASS,
+            "statistic": "median",
+            "steps": [
+                uncertainty_step("polls_today", "current"),
+                uncertainty_step("campaign_movement", "election_support"),
+                uncertainty_step("election_day", "named_result"),
+            ],
+            "note": (
+                "The same simulations at three points: what the polls say now, support "
+                "at election day before the election-day error, and the result. The last "
+                "step is the published margin."
+            ),
         },
         "model": model_record,
         "sensitivity": sensitivity,
