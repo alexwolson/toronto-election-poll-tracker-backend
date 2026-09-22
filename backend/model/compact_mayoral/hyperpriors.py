@@ -16,6 +16,7 @@ GLOBALS = (
     "omega_move",
     "tau_firm",
     "tau_election",
+    "phi_election",
     "kappa",
     "tau_reference",
     "mu_tail",
@@ -36,6 +37,9 @@ def population_hyperpriors() -> dict:
             "tau_reference": {"dist": "HalfNormal", "scale": 0.05},
             "mu_tail": {"dist": "Normal", "loc": float(np.log(0.08 / 0.92)), "scale": 1.0},
             "sigma_tail": {"dist": "HalfNormal", "scale": 1.0},
+            # Election-day Dirichlet precision (ADR 0055), pre-registered 2026-09-22 before
+            # the held-out test: spans roughly phi = 2 to 600.
+            "phi_election": {"dist": "LogNormal", "mu": float(np.log(40.0)), "sigma": 1.5},
         },
     }
 

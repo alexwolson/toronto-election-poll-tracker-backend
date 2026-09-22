@@ -5,7 +5,7 @@ from datetime import date
 import jax
 import numpy as np
 import pytest
-from numpyro.handlers import seed, trace
+from numpyro.handlers import seed, substitute, trace
 
 from backend.model.compact_mayoral.hyperpriors import population_hyperpriors
 from backend.model.compact_mayoral.model import build_model
@@ -15,7 +15,7 @@ from backend.model.compact_mayoral.qualification import (
     qualify,
 )
 from backend.model.compact_mayoral.readings import CampaignPolls, Poll
-from backend.model.compact_mayoral.sampling import FitSettings, fit_joint
+from backend.model.compact_mayoral.sampling import PRODUCTION_VARIANT, FitSettings, fit_joint
 
 jax.config.update("jax_enable_x64", True)
 FAST = FitSettings(warmup=150, draws=150, chains=1, seed=1, target_accept=0.9)
@@ -100,6 +100,50 @@ def test_population_hyperpriors_are_the_heavy_model_priors() -> None:
     assert s["tau_election"] == {"dist": "HalfNormal", "scale": 0.30}
     assert s["kappa"]["dist"] == "LogNormal" and s["kappa"]["mu"] == pytest.approx(np.log(1.5))
     assert s["mu_tail"]["loc"] == pytest.approx(np.log(0.08 / 0.92))
+    # Election-day Dirichlet precision (ADR 0055): pre-registered before the held-out test.
+    assert s["phi_election"] == {
+        "dist": "LogNormal",
+        "mu": pytest.approx(np.log(40.0)),
+        "sigma": 1.5,
+    }
+
+
+def test_dirichlet_variant_is_the_production_specification() -> None:
+    assert PRODUCTION_VARIANT == "dirichlet"
+    pred, obs = (
+        synthetic("pred"),
+        synthetic("obs", outcome=(0.48, 0.42, 0.10), tail=0.03, n_polls=4),
+    )
+    model = build_model((pred, obs), population_hyperpriors(), variant="dirichlet")
+    values = {
+        "phi_election": np.float64(40.0),
+        "pred/election_mixing": np.float64(1.0),
+        "obs/election_mixing": np.float64(2.0),
+    }
+    with seed(rng_seed=0):
+        tr = trace(substitute(model, data=values)).get_trace()
+    assert "phi_election" in tr
+    for absent in ("tau_election", "tau_lead", "tau_rest", "pred/election_z", "obs/election"):
+        assert absent not in tr
+    # Predicted campaign: a latent Dirichlet draw around the latent support, precision phi * mixing.
+    site = tr["pred/election_result"]
+    assert site["type"] == "sample" and not site["is_observed"]
+    support = np.asarray(tr["pred/election_support"]["value"])
+    assert np.isclose(support.sum(), 1.0)
+    assert np.allclose(np.asarray(site["fn"].concentration), 40.0 * support)
+    assert np.allclose(tr["pred/named_result"]["value"], site["value"])
+    assert np.allclose(tr["pred/election_precision"]["value"], 40.0)
+    # Observed campaign: the actual named shares are the observation.
+    seen = tr["obs/election_result"]
+    assert seen["is_observed"] and np.allclose(seen["value"], (0.48, 0.42, 0.10))
+    assert np.isclose(float(np.asarray(seen["fn"].concentration).sum()), 80.0)
+
+
+def test_fit_joint_defaults_to_the_production_variant() -> None:
+    result = fit_joint((synthetic("s", n_polls=4),), population_hyperpriors(), settings=FAST)
+    assert "phi_election" in result.draws and "tau_election" not in result.draws
+    assert result.draws["s/election_result"].shape == (150, 3)
+    assert np.allclose(result.draws["s/election_result"].sum(axis=1), 1.0)
 
 
 def test_fit_joint_recovers_a_stable_race_and_reports_diagnostics() -> None:

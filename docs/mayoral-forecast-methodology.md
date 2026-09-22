@@ -1,6 +1,6 @@
 # How the mayoral forecast is made
 
-The forecast on the homepage comes from one statistical model that is fitted every time the polls are updated. It answers three questions from the same set of simulated elections: how far apart the two leading candidates are likely to finish, what each candidate's share of the vote could look like, and how often each candidate wins the whole race. This page explains the model in plain language. The formal record is ADR 0054 and the research note it cites.
+The forecast on the homepage comes from one statistical model that is fitted every time the polls are updated. It answers three questions from the same set of simulated elections: how far apart the two leading candidates are likely to finish, what each candidate's share of the vote could look like, and how often each candidate wins the whole race. This page explains the model in plain language. The formal record is ADR 0054, amended by ADR 0055, and the research notes they cite.
 
 ## What goes in
 
@@ -12,7 +12,7 @@ The forecast on the homepage comes from one statistical model that is fitted eve
 
 1. **Where the race stands.** Each candidate's support is tracked as a path through the campaign. Each poll is a noisy reading of that path, with allowance for the firm that ran it and for how many people it asked. Polls disagree, so the current estimate carries a range, roughly plus or minus five points on the gap between the two leaders.
 2. **What can still change.** Between the latest poll and election day the path keeps moving, at the pace the past campaigns say is typical for Toronto, with this campaign allowed to be calmer or livelier than average.
-3. **How polls miss.** On election day the result differs from the final polling picture. The size of that difference is learned from the seven past races, where the gap between the leader and the runner-up known at the time was off by about 16 points on average. This is the largest source of uncertainty in the forecast and the reason a clear polling lead does not translate into a near-certain win.
+3. **How polls miss.** On election day the result differs from the final polling picture. The model treats the result as one more, especially noisy, reading of the electorate, with the noise level learned from the seven past races, where the gap between the leader and the runner-up known at the time was off by about 16 points on average. Larger candidates move by more points than smaller ones, and a fringe candidate's proportional swings do not set the front-runners' uncertainty. This is the largest source of uncertainty in the forecast and the reason a clear polling lead does not translate into a near-certain win.
 4. **The rest of the ballot.** The 50 other certified candidates are treated as one pool whose combined share is learned from past races. No single one of them is modelled as a winner.
 
 Steps 1 to 4 are combined into 16,000 simulated elections. Every number on the page is a summary of those simulations, so the margin chart, the vote ranges and the win probabilities always agree with one another.
@@ -29,4 +29,4 @@ It cannot tell which way this year's polls are wrong, only how wrong polls have 
 
 ## Checks
 
-Before this model replaced the previous one it was tested by hiding each past election's result in turn and predicting it from the polls available 39 days out (the position of the 2026 race when the model was adopted) and 14 days out. Its 80% ranges for the leader's margin contained the actual margin in ten of eleven cases. The full record, the alternatives tried and rejected, and the runtime of the model (about a minute) are in the research note referenced by ADR 0054.
+Before this model replaced the previous one it was tested by hiding each past election's result in turn and predicting it from the polls available 39 days out (the position of the 2026 race when the model was adopted) and 14 days out. Its 80% ranges for the leader's margin contained the actual margin in ten of eleven cases. The election-day noise model was then chosen by a second test whose pass rule was written down before the candidates were fitted; the version adopted predicted the past elections better than the one it replaced on every measure in that rule, and moved the poll leader's chance from about 63% to about 70%. The full records, the alternatives tried and rejected, and the runtime of the model (about a minute) are in the research notes referenced by ADR 0054 and ADR 0055.
