@@ -1,6 +1,6 @@
 # How the mayoral forecast is made
 
-The forecast on the homepage comes from one statistical model that is fitted every time the polls are updated. It answers three questions from the same set of simulated elections: how far apart the two leading candidates are likely to finish, what each candidate's share of the vote could look like, and how often each candidate wins the whole race. This page explains the model in plain language. The formal record is ADR 0054, amended by ADR 0055, and the research notes they cite.
+The forecast on the homepage comes from one statistical model that is fitted every time the polls are updated. It answers three questions from the same set of simulated elections: how far apart the two leading candidates are likely to finish, what each candidate's share of the vote could look like, and where the forecast's uncertainty comes from. This page explains the model in plain language. The formal record is ADR 0054, amended by ADR 0055, and the research notes they cite.
 
 ## What goes in
 
@@ -15,14 +15,14 @@ The forecast on the homepage comes from one statistical model that is fitted eve
 3. **How polls miss.** On election day the result differs from the final polling picture. The model treats the result as one more, especially noisy, reading of the electorate, with the noise level learned from the seven past races, where the gap between the leader and the runner-up known at the time was off by about 16 points on average. Larger candidates move by more points than smaller ones, and a fringe candidate's proportional swings do not set the front-runners' uncertainty. This is the largest source of uncertainty in the forecast and the reason a clear polling lead does not translate into a near-certain win.
 4. **The rest of the ballot.** The 50 other certified candidates are treated as one pool whose combined share is learned from past races. No single one of them is modelled as a winner.
 
-Steps 1 to 4 are combined into 16,000 simulated elections. Every number on the page is a summary of those simulations, so the margin chart, the vote ranges and the win probabilities always agree with one another.
+Steps 1 to 4 are combined into 16,000 simulated elections. Every number on the page is a summary of those simulations, so the margin chart, the vote ranges and the uncertainty rows always agree with one another.
 
 ## What the numbers mean
 
 - **The margin bars** sort the simulations into three outcomes: the poll leader ahead by two points or more, the two within two points of each other, and the challenger ahead by two or more. Each bar carries its share of the simulations. Finishing ahead of one rival is not the same as winning the race.
-- **The vote ranges** are the middle 80% of simulated outcomes for each candidate's share of all votes cast. Ranges can overlap; they are not chances of winning.
-- **The win probabilities** are the fraction of simulated elections each candidate wins outright. They are rounded to whole percentages, with "<1%" and ">99%" at the extremes.
-- **Where the uncertainty comes from** shows the gap between the two leaders under each source of doubt on its own, applied to today's middle estimate: the polls' own noise, five more weeks of campaign movement, and how far results have landed from final polls. A fourth row, set apart, is all three together, which is the published forecast. The number printed at the right is each source's share of the uncertainty, its part of the spread of the simulated outcomes; the three add up to 100%. The bands show each source's size on the same scale as the forecast; the ranges themselves do not add, which is why the last band is wider than any one source but narrower than their sum.
+- **The vote ranges**, the first tab beneath the margin chart, are the middle 80% of simulated outcomes for each candidate's share of all votes cast. Ranges can overlap; they are not chances of winning.
+- **The lede's percentage** is how often the poll leader finishes ahead of the runner-up across the simulations; chances are rounded to whole percentages, with "<1%" and ">99%" at the extremes.
+- **Where the uncertainty comes from**, the second tab beneath the margin chart, shows the gap between the two leaders under each source of doubt on its own, applied to today's middle estimate: the polls' own noise, five more weeks of campaign movement, and how far results have landed from final polls. A fourth row, set apart, is all three together, which is the published forecast. The number printed at the right is each source's share of the uncertainty, its part of the spread of the simulated outcomes; the three add up to 100%. The bands show each source's size on the same scale as the forecast; the ranges themselves do not add, which is why the last band is wider than any one source but narrower than their sum.
 
 ## What the model does not know
 
