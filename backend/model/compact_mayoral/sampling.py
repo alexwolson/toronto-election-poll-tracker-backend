@@ -26,6 +26,9 @@ class FitSettings:
 
 PRODUCTION = FitSettings()
 SENSITIVITY = FitSettings(draws=1000)
+# The published election-day discrepancy (ADR 0055): a Dirichlet reading of the latent
+# support. "isotropic" is the ADR 0054 specification, kept as a sensitivity refit.
+PRODUCTION_VARIANT = "dirichlet"
 
 
 @dataclass(frozen=True)
@@ -70,7 +73,7 @@ def fit_joint(
     hyperpriors: dict,
     *,
     settings: FitSettings = PRODUCTION,
-    variant: str = "isotropic",
+    variant: str = PRODUCTION_VARIANT,
     innovations: str = "gaussian",
 ) -> FitResult:
     """Fit all campaigns jointly; returns merged draws of every site plus diagnostics."""

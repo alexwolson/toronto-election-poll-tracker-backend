@@ -234,12 +234,12 @@ def test_end_to_end_feed_from_the_joint_fit_on_fixture_inputs(tmp_path: Path) ->
         "Sarah McVie"
     ]
     assert {s["label"] for s in feed["sensitivity"]} == {
-        "leaders-discrepancy",
+        "isotropic-discrepancy",
         "with-pre-certification-polls",
     }
     assert feed["model"]["draws"] == 150 and feed["model"]["qualification_passed"] is None
     assert feed["model"]["specification"] == {
-        "discrepancy": "isotropic",
+        "discrepancy": "dirichlet",
         "innovations": "gaussian",
         "polls": "certified_field_only",
         "hyperpriors": "population_joint_refit",

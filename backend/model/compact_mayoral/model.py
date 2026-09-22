@@ -6,14 +6,20 @@ variance-normalized t(5) scale mixtures with ``innovations="student_t"``, which
 then also applies to firm effects) evaluated at the distinct poll dates and
 election day; one firm effect per firm; each poll a Dirichlet composition over
 the reference candidates it offered, with the precision law
-phi = 1 / (kappa / n_eff + tau_reference^2 / 4); an election-day Student-t(5)
-discrepancy on the named contrasts (drawn non-centered for predicted campaigns);
-and a Student-t logit for the ballot share outside the named reference. Shared
-scales are drawn from ``hyperpriors``.
+phi = 1 / (kappa / n_eff + tau_reference^2 / 4); an election-day discrepancy (a
+Dirichlet reading of the latent support under the published ``dirichlet`` variant;
+a Student-t(5) shock on the named contrasts, drawn non-centered for predicted
+campaigns, under ``isotropic`` and ``leaders``); and a Student-t logit for the
+ballot share outside the named reference. Shared scales are drawn from
+``hyperpriors``.
 
 ``variant``:
-* ``isotropic``: one discrepancy scale ``tau_election`` for every candidate
-  (the published specification, ADR 0054).
+* ``dirichlet``: the named result is one more composition reading of the latent
+  support, ``Dirichlet(phi_election * election_mixing * p)``, so the discrepancy is
+  mean-preserving with variance proportional to ``p (1 - p)`` (the published
+  specification, ADR 0055; pre-registered and held-out tested 2026-09-22).
+* ``isotropic``: one log-odds discrepancy scale ``tau_election`` for every
+  candidate (the ADR 0054 specification, kept as a sensitivity refit).
 * ``leaders``: ``tau_lead`` for the two candidates leading the latest polls and
   ``tau_rest`` for everyone else (a stress test; its scale is fragile).
 """
@@ -91,6 +97,7 @@ class Prepared:
     current_time: int  # latent index of the most recent poll date
     is_leader: np.ndarray  # (K,)
     outcome_contrasts: np.ndarray | None  # (K-1,) Helmert contrasts of log outcome shares
+    outcome_shares: np.ndarray | None  # (K,) named result, floored and renormalized
     outcome_logit_tail: float | None
 
 
@@ -121,8 +128,11 @@ def prepare(campaign: CampaignPolls) -> Prepared:
     is_leader = np.zeros(count, dtype=bool)
     is_leader[list(campaign.leaders)] = True
     outcome = None
+    outcome_shares = None
     if campaign.outcome_shares is not None:
         outcome = np.log(np.asarray(campaign.outcome_shares)) @ basis
+        floored = np.maximum(np.asarray(campaign.outcome_shares, dtype=float), 1e-4)
+        outcome_shares = floored / floored.sum()
     tail = None
     if campaign.outcome_tail is not None:
         tail = float(np.log(campaign.outcome_tail / (1.0 - campaign.outcome_tail)))
@@ -140,6 +150,7 @@ def prepare(campaign: CampaignPolls) -> Prepared:
         current_time=position[min(p.days_before_election for p in campaign.polls)],
         is_leader=is_leader,
         outcome_contrasts=outcome,
+        outcome_shares=outcome_shares,
         outcome_logit_tail=tail,
     )
 
@@ -152,8 +163,8 @@ def build_model(
     starting_pair_sd: float = 2.0,
     innovations: str = "gaussian",
 ):
-    if variant not in {"isotropic", "leaders"}:
-        raise ValueError("variant must be 'isotropic' or 'leaders'")
+    if variant not in {"isotropic", "leaders", "dirichlet"}:
+        raise ValueError("variant must be 'isotropic', 'leaders' or 'dirichlet'")
     if innovations not in {"gaussian", "student_t"}:
         raise ValueError("innovations must be 'gaussian' or 'student_t'")
     heavy_tailed = innovations == "student_t"
@@ -173,7 +184,11 @@ def build_model(
         tau_reference = shared("tau_reference")
         mu_tail = shared("mu_tail")
         sigma_tail = shared("sigma_tail")
-        if variant == "isotropic":
+        phi_election = None
+        if variant == "dirichlet":
+            phi_election = shared("phi_election")
+            tau_lead = tau_rest = None
+        elif variant == "isotropic":
             tau_lead = tau_rest = shared("tau_election")
         else:
             tau_lead = shared("tau_lead", "tau_election")
@@ -240,30 +255,50 @@ def build_model(
             # Election-day discrepancy: per-candidate log-share shocks with a shared
             # t(5) mixing variable, projected onto the contrasts. Isotropic scales give
             # a per-contrast variance of tau^2 / 2.
-            sigma = jnp.where(jnp.asarray(P.is_leader), tau_lead, tau_rest) / jnp.sqrt(2.0)
-            mixing = numpyro.sample(prefix + "election_mixing", dist.Gamma(T_DF / 2.0, T_DF / 2.0))
-            covariance = (basis.T * (sigma**2)[None, :]) @ basis * (T_UNIT**2 / mixing)
-            covariance = covariance + 1e-12 * jnp.eye(dims)
-            if P.outcome_contrasts is None:
-                # Non-centered prediction: a standard-normal shock scaled by the
-                # covariance's Cholesky factor, so a small discrepancy scale cannot
-                # open a funnel between scale and shock.
-                election_z = numpyro.sample(
-                    prefix + "election_z", dist.Normal(0.0, 1.0).expand((dims,)).to_event(1)
-                )
-                election = numpyro.deterministic(
-                    prefix + "election",
-                    contrasts[-1] + jnp.linalg.cholesky(covariance) @ election_z,
-                )
-            else:
-                election = numpyro.sample(
-                    prefix + "election",
-                    dist.MultivariateNormal(contrasts[-1], covariance_matrix=covariance),
-                    obs=jnp.asarray(P.outcome_contrasts),
-                )
-            named = numpyro.deterministic(
-                prefix + "named_result", jax.nn.softmax(election @ basis.T)
+            # Latent named support at election day, before the discrepancy is applied.
+            support = numpyro.deterministic(
+                prefix + "election_support", jax.nn.softmax(contrasts[-1] @ basis.T)
             )
+            mixing = numpyro.sample(prefix + "election_mixing", dist.Gamma(T_DF / 2.0, T_DF / 2.0))
+            if phi_election is not None:
+                # Dirichlet election day (ADR 0055): the result is one more composition
+                # reading of the latent support with precision phi * mixing, so the shock
+                # is mean-preserving and its variance scales with p (1 - p). Observed
+                # campaigns condition on their named result.
+                precision = numpyro.deterministic(
+                    prefix + "election_precision", phi_election * mixing
+                )
+                concentration = precision * jnp.clip(support, 1e-6, None)
+                named = numpyro.sample(
+                    prefix + "election_result",
+                    dist.Dirichlet(concentration),
+                    obs=None if P.outcome_shares is None else jnp.asarray(P.outcome_shares),
+                )
+                named = numpyro.deterministic(prefix + "named_result", named)
+            else:
+                sigma = jnp.where(jnp.asarray(P.is_leader), tau_lead, tau_rest) / jnp.sqrt(2.0)
+                covariance = (basis.T * (sigma**2)[None, :]) @ basis * (T_UNIT**2 / mixing)
+                covariance = covariance + 1e-12 * jnp.eye(dims)
+                if P.outcome_contrasts is None:
+                    # Non-centered prediction: a standard-normal shock scaled by the
+                    # covariance's Cholesky factor, so a small discrepancy scale cannot
+                    # open a funnel between scale and shock.
+                    election_z = numpyro.sample(
+                        prefix + "election_z", dist.Normal(0.0, 1.0).expand((dims,)).to_event(1)
+                    )
+                    election = numpyro.deterministic(
+                        prefix + "election",
+                        contrasts[-1] + jnp.linalg.cholesky(covariance) @ election_z,
+                    )
+                else:
+                    election = numpyro.sample(
+                        prefix + "election",
+                        dist.MultivariateNormal(contrasts[-1], covariance_matrix=covariance),
+                        obs=jnp.asarray(P.outcome_contrasts),
+                    )
+                named = numpyro.deterministic(
+                    prefix + "named_result", jax.nn.softmax(election @ basis.T)
+                )
             logit_tail = numpyro.sample(
                 prefix + "logit_tail",
                 dist.StudentT(T_DF, mu_tail, sigma_tail * T_UNIT),

@@ -45,7 +45,7 @@ BIN_RANGE = (-100, 100)
 # by at least this many points" on either side, and "within this many points" between.
 CLOSE_THRESHOLD_POINTS = 2.0
 SPECIFICATION = {
-    "discrepancy": "isotropic",
+    "discrepancy": "dirichlet",
     "innovations": "gaussian",
     "polls": "certified_field_only",
     "hyperpriors": "population_joint_refit",
@@ -254,10 +254,10 @@ def build_compact_mayoral_forecast_feed(
 
     sensitivity = [
         _sensitivity_record(
-            "leaders-discrepancy",
+            "isotropic-discrepancy",
             current,
             fit_joint(
-                (*history, current), hyperpriors, settings=sensitivity_settings, variant="leaders"
+                (*history, current), hyperpriors, settings=sensitivity_settings, variant="isotropic"
             ),
         )
     ]
