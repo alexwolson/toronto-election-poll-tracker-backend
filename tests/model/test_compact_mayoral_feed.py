@@ -234,6 +234,17 @@ def test_uncertainty_block_isolates_each_source_and_ends_at_the_published_margin
             float((x < 0).mean()), abs=1e-6
         )
         assert source["probability_leader_ahead"] == pytest.approx(float((x > 0).mean()), abs=1e-6)
+    # Shares of the uncertainty: each part's variance over the parts' summed variance.
+    variances = {
+        k: float(np.var(x - (centre if k == "polls_today" else 0))) for k, x in expected.items()
+    }
+    summed = sum(variances.values())
+    for source in block["sources"]:
+        assert source["share_of_uncertainty"] == pytest.approx(
+            variances[source["key"]] / summed, abs=1e-6
+        )
+    assert sum(s["share_of_uncertainty"] for s in block["sources"]) == pytest.approx(1.0, abs=1e-5)
+    assert block["variance_explained"] == pytest.approx(summed / float(np.var(result)), abs=1e-6)
     combined = block["combined"]
     for source in block["sources"]:
         assert source["upper"] - source["lower"] < combined["upper"] - combined["lower"]

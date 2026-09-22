@@ -146,10 +146,19 @@ def assemble_forecast_feed(
     # to today's middle estimate, then all three together, which is the result.
     now, at_election, result = gap("current"), gap("election_support"), gap("named_result")
     centre = float(np.median(now))
+    parts = [
+        ("polls_today", now - centre),
+        ("campaign_movement", at_election - now),
+        ("election_day", result - at_election),
+    ]
+    # The three parts are close to independent in the fit, so their variances add up
+    # to the total within a percent; each source's share of that sum is the additive
+    # number a reader can add up, which its range and its "ahead" chance are not.
+    variances = [float(np.var(x)) for _, x in parts]
+    explained = sum(variances)
     uncertainty_sources = [
-        {"key": "polls_today", **summary(now)},
-        {"key": "campaign_movement", **summary(centre + (at_election - now))},
-        {"key": "election_day", **summary(centre + (result - at_election))},
+        {"key": key, **summary(centre + x), "share_of_uncertainty": _r(v / explained)}
+        for (key, x), v in zip(parts, variances, strict=True)
     ]
 
     return {
@@ -220,11 +229,15 @@ def assemble_forecast_feed(
             "centre": _r(centre),
             "sources": uncertainty_sources,
             "combined": summary(result),
+            "variance_explained": _r(explained / float(np.var(result))),
             "note": (
                 "Each source is applied on its own to today's middle estimate of the gap: "
                 "the polls' own noise; five more weeks of movement; the election-day "
                 "difference from final polls. 'combined' is all three together and equals "
-                "the published margin. Sources combine roughly in quadrature, not by addition."
+                "the published margin. share_of_uncertainty is each source's variance as a "
+                "fraction of the three sources' summed variance (they add to 1); ranges and "
+                "'ahead' chances do not add. variance_explained is that sum over the "
+                "combined variance."
             ),
         },
         "model": model_record,
