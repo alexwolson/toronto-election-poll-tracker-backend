@@ -5,10 +5,10 @@ from one set of joint election-day draws. The feed carries full-ballot
 vote-share medians with central 80% intervals for the named candidates and the
 residual pool, the signed leader-minus-challenger margin as fixed five-point
 bins, full-race win probabilities, the polls used, the analysis cutoff, a model
-record, two prespecified sensitivity refits as audit metadata, and an
-uncertainty ladder: the leader margin at three snapshots of the same draws
-(what the polls say now, support at election day before the election-day
-error, the result), so readers can see where the doubt comes from (ADR 0056).
+record, two prespecified sensitivity refits as audit metadata, and where the
+uncertainty comes from (ADR 0056): the leader margin under each source of doubt on
+its own (poll noise, campaign movement, election-day error) and under all three
+together, which is the published margin.
 """
 
 from __future__ import annotations
@@ -129,17 +129,37 @@ def assemble_forecast_feed(
     margins = 100.0 * (full[:, leader] - full[:, challenger])
     scale = (1.0 - tail)[:, None]
 
-    def uncertainty_step(key: str, site: str) -> dict:
-        # One snapshot of the same simulations, in full-ballot points like the
-        # published margin; the election-day step reproduces it exactly.
+    def gap(site: str) -> np.ndarray:
+        # Leader-minus-challenger gap for one snapshot of the same draws, in
+        # full-ballot points like the published margin.
         shares = np.asarray(draws[prefix + site]) * scale
-        gap = 100.0 * (shares[:, leader] - shares[:, challenger])
+        return 100.0 * (shares[:, leader] - shares[:, challenger])
+
+    def summary(x: np.ndarray) -> dict:
         return {
-            "key": key,
-            **_quantiles(gap),
-            "probability_leader_ahead": _r((gap > 0).mean()),
-            "probability_challenger_ahead": _r((gap < 0).mean()),
+            **_quantiles(x),
+            "probability_leader_ahead": _r((x > 0).mean()),
+            "probability_challenger_ahead": _r((x < 0).mean()),
         }
+
+    # Where the uncertainty comes from (ADR 0056): each source on its own, applied
+    # to today's middle estimate, then all three together, which is the result.
+    now, at_election, result = gap("current"), gap("election_support"), gap("named_result")
+    centre = float(np.median(now))
+    parts = [
+        ("polls_today", now - centre),
+        ("campaign_movement", at_election - now),
+        ("election_day", result - at_election),
+    ]
+    # The three parts are close to independent in the fit, so their variances add up
+    # to the total within a percent; each source's share of that sum is the additive
+    # number a reader can add up, which its range and its "ahead" chance are not.
+    variances = [float(np.var(x)) for _, x in parts]
+    explained = sum(variances)
+    uncertainty_sources = [
+        {"key": key, **summary(centre + x), "share_of_uncertainty": _r(v / explained)}
+        for (key, x), v in zip(parts, variances, strict=True)
+    ]
 
     return {
         "schema_version": MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
@@ -206,15 +226,18 @@ def assemble_forecast_feed(
             "unit": "vote_share_points",
             "interval_mass": INTERVAL_MASS,
             "statistic": "median",
-            "steps": [
-                uncertainty_step("polls_today", "current"),
-                uncertainty_step("campaign_movement", "election_support"),
-                uncertainty_step("election_day", "named_result"),
-            ],
+            "centre": _r(centre),
+            "sources": uncertainty_sources,
+            "combined": summary(result),
+            "variance_explained": _r(explained / float(np.var(result))),
             "note": (
-                "The same simulations at three points: what the polls say now, support "
-                "at election day before the election-day error, and the result. The last "
-                "step is the published margin."
+                "Each source is applied on its own to today's middle estimate of the gap: "
+                "the polls' own noise; five more weeks of movement; the election-day "
+                "difference from final polls. 'combined' is all three together and equals "
+                "the published margin. share_of_uncertainty is each source's variance as a "
+                "fraction of the three sources' summed variance (they add to 1); ranges and "
+                "'ahead' chances do not add. variance_explained is that sum over the "
+                "combined variance."
             ),
         },
         "model": model_record,

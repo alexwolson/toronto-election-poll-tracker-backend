@@ -188,7 +188,7 @@ def test_pairwise_margin_carries_three_exact_outcomes_at_a_two_point_threshold()
     assert m["probability_challenger_ahead"] >= outcomes["challenger_ahead"]
 
 
-def test_uncertainty_block_widens_step_by_step_and_ends_at_the_published_margin() -> None:
+def test_uncertainty_block_isolates_each_source_and_ends_at_the_published_margin() -> None:
     draws = _draws()
     feed = assemble_forecast_feed(
         campaign=_campaign(),
@@ -205,31 +205,52 @@ def test_uncertainty_block_widens_step_by_step_and_ends_at_the_published_margin(
     assert block["leader_candidate_id"] == margin["leader_candidate_id"] == CHOW
     assert block["challenger_candidate_id"] == margin["challenger_candidate_id"] == BRAD
     assert block["unit"] == "vote_share_points" and block["interval_mass"] == 0.8
-    assert [s["key"] for s in block["steps"]] == [
+    assert [s["key"] for s in block["sources"]] == [
         "polls_today",
         "campaign_movement",
         "election_day",
     ]
-    # Each step is the leader-minus-challenger gap in full-ballot points for one snapshot.
+    # Each source on its own, applied to today's middle estimate, in full-ballot points.
     scale = 1 - draws["toronto-2026/tail"]
-    for step, site in zip(
-        block["steps"], ("current", "election_support", "named_result"), strict=True
-    ):
+
+    def gap(site: str) -> np.ndarray:
         shares = draws[f"toronto-2026/{site}"] * scale[:, None]
-        gap = 100 * (shares[:, 0] - shares[:, 1])
-        assert step["median"] == pytest.approx(float(np.median(gap)), abs=1e-6)
-        assert step["lower"] == pytest.approx(float(np.quantile(gap, 0.1)), abs=1e-6)
-        assert step["upper"] == pytest.approx(float(np.quantile(gap, 0.9)), abs=1e-6)
-        assert step["probability_challenger_ahead"] == pytest.approx(
-            float((gap < 0).mean()), abs=1e-6
+        return 100 * (shares[:, 0] - shares[:, 1])
+
+    now, at_election, result = gap("current"), gap("election_support"), gap("named_result")
+    centre = float(np.median(now))
+    assert block["centre"] == pytest.approx(centre, abs=1e-6)
+    expected = {
+        "polls_today": now,
+        "campaign_movement": centre + (at_election - now),
+        "election_day": centre + (result - at_election),
+    }
+    for source in block["sources"]:
+        x = expected[source["key"]]
+        assert source["median"] == pytest.approx(float(np.median(x)), abs=1e-6)
+        assert source["lower"] == pytest.approx(float(np.quantile(x, 0.1)), abs=1e-6)
+        assert source["upper"] == pytest.approx(float(np.quantile(x, 0.9)), abs=1e-6)
+        assert source["probability_challenger_ahead"] == pytest.approx(
+            float((x < 0).mean()), abs=1e-6
         )
-        assert step["probability_leader_ahead"] == pytest.approx(float((gap > 0).mean()), abs=1e-6)
-    widths = [s["upper"] - s["lower"] for s in block["steps"]]
-    assert widths[0] < widths[1] < widths[2]
-    # The last step is exactly the published margin.
-    last = block["steps"][-1]
+        assert source["probability_leader_ahead"] == pytest.approx(float((x > 0).mean()), abs=1e-6)
+    # Shares of the uncertainty: each part's variance over the parts' summed variance.
+    variances = {
+        k: float(np.var(x - (centre if k == "polls_today" else 0))) for k, x in expected.items()
+    }
+    summed = sum(variances.values())
+    for source in block["sources"]:
+        assert source["share_of_uncertainty"] == pytest.approx(
+            variances[source["key"]] / summed, abs=1e-6
+        )
+    assert sum(s["share_of_uncertainty"] for s in block["sources"]) == pytest.approx(1.0, abs=1e-5)
+    assert block["variance_explained"] == pytest.approx(summed / float(np.var(result)), abs=1e-6)
+    combined = block["combined"]
+    for source in block["sources"]:
+        assert source["upper"] - source["lower"] < combined["upper"] - combined["lower"]
+    # All three together is exactly the published margin.
     for key in ("median", "lower", "upper", "probability_challenger_ahead"):
-        assert last[key] == margin[key]
+        assert combined[key] == margin[key]
 
 
 def _fixture_root(tmp_path: Path) -> Path:
