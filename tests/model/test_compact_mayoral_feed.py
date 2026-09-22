@@ -50,14 +50,28 @@ def _campaign() -> CampaignPolls:
 def _draws(n=2000, seed=3):
     rng = np.random.default_rng(seed)
     contest = rng.normal(0, 0.25, n)
-    logits = np.stack([np.log(0.49) + contest, np.log(0.40) - contest, np.full(n, np.log(0.11))], 1)
-    named = np.exp(logits) / np.exp(logits).sum(1, keepdims=True)
+
+    def composition(spread: float) -> np.ndarray:
+        logits = np.stack(
+            [
+                np.log(0.49) + spread * contest,
+                np.log(0.40) - spread * contest,
+                np.full(n, np.log(0.11)),
+            ],
+            1,
+        )
+        return np.exp(logits) / np.exp(logits).sum(1, keepdims=True)
+
+    # Three snapshots of the same simulations, each wider than the last: what the
+    # polls say now, support at election day before the election-day error, the result.
+    named = composition(1.0)
     tail = 1 / (1 + np.exp(-rng.normal(-2.9, 0.4, n)))
     return {
         "toronto-2026/named_result": named,
         "toronto-2026/tail": tail,
         "toronto-2026/full_ballot": named * (1 - tail)[:, None],
-        "toronto-2026/current": named,
+        "toronto-2026/current": composition(0.4),
+        "toronto-2026/election_support": composition(0.7),
     }
 
 
@@ -172,6 +186,50 @@ def test_pairwise_margin_carries_three_exact_outcomes_at_a_two_point_threshold()
     ] == pytest.approx(1.0, abs=1e-5)
     # The pairwise probability still counts every draw by who is ahead.
     assert m["probability_challenger_ahead"] >= outcomes["challenger_ahead"]
+
+
+def test_uncertainty_block_widens_step_by_step_and_ends_at_the_published_margin() -> None:
+    draws = _draws()
+    feed = assemble_forecast_feed(
+        campaign=_campaign(),
+        draws=draws,
+        live_cycle=LIVE,
+        analysis_cutoff=CUTOFF,
+        model_record={"name": "compact_mayoral", "qualification_passed": True},
+        sensitivity=[],
+        residual_named=[],
+        residual_candidate_count=50,
+    )
+    block = feed["uncertainty"]
+    margin = feed["election_day"]["pairwise_margin"]
+    assert block["leader_candidate_id"] == margin["leader_candidate_id"] == CHOW
+    assert block["challenger_candidate_id"] == margin["challenger_candidate_id"] == BRAD
+    assert block["unit"] == "vote_share_points" and block["interval_mass"] == 0.8
+    assert [s["key"] for s in block["steps"]] == [
+        "polls_today",
+        "campaign_movement",
+        "election_day",
+    ]
+    # Each step is the leader-minus-challenger gap in full-ballot points for one snapshot.
+    scale = 1 - draws["toronto-2026/tail"]
+    for step, site in zip(
+        block["steps"], ("current", "election_support", "named_result"), strict=True
+    ):
+        shares = draws[f"toronto-2026/{site}"] * scale[:, None]
+        gap = 100 * (shares[:, 0] - shares[:, 1])
+        assert step["median"] == pytest.approx(float(np.median(gap)), abs=1e-6)
+        assert step["lower"] == pytest.approx(float(np.quantile(gap, 0.1)), abs=1e-6)
+        assert step["upper"] == pytest.approx(float(np.quantile(gap, 0.9)), abs=1e-6)
+        assert step["probability_challenger_ahead"] == pytest.approx(
+            float((gap < 0).mean()), abs=1e-6
+        )
+        assert step["probability_leader_ahead"] == pytest.approx(float((gap > 0).mean()), abs=1e-6)
+    widths = [s["upper"] - s["lower"] for s in block["steps"]]
+    assert widths[0] < widths[1] < widths[2]
+    # The last step is exactly the published margin.
+    last = block["steps"][-1]
+    for key in ("median", "lower", "upper", "probability_challenger_ahead"):
+        assert last[key] == margin[key]
 
 
 def _fixture_root(tmp_path: Path) -> Path:
