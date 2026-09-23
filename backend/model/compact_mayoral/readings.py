@@ -350,8 +350,14 @@ def _select_current_readings(polling_dir: Path, columns: list[str], require_full
             readings[r["poll_sample_id"]].append(r)
     shares_by_reading: dict[str, dict[str, float]] = defaultdict(dict)
     for row in _read_csv(polling_dir / "poll_responses.csv"):
-        if row["response_kind"] == "candidate" and row["share"] != "":
-            shares_by_reading[row["poll_reading_id"]][row["candidate_id"]] = float(row["share"])
+        if row["response_kind"] != "candidate" or row["share"] == "":
+            continue
+        # The Polling bundle keys candidates by ``source_candidate_id`` (the response
+        # slug, e.g. "chow") beside the canonical ``person_id``; the backend's model
+        # copy collapses both into ``candidate_id``. CURRENT_FIELD is in slugs.
+        key = row.get("source_candidate_id") or row.get("candidate_id") or ""
+        if key:
+            shares_by_reading[row["poll_reading_id"]][key] = float(row["share"])
     base_count = len(CURRENT_FIELD)
     selected = []
     for s in samples:
