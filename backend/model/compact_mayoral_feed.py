@@ -13,8 +13,10 @@ together, which is the published margin.
 
 from __future__ import annotations
 
+import csv
 import json
 import subprocess
+from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
 
@@ -24,7 +26,9 @@ from backend.model.compact_mayoral.hyperpriors import population_hyperpriors
 from backend.model.compact_mayoral.qualification import QualificationError, qualify
 from backend.model.compact_mayoral.readings import (
     CURRENT_FIELD,
+    CURRENT_KEY,
     CampaignPolls,
+    _campaign_polls,
     certified_candidates,
     current_campaign,
     current_reading_selection,
@@ -267,6 +271,86 @@ def _sensitivity_record(label: str, campaign: CampaignPolls, result: FitResult) 
     }
 
 
+@dataclass(frozen=True)
+class HistoryCutoff:
+    """The 2026 campaign as it stood after the polls published on ``date``."""
+
+    date: str
+    new_samples: list[str]
+    campaign: CampaignPolls
+
+
+def history_cutoffs(campaign: CampaignPolls, published: dict[str, str]) -> list[HistoryCutoff]:
+    """One cutoff per distinct publication date, oldest first.
+
+    A poll moves the forecast only once it is published, so each cutoff holds the
+    polls published on or before its date (a late release of early fieldwork
+    lands on its publication date). The last cutoff is the full campaign.
+    """
+    missing = sorted({p.group for p in campaign.polls} - set(published))
+    if missing:
+        raise ValueError(f"no publication date for sample(s) {missing}")
+    cutoffs = []
+    for day in sorted({published[p.group] for p in campaign.polls}):
+        polls = [p for p in campaign.polls if published[p.group] <= day]
+        cutoffs.append(
+            HistoryCutoff(
+                date=day,
+                new_samples=sorted(p.group for p in polls if published[p.group] == day),
+                campaign=_campaign_polls(
+                    CURRENT_KEY,
+                    campaign.candidates,
+                    campaign.names,
+                    campaign.election_date,
+                    polls,
+                    None,
+                    None,
+                ),
+            )
+        )
+    return cutoffs
+
+
+def _qualified_fit(campaigns, hyperpriors, settings: FitSettings, qualification) -> FitResult:
+    """Fit; if the gate fails with divergences, retry once at a tighter acceptance."""
+    result = fit_joint(campaigns, hyperpriors, settings=settings)
+    if qualification is None:
+        return result
+    try:
+        qualification(result.diagnostics)
+    except QualificationError as first:
+        if result.diagnostics.divergences == 0:
+            raise
+        retry = FitSettings(
+            warmup=settings.warmup,
+            draws=settings.draws,
+            chains=settings.chains,
+            seed=settings.seed + 1,
+            target_accept=0.99,
+        )
+        result = fit_joint(campaigns, hyperpriors, settings=retry)
+        try:
+            qualification(result.diagnostics)
+        except QualificationError as second:
+            raise QualificationError(f"{first}; retry: {second}") from second
+    return result
+
+
+def _history_point(cutoff: HistoryCutoff, result: FitResult) -> dict:
+    campaign = cutoff.campaign
+    named = np.asarray(result.draws[CURRENT_KEY + "/named_result"])
+    winners = named.argmax(axis=1)
+    return {
+        "date": cutoff.date,
+        "poll_sample_ids": cutoff.new_samples,
+        "polls": len(campaign.polls),
+        "win_probability": {
+            cid: _r(float((winners == i).mean())) for i, cid in enumerate(campaign.candidates)
+        },
+        "diagnostics": result.diagnostics.as_dict(),
+    }
+
+
 def build_compact_mayoral_forecast_feed(
     root: str | Path,
     live_cycle: dict,
@@ -291,25 +375,23 @@ def build_compact_mayoral_forecast_feed(
     current = current_campaign(polling, candidates_json, election_date=election_date)
     hyperpriors = population_hyperpriors()
 
-    result = fit_joint((*history, current), hyperpriors, settings=settings)
-    if qualification is not None:
-        try:
-            qualification(result.diagnostics)
-        except QualificationError as first:
-            if result.diagnostics.divergences == 0:
-                raise
-            retry = FitSettings(
-                warmup=settings.warmup,
-                draws=settings.draws,
-                chains=settings.chains,
-                seed=settings.seed + 1,
-                target_accept=0.99,
-            )
-            result = fit_joint((*history, current), hyperpriors, settings=retry)
-            try:
-                qualification(result.diagnostics)
-            except QualificationError as second:
-                raise QualificationError(f"{first}; retry: {second}") from second
+    result = _qualified_fit((*history, current), hyperpriors, settings, qualification)
+
+    # How the forecast would have stood after each release, recomputed with this
+    # model (same settings and gate); the last point is the main fit.
+    published = {
+        row["poll_sample_id"]: row["publication_date"]
+        for row in csv.DictReader((polling / "poll_samples.csv").open(encoding="utf-8"))
+    }
+    cutoffs = history_cutoffs(current, published)
+    forecast_history = [
+        _history_point(
+            cutoff,
+            _qualified_fit((*history, cutoff.campaign), hyperpriors, settings, qualification),
+        )
+        for cutoff in cutoffs[:-1]
+    ]
+    forecast_history.append(_history_point(cutoffs[-1], result))
 
     sensitivity = [
         _sensitivity_record(
@@ -349,7 +431,7 @@ def build_compact_mayoral_forecast_feed(
         "historical_polls": sum(len(c.polls) for c in history),
         "elapsed_seconds": round(result.elapsed_seconds, 1),
     }
-    return assemble_forecast_feed(
+    feed = assemble_forecast_feed(
         campaign=current,
         draws=result.draws,
         live_cycle=live_cycle,
@@ -359,6 +441,8 @@ def build_compact_mayoral_forecast_feed(
         residual_named=minor_candidates_reported(polls_csv, candidates_json),
         residual_candidate_count=len(certified) - len(CURRENT_FIELD),
     )
+    feed["history"] = forecast_history
+    return feed
 
 
 def write_feed(path: str | Path, feed: dict) -> None:
