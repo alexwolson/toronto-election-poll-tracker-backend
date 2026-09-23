@@ -121,7 +121,15 @@ def _bundle_inputs(tmp_path: Path) -> tuple[Path, Path]:
                 "response_kind": "candidate"
                 if key not in {"other", "undecided", "would_not_vote"}
                 else key,
-                "candidate_id": key if key not in {"other", "undecided", "would_not_vote"} else "",
+                "person_id": {
+                    "chow": CHOW,
+                    "bradford": BRAD,
+                    "alexander": ALEX,
+                    "sarah-mcvie": "per_mcvie000000000000000000000000",
+                }.get(key, ""),
+                "source_candidate_id": key
+                if key not in {"other", "undecided", "would_not_vote"}
+                else "",
                 "candidate_name": {
                     "chow": "Olivia Chow",
                     "bradford": "Brad Bradford",
@@ -193,7 +201,14 @@ def _bundle_inputs(tmp_path: Path) -> tuple[Path, Path]:
     )
     write(
         "poll_responses.csv",
-        ["poll_reading_id", "response_kind", "candidate_id", "candidate_name", "share"],
+        [
+            "poll_reading_id",
+            "response_kind",
+            "person_id",
+            "source_candidate_id",
+            "candidate_name",
+            "share",
+        ],
         [
             *responses("liaison_0726_dl", {"chow": 0.49, "bradford": 0.41, "other": 0.10}),
             *responses(
