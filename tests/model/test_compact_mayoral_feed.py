@@ -15,6 +15,7 @@ from backend.model.compact_mayoral_feed import (
     PUBLICATION_POLICY,
     assemble_forecast_feed,
     build_compact_mayoral_forecast_feed,
+    history_cutoffs,
     margin_bins,
 )
 
@@ -289,11 +290,11 @@ def _fixture_root(tmp_path: Path) -> Path:
     # The model reads the bundle tables (ADR 0057); the archive above feeds the
     # minor-candidate listing only. Same four samples, one reading each.
     (polls / "poll_samples.csv").write_text(
-        "poll_sample_id,election_cycle_id,pollster,geography_type,fieldwork_end,recruited_sample_size,extraction_status\n"
-        "mainstreet-2026-09-14,toronto-2026,Mainstreet Research,citywide,2026-09-17,1000,extracted\n"
-        "liaison-2026-09-05,toronto-2026,Liaison Strategies,citywide,2026-09-05,1000,extracted\n"
-        "pallas-2026-08-21,toronto-2026,Pallas Data,citywide,2026-08-21,808,extracted\n"
-        "liaison-2026-07-26,toronto-2026,Liaison Strategies,citywide,2026-07-26,1000,extracted\n"
+        "poll_sample_id,election_cycle_id,pollster,geography_type,fieldwork_end,publication_date,recruited_sample_size,extraction_status\n"
+        "mainstreet-2026-09-14,toronto-2026,Mainstreet Research,citywide,2026-09-17,2026-09-18,1000,extracted\n"
+        "liaison-2026-09-05,toronto-2026,Liaison Strategies,citywide,2026-09-05,2026-09-09,1000,extracted\n"
+        "pallas-2026-08-21,toronto-2026,Pallas Data,citywide,2026-08-21,2026-08-25,808,extracted\n"
+        "liaison-2026-07-26,toronto-2026,Liaison Strategies,citywide,2026-07-26,2026-07-29,1000,extracted\n"
     )
     (polls / "poll_readings.csv").write_text(
         "poll_reading_id,poll_sample_id,contest_type,reading_purpose,denominator_semantics,weighted_base,reported_base,unweighted_base\n"
@@ -359,3 +360,55 @@ def test_end_to_end_feed_from_the_joint_fit_on_fixture_inputs(tmp_path: Path) ->
         "polls": "certified_field_only",
         "hyperpriors": "population_joint_refit",
     }
+    # Forecast history: one point per publication date, each a refit on the polls
+    # published by then; the last point is the main fit itself.
+    history = feed["history"]
+    assert [h["date"] for h in history] == ["2026-08-25", "2026-09-09", "2026-09-18"]
+    assert [h["poll_sample_ids"] for h in history] == [
+        ["pallas-2026-08-21"],
+        ["liaison-2026-09-05"],
+        ["mainstreet-2026-09-14"],
+    ]
+    assert [h["polls"] for h in history] == [1, 2, 3]
+    for point in history:
+        assert set(point["win_probability"]) == {CHOW, BRAD, ALEX}
+        assert sum(point["win_probability"].values()) == pytest.approx(1.0, abs=1e-6)
+        assert point["diagnostics"]["divergences"] >= 0
+    assert history[-1]["win_probability"] == {
+        cid: card["probability"] for cid, card in feed["candidate_win"].items()
+    }
+
+
+def test_history_cutoffs_group_polls_by_publication_date() -> None:
+    polls = tuple(
+        Poll(f"r{i}", sid, "A", d, 900.0, (0, 1, 2), (0.5, 0.4, 0.1))
+        for i, (sid, d) in enumerate(
+            [("early", 60), ("fielded-first", 50), ("same-day", 45), ("late", 40)]
+        )
+    )
+    campaign = CampaignPolls(
+        "toronto-2026",
+        ("a", "b", "c"),
+        ("A", "B", "C"),
+        date(2026, 10, 26),
+        polls,
+        None,
+        None,
+        (0, 1),
+    )
+    published = {
+        "early": "2026-08-01",
+        "fielded-first": "2026-09-23",  # released last, like Ipsos
+        "same-day": "2026-08-20",
+        "late": "2026-08-20",
+    }
+    cutoffs = history_cutoffs(campaign, published)
+    assert [c.date for c in cutoffs] == ["2026-08-01", "2026-08-20", "2026-09-23"]
+    assert [c.new_samples for c in cutoffs] == [["early"], ["late", "same-day"], ["fielded-first"]]
+    assert [sorted(p.group for p in c.campaign.polls) for c in cutoffs] == [
+        ["early"],
+        ["early", "late", "same-day"],
+        ["early", "fielded-first", "late", "same-day"],
+    ]
+    with pytest.raises(ValueError, match="publication date"):
+        history_cutoffs(campaign, {k: v for k, v in published.items() if k != "late"})
