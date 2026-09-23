@@ -286,6 +286,42 @@ def _fixture_root(tmp_path: Path) -> Path:
         'pallas-2026-08-21,Pallas Data,2026-08-21,808,"alexander,bradford,chow,other",0.081,0.393,0.501,0.026,\n'
         'liaison-2026-07-26,Liaison Strategies,2026-07-26,1000,"bradford,chow,other",,0.41,0.49,0.10,\n'
     )
+    # The model reads the bundle tables (ADR 0057); the archive above feeds the
+    # minor-candidate listing only. Same four samples, one reading each.
+    (polls / "poll_samples.csv").write_text(
+        "poll_sample_id,election_cycle_id,pollster,geography_type,fieldwork_end,recruited_sample_size,extraction_status\n"
+        "mainstreet-2026-09-14,toronto-2026,Mainstreet Research,citywide,2026-09-17,1000,extracted\n"
+        "liaison-2026-09-05,toronto-2026,Liaison Strategies,citywide,2026-09-05,1000,extracted\n"
+        "pallas-2026-08-21,toronto-2026,Pallas Data,citywide,2026-08-21,808,extracted\n"
+        "liaison-2026-07-26,toronto-2026,Liaison Strategies,citywide,2026-07-26,1000,extracted\n"
+    )
+    (polls / "poll_readings.csv").write_text(
+        "poll_reading_id,poll_sample_id,contest_type,reading_purpose,denominator_semantics,weighted_base,reported_base,unweighted_base\n"
+        "mainstreet_dl,mainstreet-2026-09-14,mayoral,general_vote_intention,decided_plus_leaners,832.1,,\n"
+        "liaison_0905_dl,liaison-2026-09-05,mayoral,general_vote_intention,decided_plus_leaners,838,,\n"
+        "pallas_dl,pallas-2026-08-21,mayoral,general_vote_intention,decided_plus_leaners,618,,\n"
+        "liaison_0726_dl,liaison-2026-07-26,mayoral,general_vote_intention,decided_plus_leaners,805,,\n"
+    )
+    rows = ["poll_reading_id,response_kind,candidate_id,candidate_name,share"]
+    for rid, shares in (
+        (
+            "mainstreet_dl",
+            {
+                "alexander": 0.096,
+                "bradford": 0.377,
+                "chow": 0.458,
+                "other": 0.024,
+                "sarah-mcvie": 0.025,
+            },
+        ),
+        ("liaison_0905_dl", {"alexander": 0.10, "bradford": 0.39, "chow": 0.50, "other": 0.02}),
+        ("pallas_dl", {"alexander": 0.081, "bradford": 0.393, "chow": 0.501, "other": 0.026}),
+        ("liaison_0726_dl", {"bradford": 0.41, "chow": 0.49, "other": 0.10}),
+    ):
+        for slug, share in shares.items():
+            kind = "other" if slug == "other" else "candidate"
+            rows.append(f"{rid},{kind},{slug if kind == 'candidate' else ''},,{share}")
+    (polls / "poll_responses.csv").write_text("\n".join(rows) + "\n")
     return tmp_path
 
 

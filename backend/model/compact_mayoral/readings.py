@@ -314,7 +314,142 @@ def certified_candidates(candidates_json: Path) -> list[tuple[str, str, str]]:
     return out
 
 
+# One reading per 2026 sample, by the same rule as the historical corpus: what the
+# pollster did about undecided respondents, best first. ``other`` (turnout screens,
+# leaner tables that keep undecideds, unreported denominators) is used only when a
+# sample publishes nothing else. Entered per reading at ingestion (Polling SCHEMA).
+CURRENT_DENOMINATOR_RANK = {
+    "decided_plus_leaners": 0,
+    "decided_only": 1,
+    "all_respondents": 2,
+    "other": 9,
+}
+
+
+def _select_current_readings(polling_dir: Path, columns: list[str], require_full_field: bool):
+    """(sample, reading, candidate shares by slug, present indices, base) per modelled sample.
+
+    A reading is eligible when it is a general vote-intention reading of the mayoral
+    contest whose published candidates cover the certified three (or any two of them
+    when the field is not required). Among a sample's eligible readings the best
+    denominator wins; ties go to the reading naming more candidates, then to id.
+    The base is the chosen reading's own (weighted, reported, unweighted), never the
+    recruited sample size unless the reading reports no base at all.
+    """
+    polling_dir = Path(polling_dir)
+    samples = [
+        s
+        for s in _read_csv(polling_dir / "poll_samples.csv")
+        if s["election_cycle_id"] == CURRENT_KEY
+        and s["geography_type"] == "citywide"
+        and s["extraction_status"] == "extracted"
+    ]
+    readings = defaultdict(list)
+    for r in _read_csv(polling_dir / "poll_readings.csv"):
+        if r["contest_type"] == "mayoral" and r["reading_purpose"] == "general_vote_intention":
+            readings[r["poll_sample_id"]].append(r)
+    shares_by_reading: dict[str, dict[str, float]] = defaultdict(dict)
+    for row in _read_csv(polling_dir / "poll_responses.csv"):
+        if row["response_kind"] == "candidate" and row["share"] != "":
+            shares_by_reading[row["poll_reading_id"]][row["candidate_id"]] = float(row["share"])
+    base_count = len(CURRENT_FIELD)
+    selected = []
+    for s in samples:
+        candidates = []
+        for r in readings[s["poll_sample_id"]]:
+            shares = shares_by_reading[r["poll_reading_id"]]
+            present = [i for i, column in enumerate(columns) if column in shares]
+            if len([i for i in present if i < base_count]) < (
+                base_count if require_full_field else 2
+            ):
+                continue
+            rank = CURRENT_DENOMINATOR_RANK.get(r["denominator_semantics"], 9)
+            candidates.append((rank, -len(present), r["poll_reading_id"], r, shares, present))
+        if not candidates:
+            continue
+        _, _, _, r, shares, present = min(candidates, key=lambda c: c[:3])
+        base = _first_number(
+            r["weighted_base"], r["reported_base"], r["unweighted_base"], s["recruited_sample_size"]
+        )
+        if base is None:
+            continue
+        selected.append((s, r, shares, present, base))
+    return selected
+
+
+def current_reading_selection(
+    polling_dir: Path,
+    *,
+    require_full_field: bool = True,
+    extra_named: tuple[tuple[str, str], ...] = (),
+) -> list[dict]:
+    """The reading chosen for each modelled 2026 sample, for the feed's model record."""
+    columns = [column for column, _ in (*CURRENT_FIELD, *extra_named)]
+    rows = []
+    for s, r, shares, present, base in _select_current_readings(
+        polling_dir, columns, require_full_field
+    ):
+        rows.append(
+            {
+                "poll_sample_id": s["poll_sample_id"],
+                "poll_reading_id": r["poll_reading_id"],
+                "pollster": s["pollster"],
+                "fieldwork_end": s["fieldwork_end"],
+                "denominator_semantics": r["denominator_semantics"],
+                "base": base,
+                "named_share": sum(shares[columns[i]] for i in present),
+            }
+        )
+    rows.sort(key=lambda row: (row["fieldwork_end"], row["poll_sample_id"]))
+    return rows
+
+
+def current_campaign(
+    polling_dir: Path,
+    candidates_json: Path,
+    *,
+    election_date: date,
+    require_full_field: bool = True,
+    extra_named: tuple[tuple[str, str], ...] = (),
+) -> CampaignPolls:
+    """The 2026 campaign from the hydrated Polling bundle (certified field only by default).
+
+    One reading per sample by denominator rank (see ``CURRENT_DENOMINATOR_RANK``),
+    renormalized over the named candidates it reports, weighted by that reading's
+    own base times the named share. ``extra_named`` adds (response slug, display
+    name) pairs as further named candidates; a poll offers them only when it
+    reported them, otherwise its composition is conditional on the names it did
+    report. The certified-field rule applies to the base three only.
+    """
+    display = {_normalize(name): cid for cid, name, _ in certified_candidates(candidates_json)}
+    field = (*CURRENT_FIELD, *extra_named)
+    columns = [column for column, _ in field]
+    names = tuple(name for _, name in field)
+    ids = tuple(display.get(_normalize(name), column) for column, name in field)
+
+    polls = []
+    for s, r, shares, present, base in _select_current_readings(
+        polling_dir, columns, require_full_field
+    ):
+        raw = [shares[columns[i]] for i in present]
+        total = sum(raw)
+        polls.append(
+            Poll(
+                reading_id=r["poll_reading_id"],
+                group=s["poll_sample_id"],
+                firm=s["pollster"],
+                days_before_election=(election_date - date.fromisoformat(s["fieldwork_end"])).days,
+                n_eff=base * total,
+                offered=tuple(present),
+                shares=tuple(x / total for x in raw),
+            )
+        )
+    return _campaign_polls(CURRENT_KEY, ids, names, election_date, polls, None, None)
+
+
 def _certified_field_rows(polls_csv: Path, columns: list[str], require_full_field: bool):
+    """Archive rows (polls.csv) reporting the certified field; used for the minor-candidate
+    listing only. The model itself reads the bundle tables (``current_campaign``)."""
     base_count = len(CURRENT_FIELD)
     for row in _read_csv(polls_csv):
         present = [i for i, column in enumerate(columns) if row.get(column, "") not in ("", None)]
@@ -325,47 +460,6 @@ def _certified_field_rows(polls_csv: Path, columns: list[str], require_full_fiel
         if base is None:
             continue
         yield row, present, base
-
-
-def current_campaign(
-    polls_csv: Path,
-    candidates_json: Path,
-    *,
-    election_date: date,
-    require_full_field: bool = True,
-    extra_named: tuple[tuple[str, str], ...] = (),
-) -> CampaignPolls:
-    """The 2026 campaign from the hydrated Polling release (certified field only by default).
-
-    ``extra_named`` adds (polls.csv column, display name) pairs as further named
-    candidates; a poll offers them only when it reported them, otherwise its
-    composition is conditional on the names it did report. The certified-field
-    rule applies to the base three only.
-    """
-    display = {_normalize(name): cid for cid, name, _ in certified_candidates(candidates_json)}
-    field = (*CURRENT_FIELD, *extra_named)
-    columns = [column for column, _ in field]
-    names = tuple(name for _, name in field)
-    ids = tuple(display.get(_normalize(name), column) for column, name in field)
-
-    polls = []
-    for row, present, base in _certified_field_rows(polls_csv, columns, require_full_field):
-        raw = [float(row[columns[i]]) for i in present]
-        total = sum(raw)
-        polls.append(
-            Poll(
-                reading_id=row["poll_id"],
-                group=row["poll_id"],
-                firm=row["firm"],
-                days_before_election=(
-                    election_date - date.fromisoformat(row["date_conducted"])
-                ).days,
-                n_eff=base * total,
-                offered=tuple(present),
-                shares=tuple(s / total for s in raw),
-            )
-        )
-    return _campaign_polls(CURRENT_KEY, ids, names, election_date, polls, None, None)
 
 
 def minor_candidates_reported(polls_csv: Path, candidates_json: Path) -> list[dict]:

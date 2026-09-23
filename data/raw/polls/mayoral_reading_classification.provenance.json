@@ -2,8 +2,8 @@
   "source": "docs/research/mayoral-measurement-classification-2026-09-12.json",
   "source_sha256": "a60239b4edbcdf7f73c13bd9e87b0aa5528089b1a35939f825cacaa5449c1db5",
   "register_as_of": "2026-09-12",
-  "derived_at": "2026-09-21T18:16:10.746076Z",
-  "rows": 332,
+  "derived_at": "2026-09-23T14:18:02.219205Z",
+  "rows": 265,
   "columns": [
     "poll_reading_id",
     "election_cycle_id",
