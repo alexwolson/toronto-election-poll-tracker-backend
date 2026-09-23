@@ -27,6 +27,7 @@ from backend.model.compact_mayoral.readings import (
     CampaignPolls,
     certified_candidates,
     current_campaign,
+    current_reading_selection,
     historical_campaigns,
     minor_candidates_reported,
 )
@@ -169,7 +170,7 @@ def assemble_forecast_feed(
         "analysis_cutoff": analysis_cutoff.isoformat(),
         "evidence_tier": TIER,
         "incumbent_candidate_id": live_cycle.get("incumbent_candidate_id"),
-        "final_field_samples": [p.reading_id for p in campaign.polls],
+        "final_field_samples": [p.group for p in campaign.polls],
         "forecast_favourite": {
             "tier": TIER,
             "availability": "Forecast Available",
@@ -282,11 +283,12 @@ def build_compact_mayoral_forecast_feed(
     ``None`` only in tests that use short chains.
     """
     root = Path(root)
-    polls_csv = Path(polls_dir) / "polls.csv"
+    polling = Path(polls_dir)
+    polls_csv = polling / "polls.csv"
     candidates_json = root / "data/upstream/results/mayoral_candidates.json"
     election_date = datetime.fromisoformat(live_cycle["election_date"]).date()
     history = tuple(historical_campaigns().values())
-    current = current_campaign(polls_csv, candidates_json, election_date=election_date)
+    current = current_campaign(polling, candidates_json, election_date=election_date)
     hyperpriors = population_hyperpriors()
 
     result = fit_joint((*history, current), hyperpriors, settings=settings)
@@ -319,7 +321,7 @@ def build_compact_mayoral_forecast_feed(
         )
     ]
     widened = current_campaign(
-        polls_csv, candidates_json, election_date=election_date, require_full_field=False
+        polling, candidates_json, election_date=election_date, require_full_field=False
     )
     sensitivity.append(
         _sensitivity_record(
@@ -333,6 +335,8 @@ def build_compact_mayoral_forecast_feed(
     model_record = {
         "name": "compact_mayoral",
         "version": _git_version(),
+        # The reading chosen per 2026 sample and its own base (ADR 0057).
+        "current_readings": current_reading_selection(polling),
         "specification": dict(SPECIFICATION),
         "draws": result.settings.draws * result.settings.chains,
         "chains": result.settings.chains,

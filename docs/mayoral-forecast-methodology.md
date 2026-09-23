@@ -4,7 +4,7 @@ The forecast on the homepage comes from one statistical model that is fitted eve
 
 ## What goes in
 
-- **This year's polls.** Every published poll that asked about the certified field, Olivia Chow, Brad Bradford and Chris Alexander, enters once. Polls taken before the field was certified, with other names on the ballot, are not used; a sensitivity check confirmed they would change the answer by about a point.
+- **This year's polls.** Every published poll that asked about the certified field, Olivia Chow, Brad Bradford and Chris Alexander, enters once. Each enters through one published reading: the pollster's decided-and-leaning topline where it publishes one, otherwise decided-only, otherwise all respondents. Undecided and other responses are set aside and the named candidates' shares renormalised; the reading's own base, not the recruited sample, sets its weight. Polls taken before the field was certified, with other names on the ballot, are not used; a sensitivity check confirmed they would change the answer by about a point.
 - **Seven past campaigns.** The 2003, 2006, 2010, 2014, 2018, 2022 and 2023 Toronto mayoral races, with 97 polls and their results. They are not used to predict 2026 directly. They teach the model four things: how much support typically moves from week to week, how far polling firms typically sit from one another, how far final polls have typically been from the result, and how much of the vote typically goes to minor candidates.
 - **Nothing else.** No editorial adjustments, no fundamentals, no judgement about individual candidates.
 

@@ -3,7 +3,9 @@
 
 The 2026-09-12 measurement classification register (research artifact, 1.2 MB)
 annotates every poll reading with a measurement class, denominator semantics and
-same-sample dependence group. The compact mayoral model needs only those columns.
+same-sample dependence group. The compact mayoral model needs only those columns,
+and only for the historical corpus: 2026 readings carry ``denominator_semantics``
+in the Polling bundle itself (ADR 0057).
 This script writes them to ``data/raw/polls/mayoral_reading_classification.csv``
 and records the register's SHA-256 in a sidecar provenance JSON.
 
@@ -37,7 +39,13 @@ COLUMNS = (
 def derive(register_path: Path, output: Path = OUTPUT, provenance: Path = PROVENANCE) -> int:
     payload = json.loads(register_path.read_text(encoding="utf-8"))
     rows = sorted(
-        ({column: reading[column] for column in COLUMNS} for reading in payload["readings"]),
+        (
+            {column: reading[column] for column in COLUMNS}
+            for reading in payload["readings"]
+            # Current-cycle readings carry their own denominator_semantics in the Polling
+            # bundle (ADR 0057); the register classifies only the historical corpus here.
+            if reading["corpus"] == "historical"
+        ),
         key=lambda r: (
             r["election_cycle_id"],
             r["same_sample_dependence_group"],
