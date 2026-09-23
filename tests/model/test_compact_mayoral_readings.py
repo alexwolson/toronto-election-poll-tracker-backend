@@ -289,7 +289,7 @@ def test_current_campaign_can_widen_to_the_pre_certified_field(tmp_path: Path) -
     wide = current_campaign(
         polling, candidates, election_date=ELECTION_2026, require_full_field=False
     )
-    assert [p.group for p in wide.polls][0] == "liaison-2026-07-26"
+    assert wide.polls[0].group == "liaison-2026-07-26"
     assert wide.polls[0].offered == (0, 1)
     assert wide.polls[0].n_eff == pytest.approx(805 * 0.90)
     assert len(wide.polls) == 4
