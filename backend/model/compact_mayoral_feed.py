@@ -14,8 +14,15 @@ together, which is the published margin.
 from __future__ import annotations
 
 import csv
+import hashlib
+import importlib.metadata
 import json
+import multiprocessing
+import os
+import platform
 import subprocess
+import time
+from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
 from datetime import datetime
 from pathlib import Path
@@ -336,6 +343,128 @@ def _qualified_fit(campaigns, hyperpriors, settings: FitSettings, qualification)
     return result
 
 
+HISTORY_CACHE_ENV = "COMPACT_HISTORY_CACHE"
+_MODEL_SOURCES = (
+    *sorted((Path(__file__).parent / "compact_mayoral").glob("*.py")),
+    Path(__file__),
+)
+
+
+def history_cache_dir_from_env() -> Path | None:
+    """Where history points are cached: ``$COMPACT_HISTORY_CACHE`` (``off``
+    disables the cache), else ``$XDG_CACHE_HOME`` or ``~/.cache``. Outside the
+    repository so it survives the throwaway release worktrees."""
+    configured = os.environ.get(HISTORY_CACHE_ENV)
+    if configured:
+        return None if configured.lower() == "off" else Path(configured)
+    base = Path(os.environ.get("XDG_CACHE_HOME") or Path.home() / ".cache")
+    return base / "toronto-election-backend" / "compact-history"
+
+
+def _code_fingerprint() -> str:
+    digest = hashlib.sha256()
+    for source in _MODEL_SOURCES:
+        digest.update(source.name.encode())
+        digest.update(source.read_bytes())
+    for package in ("jax", "jaxlib", "numpyro", "numpy"):
+        digest.update(f"{package}=={importlib.metadata.version(package)}".encode())
+    digest.update(platform.machine().encode())
+    return digest.hexdigest()
+
+
+def history_cache_key(
+    cutoff: HistoryCutoff,
+    history: tuple[CampaignPolls, ...],
+    hyperpriors: dict,
+    settings: FitSettings,
+    *,
+    qualified: bool,
+) -> str:
+    """Hash of everything a history point depends on: its polls and cutoff, the
+    historical corpus, hyperpriors, fit settings and seed, the gate, the model
+    code and the numerical libraries. Any change refits the point."""
+    payload = repr((cutoff, history, hyperpriors, settings, qualified, _code_fingerprint()))
+    return hashlib.sha256(payload.encode()).hexdigest()
+
+
+def _read_cached_point(cache_dir: Path | None, key: str) -> dict | None:
+    if cache_dir is None:
+        return None
+    path = cache_dir / f"{key}.json"
+    return json.loads(path.read_text(encoding="utf-8")) if path.exists() else None
+
+
+def _write_cached_point(cache_dir: Path | None, key: str, point: dict) -> None:
+    if cache_dir is None:
+        return
+    cache_dir.mkdir(parents=True, exist_ok=True)
+    partial = cache_dir / f"{key}.json.partial"
+    partial.write_text(json.dumps(point, allow_nan=False), encoding="utf-8")
+    os.replace(partial, cache_dir / f"{key}.json")  # atomic: never a half-written point
+
+
+@dataclass(frozen=True)
+class _FitJob:
+    """One joint fit in a build: the main fit, an earlier history point, or a
+    sensitivity refit. Every job carries its own settings and seed, so running
+    jobs concurrently changes wall time only, never the draws."""
+
+    label: str
+    campaigns: tuple[CampaignPolls, ...]
+    settings: FitSettings
+    qualified: bool
+    variant: str | None = None  # None = the production variant
+
+
+def fit_worker_count(*, chains: int, jobs: int, cpu_count: int | None = None) -> int:
+    """Concurrent fits: as many as the cores hold at ``chains`` cores each, or
+    ``COMPACT_FIT_WORKERS`` when set."""
+    override = os.environ.get("COMPACT_FIT_WORKERS")
+    if override:
+        return max(1, int(override))
+    cores = cpu_count or os.cpu_count() or 1
+    return max(1, min(jobs, cores // max(1, chains)))
+
+
+def _run_fit_job(job: _FitJob, hyperpriors: dict, qualification) -> tuple[FitResult, float]:
+    started = time.monotonic()
+    if job.qualified:
+        result = _qualified_fit(job.campaigns, hyperpriors, job.settings, qualification)
+    else:
+        variant = {} if job.variant is None else {"variant": job.variant}
+        result = fit_joint(job.campaigns, hyperpriors, settings=job.settings, **variant)
+    return result, time.monotonic() - started
+
+
+def _run_fits(
+    jobs: list[_FitJob], hyperpriors: dict, qualification, workers: int
+) -> list[FitResult]:
+    """Run the fits, concurrently when ``workers`` > 1 (spawned processes: JAX is
+    not fork-safe), and print one timing line per fit in job order."""
+    if workers <= 1:
+        timed = [_run_fit_job(job, hyperpriors, qualification) for job in jobs]
+    else:
+        context = multiprocessing.get_context("spawn")
+        with ProcessPoolExecutor(max_workers=workers, mp_context=context) as pool:
+            timed = list(
+                pool.map(
+                    _run_fit_job,
+                    jobs,
+                    [hyperpriors] * len(jobs),
+                    [qualification] * len(jobs),
+                )
+            )
+    for job, (result, seconds) in zip(jobs, timed):
+        retried = result.settings.target_accept != job.settings.target_accept
+        print(
+            f"[compact fit] {job.label}: {seconds:.0f}s, "
+            f"divergences {result.diagnostics.divergences}"
+            + (" (retried at tighter acceptance)" if retried else ""),
+            flush=True,
+        )
+    return [result for result, _ in timed]
+
+
 def _history_point(cutoff: HistoryCutoff, result: FitResult) -> dict:
     campaign = cutoff.campaign
     named = np.asarray(result.draws[CURRENT_KEY + "/named_result"])
@@ -360,11 +489,17 @@ def build_compact_mayoral_forecast_feed(
     settings: FitSettings = PRODUCTION,
     sensitivity_settings: FitSettings = SENSITIVITY,
     qualification=qualify,
+    fit_workers: int | None = None,
+    history_cache_dir: Path | None = None,
 ) -> dict:
     """Fit, qualify (fail closed), run the sensitivity refits, and assemble schema 4.
 
     ``qualification`` is the gate applied to the main fit's diagnostics; pass
-    ``None`` only in tests that use short chains.
+    ``None`` only in tests that use short chains. ``fit_workers`` sets how many
+    fits run at once (default: :func:`fit_worker_count`).
+    ``history_cache_dir`` reuses earlier history points whose inputs are
+    unchanged (``None``: no cache; the build script passes
+    :func:`history_cache_dir_from_env`).
     """
     root = Path(root)
     polling = Path(polls_dir)
@@ -375,43 +510,64 @@ def build_compact_mayoral_forecast_feed(
     current = current_campaign(polling, candidates_json, election_date=election_date)
     hyperpriors = population_hyperpriors()
 
-    result = _qualified_fit((*history, current), hyperpriors, settings, qualification)
-
-    # How the forecast would have stood after each release, recomputed with this
-    # model (same settings and gate); the last point is the main fit.
     published = {
         row["poll_sample_id"]: row["publication_date"]
         for row in csv.DictReader((polling / "poll_samples.csv").open(encoding="utf-8"))
     }
     cutoffs = history_cutoffs(current, published)
-    forecast_history = [
-        _history_point(
-            cutoff,
-            _qualified_fit((*history, cutoff.campaign), hyperpriors, settings, qualification),
-        )
-        for cutoff in cutoffs[:-1]
-    ]
-    forecast_history.append(_history_point(cutoffs[-1], result))
-
-    sensitivity = [
-        _sensitivity_record(
-            "isotropic-discrepancy",
-            current,
-            fit_joint(
-                (*history, current), hyperpriors, settings=sensitivity_settings, variant="isotropic"
-            ),
-        )
-    ]
     widened = current_campaign(
         polling, candidates_json, election_date=election_date, require_full_field=False
     )
-    sensitivity.append(
-        _sensitivity_record(
-            "with-pre-certification-polls",
-            widened,
-            fit_joint((*history, widened), hyperpriors, settings=sensitivity_settings),
-        )
+    qualified = qualification is not None
+    earlier = cutoffs[:-1]
+    keys = [
+        history_cache_key(c, history, hyperpriors, settings, qualified=qualified) for c in earlier
+    ]
+    cached = [_read_cached_point(history_cache_dir, key) for key in keys]
+    for cutoff, point in zip(earlier, cached):
+        if point is not None:
+            print(f"[compact fit] history {cutoff.date}: cached", flush=True)
+    to_fit = [cutoff for cutoff, point in zip(earlier, cached) if point is None]
+    jobs = [
+        _FitJob("main", (*history, current), settings, qualified=True),
+        *(
+            _FitJob(f"history {cutoff.date}", (*history, cutoff.campaign), settings, qualified=True)
+            for cutoff in to_fit
+        ),
+        _FitJob(
+            "sensitivity isotropic-discrepancy",
+            (*history, current),
+            sensitivity_settings,
+            qualified=False,
+            variant="isotropic",
+        ),
+        _FitJob(
+            "sensitivity with-pre-certification-polls",
+            (*history, widened),
+            sensitivity_settings,
+            qualified=False,
+        ),
+    ]
+    workers = fit_workers or fit_worker_count(chains=settings.chains, jobs=len(jobs))
+    result, *history_results, isotropic, pre_certification = _run_fits(
+        jobs, hyperpriors, qualification, workers
     )
+
+    # How the forecast would have stood after each release, recomputed with this
+    # model (same settings and gate); the last point is the main fit.
+    fitted = iter(history_results)
+    forecast_history = []
+    for cutoff, key, point in zip(earlier, keys, cached):
+        if point is None:
+            point = _history_point(cutoff, next(fitted))
+            _write_cached_point(history_cache_dir, key, point)
+        forecast_history.append(point)
+    forecast_history.append(_history_point(cutoffs[-1], result))
+
+    sensitivity = [
+        _sensitivity_record("isotropic-discrepancy", current, isotropic),
+        _sensitivity_record("with-pre-certification-polls", widened, pre_certification),
+    ]
 
     certified = certified_candidates(candidates_json)
     model_record = {
