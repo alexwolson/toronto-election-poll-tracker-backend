@@ -412,3 +412,118 @@ def test_history_cutoffs_group_polls_by_publication_date() -> None:
     ]
     with pytest.raises(ValueError, match="publication date"):
         history_cutoffs(campaign, {k: v for k, v in published.items() if k != "late"})
+
+
+def _without_timings(value):
+    if isinstance(value, dict):
+        return {k: _without_timings(v) for k, v in value.items() if k != "elapsed_seconds"}
+    if isinstance(value, list):
+        return [_without_timings(v) for v in value]
+    return value
+
+
+def test_concurrent_fits_build_the_same_feed_as_sequential_fits(tmp_path: Path, capsys) -> None:
+    root = _fixture_root(tmp_path)
+    fast = FitSettings(warmup=100, draws=100, chains=1, seed=5, target_accept=0.9)
+    common = {
+        "polls_dir": root / "polls",
+        "analysis_cutoff": CUTOFF,
+        "settings": fast,
+        "sensitivity_settings": fast,
+        "qualification": None,
+    }
+    sequential = build_compact_mayoral_forecast_feed(root, LIVE, fit_workers=1, **common)
+    capsys.readouterr()
+    concurrent = build_compact_mayoral_forecast_feed(root, LIVE, fit_workers=3, **common)
+    log = capsys.readouterr().out
+    assert _without_timings(concurrent) == _without_timings(sequential)
+    # one timing line per fit: main, two earlier history points, two sensitivity refits
+    assert log.count("[compact fit]") == 5
+
+
+def test_fit_worker_count_fills_the_cores_without_oversubscribing(monkeypatch) -> None:
+    from backend.model.compact_mayoral_feed import fit_worker_count
+
+    monkeypatch.delenv("COMPACT_FIT_WORKERS", raising=False)
+    assert fit_worker_count(chains=4, jobs=11, cpu_count=14) == 3
+    assert fit_worker_count(chains=4, jobs=2, cpu_count=14) == 2
+    assert fit_worker_count(chains=4, jobs=11, cpu_count=2) == 1
+    monkeypatch.setenv("COMPACT_FIT_WORKERS", "1")
+    assert fit_worker_count(chains=4, jobs=11, cpu_count=14) == 1
+
+
+def test_history_points_are_reused_from_the_cache_and_match_a_fresh_fit(
+    tmp_path: Path, capsys
+) -> None:
+    root = _fixture_root(tmp_path)
+    fast = FitSettings(warmup=100, draws=100, chains=1, seed=5, target_accept=0.9)
+    common = {
+        "polls_dir": root / "polls",
+        "analysis_cutoff": CUTOFF,
+        "settings": fast,
+        "sensitivity_settings": fast,
+        "qualification": None,
+        "fit_workers": 1,
+    }
+    cache = tmp_path / "history-cache"
+    fresh = build_compact_mayoral_forecast_feed(root, LIVE, **common)
+    capsys.readouterr()
+    first = build_compact_mayoral_forecast_feed(root, LIVE, history_cache_dir=cache, **common)
+    first_log = capsys.readouterr().out
+    second = build_compact_mayoral_forecast_feed(root, LIVE, history_cache_dir=cache, **common)
+    second_log = capsys.readouterr().out
+    assert len(list(cache.glob("*.json"))) == 2  # the two earlier history points
+    assert first_log.count(": cached") == 0 and first_log.count("[compact fit]") == 5
+    # second build: main + two sensitivity refits fit; both history points come from the cache
+    assert second_log.count(": cached") == 2
+    assert second_log.count("[compact fit]") == 5
+    assert _without_timings(second) == _without_timings(first) == _without_timings(fresh)
+
+
+def test_history_cache_key_changes_with_every_input(tmp_path: Path) -> None:
+    import dataclasses
+
+    from backend.model.compact_mayoral.hyperpriors import population_hyperpriors
+    from backend.model.compact_mayoral_feed import history_cache_key
+
+    campaign = _campaign()
+    cutoff = history_cutoffs(
+        campaign, {"p0": "2026-08-01", "p1": "2026-08-10", "p2": "2026-08-20"}
+    )[1]
+    fast = FitSettings(warmup=100, draws=100, chains=1, seed=5, target_accept=0.9)
+    hyper = population_hyperpriors()
+    base = history_cache_key(cutoff, (), hyper, fast, qualified=True)
+    assert base == history_cache_key(cutoff, (), hyper, fast, qualified=True)
+    other_poll = dataclasses.replace(
+        cutoff,
+        campaign=dataclasses.replace(
+            cutoff.campaign,
+            polls=(
+                dataclasses.replace(cutoff.campaign.polls[0], n_eff=931.0),
+                *cutoff.campaign.polls[1:],
+            ),
+        ),
+    )
+    variants = [
+        history_cache_key(other_poll, (), hyper, fast, qualified=True),
+        history_cache_key(cutoff, (campaign,), hyper, fast, qualified=True),
+        history_cache_key(cutoff, (), {**hyper, "extra": 1.0}, fast, qualified=True),
+        history_cache_key(cutoff, (), hyper, dataclasses.replace(fast, seed=6), qualified=True),
+        history_cache_key(cutoff, (), hyper, fast, qualified=False),
+    ]
+    assert base not in variants and len(set(variants)) == len(variants)
+
+
+def test_history_cache_location_follows_the_environment(monkeypatch, tmp_path: Path) -> None:
+    from backend.model.compact_mayoral_feed import history_cache_dir_from_env
+
+    monkeypatch.setenv("COMPACT_HISTORY_CACHE", "off")
+    assert history_cache_dir_from_env() is None
+    monkeypatch.setenv("COMPACT_HISTORY_CACHE", str(tmp_path))
+    assert history_cache_dir_from_env() == tmp_path
+    monkeypatch.delenv("COMPACT_HISTORY_CACHE")
+    monkeypatch.setenv("XDG_CACHE_HOME", str(tmp_path / "xdg"))
+    assert (
+        history_cache_dir_from_env()
+        == tmp_path / "xdg" / "toronto-election-backend" / "compact-history"
+    )

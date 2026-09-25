@@ -26,6 +26,7 @@ sys.path.insert(0, str(ROOT))
 from backend.model.compact_mayoral_feed import (
     MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
     build_compact_mayoral_forecast_feed,
+    history_cache_dir_from_env,
 )
 from backend.model.council_snapshot import COUNCIL_RACE_CARD_SCHEMA_VERSION
 from backend.model.publication_manifest import (
@@ -87,6 +88,7 @@ def main() -> None:
         live_cycle,
         polls_dir=inputs.polling_dir,
         analysis_cutoff=cutoff,
+        history_cache_dir=history_cache_dir_from_env(),
     )
     _write(args.output_dir, "mayoral_forecast.json", forecast)
 
