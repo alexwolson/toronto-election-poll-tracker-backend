@@ -46,7 +46,7 @@ from backend.model.council_race_card import (
 )
 from backend.model.race_map import build_race_map
 
-COUNCIL_RACE_CARD_SCHEMA_VERSION = 8
+COUNCIL_RACE_CARD_SCHEMA_VERSION = 9
 
 _ATTENTION_LABELS = {
     "open": "Open seat",
@@ -224,6 +224,7 @@ def _candidate_card(
     candidate: RaceCandidate,
     hints: tuple[FiredHint, ...] = (),
     past_elections: tuple[PastElection, ...] = (),
+    endorsements: list[dict] | None = None,
 ) -> dict:
     bio = candidate.biography
     return {
@@ -238,6 +239,8 @@ def _candidate_card(
         "biography": _biography_card(bio),
         "historical_hints": [_hint_card(h) for h in hints],
         "past_elections": [past_election_to_dict(e) for e in past_elections],
+        # Observed facts from the Results release (ADR 0058); open-world, never a model input.
+        "endorsements": list(endorsements or []),
     }
 
 
@@ -289,8 +292,10 @@ def _race_card(
     ward_name: str | None,
     candidate_hints: dict[str, tuple[FiredHint, ...]],
     candidate_offices: dict[str, tuple[PastElection, ...]],
+    endorsements: dict[str, list[dict]] | None = None,
 ) -> dict:
     facts = derive_competitiveness_facts(race, prior)
+    endorsements = endorsements or {}
     triggers = race_exposure_triggers(race)
     return {
         "ward": race.ward,
@@ -304,6 +309,7 @@ def _race_card(
                 c,
                 candidate_hints.get(c.display_name, ()),
                 candidate_offices.get(c.display_name, ()),
+                endorsements.get(c.candidacy_id or "", []),
             )
             for c in race.candidates
         ],
@@ -397,6 +403,7 @@ def build_council_snapshot(
     | None = None,
     supported_hints: tuple[SupportedHint, ...] = (),
     geometry_path: str | Path | None = None,
+    endorsements: dict[str, list[dict]] | None = None,
 ) -> dict:
     biographies = build_all_biographies(results)
     races = build_council_races(incumbency, field, biographies)
@@ -423,6 +430,7 @@ def build_council_snapshot(
             names.get(ward),
             ward_hints(race),
             ward_offices(race),
+            endorsements,
         )
         for ward, race in races.items()
     }

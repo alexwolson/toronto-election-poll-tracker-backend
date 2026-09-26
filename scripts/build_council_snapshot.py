@@ -19,6 +19,7 @@ ROOT = Path(__file__).resolve().parent.parent
 sys.path.insert(0, str(ROOT))
 
 from backend.model.council_biography import load_council_results
+from backend.model.council_endorsements import load_endorsements
 from backend.model.council_hints import (
     load_officeholding_history,
     load_supported_hints,
@@ -47,6 +48,7 @@ def main() -> None:
         officeholding=load_officeholding_history(canonical, inputs.electoral_districts),
         supported_hints=load_supported_hints(RAW / "hints" / "supported_historical_hints.csv"),
         geometry_path=inputs.electoral_districts_parquet,
+        endorsements=load_endorsements(inputs.results_dir),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as handle:
