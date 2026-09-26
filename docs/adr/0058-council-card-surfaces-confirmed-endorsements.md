@@ -1,0 +1,9 @@
+# Council card surfaces confirmed endorsements
+
+The council race card (ADR 0043) is descriptive: it shows observed facts about each race and makes no prediction. Endorsements from the approved endorser panel are the most asked-for fact it does not yet show, and the canonical Results dataset already curates them as sourced, open-world facts (upstream ADR 0008) keyed to exact candidacies.
+
+This ADR adds an **`endorsements`** list to every candidate on the card (schema **8 → 9**): each confirmed endorsement for that candidacy in the Results release the build pins, with the endorser's name and type, the endorsement kind, the announcement date and its precision, and the source URL. It is built from the three tables every Results release already ships (`endorsers.csv`, `endorsements.csv`, `endorsement_assertions.csv`) by `backend/model/council_endorsements.py`, joined on `candidacy_id`. Any approved endorser appears without a code change; adding one is a Results curation, not a backend edit.
+
+**Constraints that follow from ADR 0043.** Endorsements are shown, never used: they are not a model input, carry no win rate or historical association, and are not summarized into any verdict about the race. The dataset is open-world, so an empty list means no endorsement has been recorded, not that the candidate was passed over; the frontend must say so wherever it shows endorsements. Every candidate carries the field, empty when there is nothing to show, so consumers never have to distinguish "missing" from "none recorded".
+
+**Consequence.** Endorsements now reach the site through the same release chain as results: a new endorsement is a Results release, then a Polling release re-pinned to it, then a Backend release. The descriptive race card gains a fact whose historical association with winning is real but is a selection effect (endorsers pick viable candidates), which is why it stays unannotated.

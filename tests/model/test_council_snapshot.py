@@ -49,8 +49,8 @@ def test_snapshot_covers_all_wards_and_serializes_cleanly() -> None:
     json.dumps(snap, allow_nan=False)  # no Decimal / NaN leaks
 
 
-def test_schema_bumped_to_v8_for_presentation_ready_map() -> None:
-    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 8
+def test_schema_bumped_to_v9_for_candidate_endorsements() -> None:
+    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 9
 
 
 def test_map_matches_attention_order_and_ward_facts(tmp_path: Path) -> None:
@@ -249,3 +249,35 @@ def test_open_seat_with_a_ward_poll_still_lists_it() -> None:
     assert all(
         p["candidates"][0]["candidate_name"] == "Nate Erskine-Smith" for p in w["ward_polls"]
     )
+
+
+def test_candidates_carry_their_endorsements_and_everyone_else_an_empty_list() -> None:
+    # Production reads the field from the canonical results, which carry candidacy ids;
+    # the tracked fixture predates the 2026 field, so give one candidate an id.
+    field = load_registered_field(FIELD)
+    field["5"][0] = {**field["5"][0], "candidacy_id": "can_fixture_w5"}
+    target = {"candidacy_id": "can_fixture_w5"}
+    record = {
+        "endorser_id": "edr_pt",
+        "endorser_name": "Progress Toronto",
+        "endorser_type": "organization",
+        "kind": "progressive_champion",
+        "announced": None,
+        "date_precision": "unknown",
+        "source_url": "https://pt.example/champions",
+    }
+    snap = build_council_snapshot(
+        load_ward_incumbency(INCUMBENCY),
+        field,
+        load_council_results(RESULTS),
+        load_ward_poll_readings(WARD_POLLS),
+        ward_names=load_ward_names(WARD_NAMES),
+        officeholding=load_officeholding_history(RESULTS),
+        supported_hints=load_supported_hints(HINTS),
+        endorsements={target["candidacy_id"]: [record]},
+    )
+    everyone = [c for ward in snap["wards"].values() for c in ward["candidates"]]
+    assert all(isinstance(c["endorsements"], list) for c in everyone)
+    endorsed = [c for c in everyone if c["endorsements"]]
+    assert [c["candidacy_id"] for c in endorsed] == [target["candidacy_id"]]
+    assert endorsed[0]["endorsements"] == [record]
