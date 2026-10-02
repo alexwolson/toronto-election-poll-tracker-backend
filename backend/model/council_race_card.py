@@ -197,6 +197,7 @@ class WardPollReading:
     ballot_status: str  # e.g. "different_candidate_field" — a comparability limit
     undecided_share: float | None
     candidates: tuple[WardPollCandidateReading, ...]
+    source_url: str | None = None
 
 
 def load_ward_poll_readings(path: str | Path) -> dict[str, tuple[WardPollReading, ...]]:
@@ -242,6 +243,7 @@ def load_ward_poll_readings(path: str | Path) -> dict[str, tuple[WardPollReading
                 ballot_status=head.get("ballot_status", ""),
                 undecided_share=float(undecided) if undecided else None,
                 candidates=tuple(cands),
+                source_url=head.get("source_url") or None,
             )
         )
     # chronological per ward

@@ -49,8 +49,8 @@ def test_snapshot_covers_all_wards_and_serializes_cleanly() -> None:
     json.dumps(snap, allow_nan=False)  # no Decimal / NaN leaks
 
 
-def test_schema_bumped_to_v9_for_candidate_endorsements() -> None:
-    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 9
+def test_schema_bumped_to_v10_for_historical_poll_context() -> None:
+    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 10
 
 
 def test_map_matches_attention_order_and_ward_facts(tmp_path: Path) -> None:

@@ -1,0 +1,5 @@
+# Show historical error context for ward polls
+
+The user wants readers to judge already-publicized ward polling rather than manufacture precise Council forecasts from sparse evidence. Council race cards therefore show source-exact shares alongside a descriptive historical error span: the minimum and maximum actual-minus-published named-candidate errors in audited, horizon-comparable Council polls, with one reading per contest. This deliberately retains large observed misses instead of trimming them into an apparent confidence interval; it supplies no outcome draws or win probabilities and does not change ADR 0043's forecast policy.
+
+The comparison records its sources, independent contest/cycle/firm counts and leave-one-contest-out sensitivity. It uses question-level bases, exposes mixed-mode and unknown-design-effect limitations, and never splits Other among unnamed candidates. Historical errors include both survey error and subsequent campaign changes; they cannot establish a bound on the next poll's error. Unpolled candidates and poll residuals receive no historical band.
