@@ -1,8 +1,4 @@
-"""Descriptive historical errors alongside source-exact ward polls (ADR 0059).
-
-A historical error span is a comparison with observed misses, not an outcome
-model, confidence interval or allocation of a poll's residual to ballot names.
-"""
+"""Audited historical errors and conditional named-set ward modelling (ADR 0059)."""
 
 from __future__ import annotations
 
@@ -14,7 +10,17 @@ import re
 from datetime import date
 from pathlib import Path
 
+import numpy as np
+
 from backend.model.council_race_card import WardPollReading
+from backend.model.ward_poll_model import (
+    METHOD,
+    cohorts,
+    fit,
+    logistic_normal_prediction,
+    model_audit,
+    summary,
+)
 
 
 def _rows(path: Path) -> list[dict[str, str]]:
@@ -145,7 +151,8 @@ def historical_benchmark(corpus: Path, results: Path) -> dict:
             {"omitted_sample": sid, "lower": min(remaining), "upper": max(remaining)}
         )
     return {
-        "method": "observed-named-candidate-error-span-v1",
+        "method": METHOD,
+        "model": model_audit(errors),
         "sample_count": len(chosen),
         "contest_count": len(chosen),
         "cycle_count": len({s["year"] for s in sources}),
@@ -165,11 +172,18 @@ def historical_benchmark(corpus: Path, results: Path) -> dict:
 def poll_contexts(
     polls: dict[str, tuple[WardPollReading, ...]], source_dir: Path, benchmark: dict
 ) -> dict[str, dict]:
-    """Attach auditable bases and historical bands only to matching final-field polls."""
+    """Attach auditable bases and joint named-set ranges to matching final-field polls."""
     samples = {r["poll_sample_id"]: r for r in _rows(source_dir / "poll_samples.csv")}
     readings = _rows(source_dir / "poll_readings.csv")
     responses = _rows(source_dir / "poll_responses.csv")
     contexts = {}
+    records = cohorts(benchmark["errors"])
+    fitted = fit(records)
+    alternatives = {
+        "lower_concentration_prior": fit(records, prior_median=10),
+        "higher_concentration_prior": fit(records, prior_median=100),
+        "less_ward_heterogeneity": fit(records, tau_scale=0.5),
+    }
     for ward, items in polls.items():
         for poll in items:
             if poll.ballot_status != "final_ballot_candidates":
@@ -200,16 +214,36 @@ def poll_contexts(
                     f"expected one audited council reading for {poll.poll_id}, got {len(matches)}"
                 )
             sample, reading = matches[0]
+            named = [c for c in poll.candidates if not c.is_residual]
+            values = np.array([c.share for c in named])
+            named_shares = values / values.sum()
+            prediction = summary(fitted.predict(values))
+            replicate = summary(fitted.predict(values, seed=20261003))
+            mc_difference = max(
+                abs(a - b)
+                for key in ["lower", "median", "upper"]
+                for a, b in zip(prediction[key], replicate[key], strict=True)
+            )
+            if mc_difference > 0.01:
+                raise ValueError("ward predictive quantiles are not numerically stable")
+            sensitivities = {
+                key: summary(alternative.predict(values))
+                for key, alternative in alternatives.items()
+            }
+            sensitivities["logistic_normal_shape"] = summary(
+                logistic_normal_prediction(records, values)
+            )
             bands = [
                 {
                     "candidate_id": c.candidate_id,
                     "candidate_name": c.candidate_name,
                     "reported_share": c.share,
-                    "lower": max(0.0, c.share + benchmark["error_lower"]),
-                    "upper": min(1.0, c.share + benchmark["error_upper"]),
+                    "named_share": float(named_shares[index]),
+                    "median": prediction["median"][index],
+                    "lower": prediction["lower"][index],
+                    "upper": prediction["upper"][index],
                 }
-                for c in poll.candidates
-                if not c.is_residual
+                for index, c in enumerate(named)
             ]
             contexts[poll.poll_id] = {
                 "reading_id": reading["poll_reading_id"],
@@ -217,6 +251,10 @@ def poll_contexts(
                 "unweighted_base": _base(reading, "unweighted_base"),
                 "weighted_base": _base(reading, "weighted_base"),
                 "reported_base": _base(reading, "reported_base"),
+                "denominator": "named_candidates",
+                "interval_mass": 0.8,
                 "rows": bands,
+                "sensitivity": sensitivities,
+                "quantile_replication_max_difference": mc_difference,
             }
     return contexts

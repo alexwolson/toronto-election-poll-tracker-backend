@@ -43,6 +43,16 @@ def main() -> None:
     polls = load_ward_poll_readings(inputs.polling_dir / "ward_poll_readings.csv")
     benchmark = historical_benchmark(RAW / "polls/historical_council/poll_responses.csv", canonical)
     context = poll_contexts(polls, inputs.polling_dir, benchmark)
+    benchmark["model"]["shape_sensitivity_max_endpoint_difference"] = (
+        max(
+            abs(row[key] - item["sensitivity"]["logistic_normal_shape"][key][index])
+            for item in context.values()
+            for index, row in enumerate(item["rows"])
+            for key in ["lower", "upper"]
+        )
+        if context
+        else 0.0
+    )
     snapshot = build_council_snapshot(
         load_ward_incumbency(RAW / "defeatability" / "ward_defeatability.csv"),
         load_registered_field(canonical),

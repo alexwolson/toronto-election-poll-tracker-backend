@@ -62,11 +62,11 @@ There are nine usable samples across eight contests if the three late comparison
 
 A wider-horizon check keeps the latest usable sample in each of the eight contests, giving 38 named-candidate comparisons. Its signed actual-minus-poll extremes are unchanged: −16.5219 to +25.5640 percentage points. This check does not add a second firm or election cycle. The main six-contest benchmark and its leave-one-contest-out results remain separately published in the feed.
 
-## What this can support
+## How this evidence is used
 
-The primary corpus supports a transparent historical comparison: show the latest published 2026 named-candidate share and illustrate the full observed range of historical named-share misses from these six 2022 ward contests, preserving candidate identity and the original toplines. Describe the bars as historical misses, not a confidence interval, an 80% probability range or a forecast. Whole-percentage rounding, poll-to-election change, denominator mismatch and survey error all contribute to the observed misses; the dataset does not isolate them.
+The released chart uses a small joint model conditional on each poll’s named set, as chosen by the user. Named source shares and same-person official shares are normalized separately within that set for modelling; original percentages remain available unchanged. Other is neither allocated nor mapped to eventual unnamed candidates. The full raw error span remains audit metadata rather than a probability interval. See [the model and validation](ward-poll-model-validation-2026-10-02.md) and [ADR 0059](../adr/0059-show-historical-error-context-for-ward-polls.md).
 
-This evidence is too narrow to establish reliable Council win probabilities. It has one historical cycle and one firm, sparse within-contest time coverage, unresolved Other meanings and changing named fields. The 2026 polls mix IVR with a non-random online panel, unlike the recovered 2022 IVR-only releases. The historical horizon is about ten days earlier than the current September 27 poll end. A wider historical range is not itself a validated probability statement. Use contest/cycle units in any subsequent validation; extra candidate rows and dependent mayoral questions cannot increase independent trial counts.
+The corpus is too narrow to establish reliable full-field Council win probabilities. It has one historical cycle and one firm, sparse within-contest time coverage, unresolved Other meanings and changing named fields. The 2026 polls mix IVR with a non-random online panel, unlike the recovered 2022 IVR-only releases. The historical horizon is about ten days earlier than the current September 27 poll end. Transferring discrepancy across methods and cycles is an assumption, not an estimated correction. Whole-contest checks and distribution sensitivities qualify what the charts mean without turning candidate rows into independent elections.
 
 ## Leads remaining unacquired
 

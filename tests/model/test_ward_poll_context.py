@@ -100,9 +100,15 @@ def test_source_bases_and_published_shares_are_preserved_without_other_allocatio
             },
             {
                 "poll_reading_id": "r",
+                "candidate_name": "Candidate B",
+                "response_kind": "candidate",
+                "share": "0.50",
+            },
+            {
+                "poll_reading_id": "r",
                 "candidate_name": "",
                 "response_kind": "other",
-                "share": "0.94",
+                "share": "0.44",
             },
         ],
     )
@@ -119,17 +125,19 @@ def test_source_bases_and_published_shares_are_preserved_without_other_allocatio
         None,
         (
             WardPollCandidateReading("a", "Candidate", 0.06, False, False, "registered"),
-            WardPollCandidateReading("other", "Other", 0.94, False, True, "residual"),
+            WardPollCandidateReading("b", "Candidate B", 0.50, False, False, "registered"),
+            WardPollCandidateReading("other", "Other", 0.44, False, True, "residual"),
         ),
     )
-    b = {"error_lower": -0.16521877486077963, "error_upper": 0.2556404136833731}
+    b = historical_benchmark(CORPUS, RESULTS)
     c = poll_contexts({"4": (poll,)}, tmp_path, b)["p"]
     assert c["unweighted_base"] == 307 and c["weighted_base"] == 331
     assert c["reported_base"] is None
-    assert len(c["rows"]) == 1
+    assert len(c["rows"]) == 2
+    assert sum(r["named_share"] for r in c["rows"]) == pytest.approx(1)
     assert c["rows"][0]["reported_share"] == 0.06
-    assert c["rows"][0]["lower"] == 0
-    assert c["rows"][0]["upper"] == pytest.approx(0.3156404136833731)
+    assert c["rows"][0]["named_share"] == pytest.approx(0.06 / 0.56)
+    assert 0 < c["rows"][0]["lower"] < c["rows"][0]["median"] < c["rows"][0]["upper"] < 1
     assert (
         poll_contexts(
             {"4": (replace(poll, ballot_status="different_candidate_field"),)}, tmp_path, b

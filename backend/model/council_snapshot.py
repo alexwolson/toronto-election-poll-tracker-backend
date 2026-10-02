@@ -439,7 +439,7 @@ def build_council_snapshot(
     }
     for card in wards.values():
         for poll in card["ward_polls"]:
-            poll["historical_context"] = (poll_context or {}).get(poll["poll_id"])
+            poll["modelled_context"] = (poll_context or {}).get(poll["poll_id"])
         card["attention"] = {
             "level": _attention_level(card),
             "score": _attention_score(card),
