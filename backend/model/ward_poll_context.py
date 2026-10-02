@@ -17,6 +17,7 @@ from backend.model.ward_poll_model import (
     METHOD,
     cohorts,
     fit,
+    leader_range,
     logistic_normal_prediction,
     model_audit,
     summary,
@@ -217,7 +218,8 @@ def poll_contexts(
             named = [c for c in poll.candidates if not c.is_residual]
             values = np.array([c.share for c in named])
             named_shares = values / values.sum()
-            prediction = summary(fitted.predict(values))
+            draws = fitted.predict(values)
+            prediction = summary(draws)
             replicate = summary(fitted.predict(values, seed=20261003))
             mc_difference = max(
                 abs(a - b)
@@ -230,9 +232,21 @@ def poll_contexts(
                 key: summary(alternative.predict(values))
                 for key, alternative in alternatives.items()
             }
-            sensitivities["logistic_normal_shape"] = summary(
-                logistic_normal_prediction(records, values)
-            )
+            alternative_draws = logistic_normal_prediction(records, values)
+            sensitivities["logistic_normal_shape"] = summary(alternative_draws)
+            leader_index = int(np.argmax(values))
+            leader = named[leader_index]
+            leader_context = {
+                "candidate_id": leader.candidate_id,
+                "candidate_name": leader.candidate_name,
+                "reported_lead": float(
+                    values[leader_index] - np.delete(values, leader_index).max()
+                ),
+                "ranges": [
+                    {"model": "dirichlet", **leader_range(draws, leader_index)},
+                    {"model": "logistic_normal", **leader_range(alternative_draws, leader_index)},
+                ],
+            }
             bands = [
                 {
                     "candidate_id": c.candidate_id,
@@ -253,6 +267,7 @@ def poll_contexts(
                 "reported_base": _base(reading, "reported_base"),
                 "denominator": "named_candidates",
                 "interval_mass": 0.8,
+                "leader": leader_context,
                 "rows": bands,
                 "sensitivity": sensitivities,
                 "quantile_replication_max_difference": mc_difference,

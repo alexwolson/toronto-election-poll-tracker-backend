@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from backend.model.ward_poll_model import fit
+from backend.model.ward_poll_model import fit, leader_range
 
 
 def test_discrepancy_learning_and_joint_predictions_are_not_binomial_precision():
@@ -25,3 +25,11 @@ def test_missing_candidates_are_not_created_and_zero_readings_fail_closed():
     assert fitted.predict(p).shape[1] == 2
     with pytest.raises(ValueError, match="positive named shares"):
         fitted.predict(np.array([0.6, 0.4, 0]))
+
+
+def test_lead_compares_the_same_leader_with_the_strongest_rival_in_each_draw():
+    draws = np.array([[0.40, 0.50, 0.10], [0.40, 0.10, 0.50], [0.60, 0.30, 0.10]])
+    result = leader_range(draws, 0)
+    assert result["lower"] == pytest.approx(-0.1)
+    assert result["upper"] == pytest.approx(0.22)
+    # A fixed poll runner-up would incorrectly miss the second draw's reversal.

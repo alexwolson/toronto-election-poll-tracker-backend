@@ -43,11 +43,20 @@ def main() -> None:
     polls = load_ward_poll_readings(inputs.polling_dir / "ward_poll_readings.csv")
     benchmark = historical_benchmark(RAW / "polls/historical_council/poll_responses.csv", canonical)
     context = poll_contexts(polls, inputs.polling_dir, benchmark)
-    benchmark["model"]["shape_sensitivity_max_endpoint_difference"] = (
+    benchmark["model"]["named_share_shape_sensitivity_max_endpoint_difference"] = (
         max(
             abs(row[key] - item["sensitivity"]["logistic_normal_shape"][key][index])
             for item in context.values()
             for index, row in enumerate(item["rows"])
+            for key in ["lower", "upper"]
+        )
+        if context
+        else 0.0
+    )
+    benchmark["model"]["shape_sensitivity_max_endpoint_difference"] = (
+        max(
+            abs(item["leader"]["ranges"][0][key] - item["leader"]["ranges"][1][key])
+            for item in context.values()
             for key in ["lower", "upper"]
         )
         if context

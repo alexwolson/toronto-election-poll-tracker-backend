@@ -169,3 +169,10 @@ def logistic_normal_prediction(records, shares: np.ndarray) -> np.ndarray:
     logits -= logits.max(axis=1, keepdims=True)
     values = np.exp(logits)
     return values / values.sum(axis=1, keepdims=True)
+
+
+def leader_range(draws: np.ndarray, leader_index: int) -> dict:
+    rivals = np.delete(draws, leader_index, axis=1).max(axis=1)
+    margin = draws[:, leader_index] - rivals
+    lower, upper = np.quantile(margin, [0.1, 0.9])
+    return {"lower": float(lower), "upper": float(upper)}
