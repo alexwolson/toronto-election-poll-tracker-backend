@@ -18,6 +18,7 @@ from backend.model.ward_poll_model import (
     cohorts,
     fit,
     leader_range,
+    leader_scenarios,
     logistic_normal_prediction,
     model_audit,
     summary,
@@ -239,6 +240,7 @@ def poll_contexts(
             leader_context = {
                 "candidate_id": leader.candidate_id,
                 "candidate_name": leader.candidate_name,
+                "scenarios": leader_scenarios((draws, alternative_draws), leader_index),
                 "reported_lead": float(
                     values[leader_index] - np.delete(values, leader_index).max()
                 ),

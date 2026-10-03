@@ -108,9 +108,30 @@ def model_audit(errors: list[dict]) -> dict:
     if total_variation > 0.005:
         raise ValueError("ward concentration quadrature did not converge")
     held_out = []
+    scenario_checks = []
     for index, (sid, p, q) in enumerate(records):
         training = [r for r in records if r[0] != sid]
         predictions = fit(training).predict(p, SEED + index * 10)
+        alternative = logistic_normal_prediction(training, p)
+        mixed = np.concatenate([predictions, alternative], axis=0)
+        lead = mixed[:, int(np.argmax(p))] - np.delete(mixed, int(np.argmax(p)), axis=1).max(axis=1)
+        actual_lead = float(q[int(np.argmax(p))] - np.delete(q, int(np.argmax(p))).max())
+        lower, upper = np.quantile(lead, [0.1, 0.9])
+        scenario_checks.append(
+            {
+                "omitted_sample": sid,
+                "actual_named_set_lead": actual_lead,
+                "lower": float(lower),
+                "upper": float(upper),
+                "covered_80": bool(lower <= actual_lead <= upper),
+                "interval_score": float(
+                    upper
+                    - lower
+                    + 10 * max(lower - actual_lead, 0)
+                    + 10 * max(actual_lead - upper, 0)
+                ),
+            }
+        )
         s = summary(predictions)
         lo, hi = np.array(s["lower"]), np.array(s["upper"])
         # Proper marginal interval score, averaged within a contest, then equally by contest.
@@ -141,6 +162,7 @@ def model_audit(errors: list[dict]) -> dict:
         "quadrature_total_variation": total_variation,
         "qualification_passed": True,
         "leave_one_contest_out": held_out,
+        "scenario_lead_holdouts": scenario_checks,
         "mean_held_out_interval_score": float(
             np.mean([r["mean_interval_score"] for r in held_out])
         ),
@@ -176,3 +198,30 @@ def leader_range(draws: np.ndarray, leader_index: int) -> dict:
     margin = draws[:, leader_index] - rivals
     lower, upper = np.quantile(margin, [0.1, 0.9])
     return {"lower": float(lower), "upper": float(upper)}
+
+
+def leader_scenarios(draws: tuple[np.ndarray, np.ndarray], leader_index: int) -> dict:
+    """Equal-weight illustrative model mixture, not fitted family probabilities."""
+    if len(draws[0]) != len(draws[1]) or not len(draws[0]):
+        raise ValueError("scenario mixture requires equal nonempty model samples")
+    margins = np.concatenate(
+        [d[:, leader_index] - np.delete(d, leader_index, axis=1).max(axis=1) for d in draws]
+    )
+    edges = np.linspace(-1, 1, 41)
+    counts, _ = np.histogram(margins, bins=edges)
+    if counts.sum() != len(margins):
+        raise ValueError("ward scenarios exceed the joint share bounds")
+    return {
+        "method": "equal-weight-error-model-scenarios-v1",
+        "model_weights": {"dirichlet": 0.5, "logistic_normal": 0.5},
+        "draws": len(margins),
+        "denominator": "named_candidates",
+        "bins": [
+            {
+                "left": float(left * 100),
+                "right": float(right * 100),
+                "fraction": int(n) / len(margins),
+            }
+            for left, right, n in zip(edges[:-1], edges[1:], counts, strict=True)
+        ],
+    }

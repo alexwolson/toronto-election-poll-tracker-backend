@@ -1,7 +1,7 @@
 import numpy as np
 import pytest
 
-from backend.model.ward_poll_model import fit, leader_range
+from backend.model.ward_poll_model import fit, leader_range, leader_scenarios
 
 
 def test_discrepancy_learning_and_joint_predictions_are_not_binomial_precision():
@@ -33,3 +33,15 @@ def test_lead_compares_the_same_leader_with_the_strongest_rival_in_each_draw():
     assert result["lower"] == pytest.approx(-0.1)
     assert result["upper"] == pytest.approx(0.22)
     # A fixed poll runner-up would incorrectly miss the second draw's reversal.
+
+
+def test_scenario_histogram_keeps_both_models_and_counts_reversals_against_any_rival():
+    first = np.array([[0.40, 0.50, 0.10], [0.40, 0.10, 0.50], [0.60, 0.30, 0.10]])
+    second = np.array([[1.0, 0, 0], [0, 1.0, 0], [0.60, 0.20, 0.20]])
+    result = leader_scenarios((first, second), 0)
+    assert result["draws"] == 6
+    assert len(result["bins"]) == 40
+    assert sum(b["fraction"] for b in result["bins"]) == pytest.approx(1)
+    assert sum(b["fraction"] for b in result["bins"] if b["right"] <= 0) == pytest.approx(0.5)
+    assert result["bins"][-1]["fraction"] == pytest.approx(1 / 6)
+    assert result["model_weights"] == {"dirichlet": 0.5, "logistic_normal": 0.5}
