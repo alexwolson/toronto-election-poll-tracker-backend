@@ -27,6 +27,7 @@ from backend.model.council_hints import (
 from backend.model.council_race import load_registered_field, load_ward_incumbency
 from backend.model.council_race_card import load_ward_poll_readings
 from backend.model.council_snapshot import build_council_snapshot, load_ward_names
+from backend.model.ward_poll_context import historical_benchmark, poll_contexts
 from backend.release_inputs import load_release_input_paths
 
 RAW = ROOT / "data" / "raw"
@@ -39,16 +40,40 @@ def main() -> None:
     args = parser.parse_args()
     inputs = load_release_input_paths(args.input_manifest)
     canonical = inputs.election_results
+    polls = load_ward_poll_readings(inputs.polling_dir / "ward_poll_readings.csv")
+    benchmark = historical_benchmark(RAW / "polls/historical_council/poll_responses.csv", canonical)
+    context = poll_contexts(polls, inputs.polling_dir, benchmark)
+    benchmark["model"]["named_share_shape_sensitivity_max_endpoint_difference"] = (
+        max(
+            abs(row[key] - item["sensitivity"]["logistic_normal_shape"][key][index])
+            for item in context.values()
+            for index, row in enumerate(item["rows"])
+            for key in ["lower", "upper"]
+        )
+        if context
+        else 0.0
+    )
+    benchmark["model"]["shape_sensitivity_max_endpoint_difference"] = (
+        max(
+            abs(item["leader"]["ranges"][0][key] - item["leader"]["ranges"][1][key])
+            for item in context.values()
+            for key in ["lower", "upper"]
+        )
+        if context
+        else 0.0
+    )
     snapshot = build_council_snapshot(
         load_ward_incumbency(RAW / "defeatability" / "ward_defeatability.csv"),
         load_registered_field(canonical),
         load_council_results(canonical),
-        load_ward_poll_readings(inputs.polling_dir / "ward_poll_readings.csv"),
+        polls,
         ward_names=load_ward_names(inputs.electoral_districts),
         officeholding=load_officeholding_history(canonical, inputs.electoral_districts),
         supported_hints=load_supported_hints(RAW / "hints" / "supported_historical_hints.csv"),
         geometry_path=inputs.electoral_districts_parquet,
         endorsements=load_endorsements(inputs.results_dir),
+        poll_context=context,
+        poll_benchmark=benchmark,
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as handle:

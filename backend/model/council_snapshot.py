@@ -46,7 +46,7 @@ from backend.model.council_race_card import (
 )
 from backend.model.race_map import build_race_map
 
-COUNCIL_RACE_CARD_SCHEMA_VERSION = 9
+COUNCIL_RACE_CARD_SCHEMA_VERSION = 10
 
 _ATTENTION_LABELS = {
     "open": "Open seat",
@@ -268,6 +268,7 @@ def _poll_card(reading: WardPollReading) -> dict:
         "date_published": reading.date_published,
         "sample_size": reading.sample_size,
         "methodology": reading.methodology,
+        "source_url": reading.source_url,
         "denominator": reading.denominator,
         "ballot_status": reading.ballot_status,
         "undecided_share": reading.undecided_share,
@@ -404,6 +405,8 @@ def build_council_snapshot(
     supported_hints: tuple[SupportedHint, ...] = (),
     geometry_path: str | Path | None = None,
     endorsements: dict[str, list[dict]] | None = None,
+    poll_context: dict[str, dict] | None = None,
+    poll_benchmark: dict | None = None,
 ) -> dict:
     biographies = build_all_biographies(results)
     races = build_council_races(incumbency, field, biographies)
@@ -435,6 +438,8 @@ def build_council_snapshot(
         for ward, race in races.items()
     }
     for card in wards.values():
+        for poll in card["ward_polls"]:
+            poll["modelled_context"] = (poll_context or {}).get(poll["poll_id"])
         card["attention"] = {
             "level": _attention_level(card),
             "score": _attention_score(card),
@@ -442,6 +447,7 @@ def build_council_snapshot(
     return {
         "schema_version": COUNCIL_RACE_CARD_SCHEMA_VERSION,
         "base_rate_note": COUNCIL_INCUMBENT_BASE_RATE_COPY,
+        "ward_poll_benchmark": poll_benchmark,
         "wards": wards,
         "map": _council_map(wards, geometry_path),
     }

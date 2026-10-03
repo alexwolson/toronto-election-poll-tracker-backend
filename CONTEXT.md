@@ -136,6 +136,10 @@ _Avoid_: Single-poll average, ward forecast
 A direct Council vote-intention result preserved as Observed Evidence when it cannot form a Ward Polling Estimate. Current-cycle readings retain their source field, denominator, date, and limitations and remain visible when stale; repeated readings from one pollster are shown chronologically rather than averaged. A source-authored hypothetical field becomes current-race evidence only if every named candidate appears on the Final Ballot.
 _Avoid_: Ward estimate, ward forecast, stale poll deletion
 
+**Named-Set Ward Vote Model**:
+A joint model of relative election-day shares among exactly the candidates named in a ward poll. Historical matched candidate sets determine total poll-to-result discrepancy, including uncertainty about its scale and variation between wards. The denominator excludes unreported candidates; source toplines remain separate. This limited model does not produce a full-ballot Council Forecast or winner probabilities.
+_Avoid_: Full-ballot forecast, sampling margin of error, chance of winning
+
 **Open Seat**:
 A Council race in which no Current Incumbent is seeking re-election. It is a factual race property, not a claim that the race is close or a substitute for a forecast quantity.
 _Avoid_: Open race, competitive race

@@ -1,0 +1,430 @@
+{
+  "audit_date": "2026-10-02",
+  "method": "First-party Forum PDF bytes recovered via raw Internet Archive captures. pdftotext-layout extraction; five-page PNG rendering; every page visually reviewed.",
+  "documents": [
+    {
+      "name": "4-sep",
+      "source": "https://poll.forumresearch.com/data/0f87336b-4a32-498e-8411-70b1dd986581Ward%204%20News%20Release.pdf",
+      "retrieved_url": "https://web.archive.org/web/20250227004529id_/https://poll.forumresearch.com/data/0f87336b-4a32-498e-8411-70b1dd986581Ward%204%20News%20Release.pdf",
+      "status": "acquired",
+      "size": 412452,
+      "sha256": "74bb49a7ce9a4759d1b933dd9a3699587c6803aa4a3cbf723948a9b70fbae397",
+      "acquired_at": "2026-10-02T22:58:21.364810+00:00",
+      "events": [
+        "live: HTTP Error 503: Service Unavailable"
+      ],
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-4-sep",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/4-sep.pdf"
+    },
+    {
+      "name": "5-sep",
+      "source": "https://poll.forumresearch.com/data/74bddea4-50a4-4c53-a017-52dabdd9cb43Ward%205%20News%20Release.pdf",
+      "retrieved_url": "https://web.archive.org/web/20250227004521id_/https://poll.forumresearch.com/data/74bddea4-50a4-4c53-a017-52dabdd9cb43Ward%205%20News%20Release.pdf",
+      "status": "acquired",
+      "size": 419827,
+      "sha256": "73e01b0fd533a1dffeab6ebc8b79fab0cdf2815dba23482797e85b8a1019dbd4",
+      "acquired_at": "2026-10-02T22:58:22.101368+00:00",
+      "events": [
+        "live: HTTP Error 503: Service Unavailable"
+      ],
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-5-sep",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/5-sep.pdf"
+    },
+    {
+      "name": "10-sep",
+      "source": "https://poll.forumresearch.com/data/b390026c-ece7-475d-85f0-9cc0e050e9e0Ward%2010%20News%20Release.pdf",
+      "retrieved_url": "https://web.archive.org/web/20250227004457id_/https://poll.forumresearch.com/data/b390026c-ece7-475d-85f0-9cc0e050e9e0Ward%2010%20News%20Release.pdf",
+      "status": "acquired",
+      "size": 414319,
+      "sha256": "ec7d6072e46ef91d24f55857c4172ba03fdc6c4eeff0b9bd4e98bd714b13e415",
+      "acquired_at": "2026-10-02T23:00:45.167551+00:00",
+      "events": [
+        "live: HTTP Error 404: Not Found"
+      ],
+      "previous_attempt": {
+        "name": "10-sep",
+        "source": "https://poll.forumresearch.com/data/b390026c-ece7-475d-85f0-9cc0e050e9e0Ward%2010%20News%20Release.pdf",
+        "status": "failed",
+        "events": [
+          "live: HTTP Error 503: Service Unavailable",
+          "archive: The read operation timed out"
+        ]
+      },
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-10-sep",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/10-sep.pdf"
+    },
+    {
+      "name": "13-sep",
+      "source": "https://poll.forumresearch.com/data/a199cd17-a268-43ac-a464-8c75787e2657Ward%2013%20News%20Release.pdf",
+      "retrieved_url": "https://web.archive.org/web/20250227004442id_/https://poll.forumresearch.com/data/a199cd17-a268-43ac-a464-8c75787e2657Ward%2013%20News%20Release.pdf",
+      "status": "acquired",
+      "size": 421985,
+      "sha256": "7052a1572b6917208fbc5a85c593a8852f9f4af5ca4a42288889fb3f0631c729",
+      "acquired_at": "2026-10-02T22:58:28.111999+00:00",
+      "events": [
+        "live: HTTP Error 503: Service Unavailable"
+      ],
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-13-sep",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/13-sep.pdf"
+    },
+    {
+      "name": "20-sep",
+      "source": "https://poll.forumresearch.com/data/00bd353b-b4c5-4efc-ba8a-7e75d5abb630Ward%2020%20News%20Release.pdf",
+      "retrieved_url": "https://web.archive.org/web/20221006035149id_/https://poll.forumresearch.com/data/00bd353b-b4c5-4efc-ba8a-7e75d5abb630Ward%2020%20News%20Release.pdf",
+      "status": "acquired",
+      "size": 415598,
+      "sha256": "fd392e38eb95c03b88ad219c05919f0464ce0a59f0cbac7964df8d5e525286eb",
+      "acquired_at": "2026-10-02T23:00:45.492955+00:00",
+      "events": [
+        "live: HTTP Error 404: Not Found"
+      ],
+      "previous_attempt": {
+        "name": "20-sep",
+        "source": "https://poll.forumresearch.com/data/00bd353b-b4c5-4efc-ba8a-7e75d5abb630Ward%2020%20News%20Release.pdf",
+        "status": "failed",
+        "events": [
+          "live: HTTP Error 404: Not Found",
+          "archive: The read operation timed out"
+        ]
+      },
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-20-sep",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/20-sep.pdf"
+    },
+    {
+      "name": "22-sep",
+      "source": "https://poll.forumresearch.com/data/2fc49a81-6baf-49bc-ad01-f22449099fb4Ward%2022%20News%20Release.pdf",
+      "retrieved_url": "https://web.archive.org/web/20221006043454id_/https://poll.forumresearch.com/data/2fc49a81-6baf-49bc-ad01-f22449099fb4Ward%2022%20News%20Release.pdf",
+      "status": "acquired",
+      "size": 406535,
+      "sha256": "43e08675fae043d146d1cf2282497c29865b113d243c6d727c8eb3ca2ace9d98",
+      "acquired_at": "2026-10-02T23:00:45.857949+00:00",
+      "events": [
+        "live: HTTP Error 404: Not Found"
+      ],
+      "previous_attempt": {
+        "name": "22-sep",
+        "source": "https://poll.forumresearch.com/data/2fc49a81-6baf-49bc-ad01-f22449099fb4Ward%2022%20News%20Release.pdf",
+        "status": "failed",
+        "events": [
+          "live: HTTP Error 404: Not Found",
+          "archive: HTTP Error 503: Service Unavailable"
+        ]
+      },
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-22-sep",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/22-sep.pdf"
+    },
+    {
+      "name": "1-oct",
+      "source": "https://poll.forumresearch.com/data/c33fd6af-e9e0-4f30-a67d-5f1c5a335e44Ward%201%20News%20Release%20%282%29.pdf",
+      "retrieved_url": "https://web.archive.org/web/20250227004404id_/https://poll.forumresearch.com/data/c33fd6af-e9e0-4f30-a67d-5f1c5a335e44Ward%201%20News%20Release%20(2).pdf",
+      "status": "acquired",
+      "size": 415028,
+      "sha256": "62972cb20359ec0e4d92b6bff4e54431e66e88270ac37a163f9db01d8dac0011",
+      "acquired_at": "2026-10-02T23:01:08.209859+00:00",
+      "events": [
+        "live: HTTP Error 503: Service Unavailable"
+      ],
+      "previous_attempt": {
+        "name": "1-oct",
+        "source": "https://poll.forumresearch.com/data/c33fd6af-e9e0-4f30-a67d-5f1c5a335e44Ward%201%20News%20Release%20%282%29.pdf",
+        "status": "failed",
+        "events": [
+          "live: HTTP Error 404: Not Found",
+          "archive: HTTP Error 503: Service Unavailable"
+        ]
+      },
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-1-oct",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/1-oct.pdf"
+    },
+    {
+      "name": "5-oct",
+      "source": "https://poll.forumresearch.com/data/4a391231-3daa-4e46-bf07-b2969a3d8998Ward%205%20News%20Release%20%282%29.pdf",
+      "retrieved_url": "https://web.archive.org/web/20221025143641id_/https://poll.forumresearch.com/data/4a391231-3daa-4e46-bf07-b2969a3d8998Ward%205%20News%20Release%20(2).pdf",
+      "status": "acquired",
+      "size": 409270,
+      "sha256": "c5d564120b5546d6de5da5967ef0572da7265601de7e2e9a482f969583132b84",
+      "acquired_at": "2026-10-02T22:58:51.589806+00:00",
+      "events": [
+        "live: HTTP Error 404: Not Found"
+      ],
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-5-oct",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/5-oct.pdf"
+    },
+    {
+      "name": "3-oct",
+      "source": "https://poll.forumresearch.com/data/39f8b538-ba12-41bd-949b-9fe053591addWard%203%20News%20Release%20%282%29.pdf",
+      "retrieved_url": "https://web.archive.org/web/20250227004400id_/https://poll.forumresearch.com/data/39f8b538-ba12-41bd-949b-9fe053591addWard%203%20News%20Release%20(2).pdf",
+      "status": "acquired",
+      "size": 412186,
+      "sha256": "a0b82a2ee808d1fa0ecb1c7c4253da0cf3c222eedb484df515bfac207a885dea",
+      "acquired_at": "2026-10-02T22:58:46.194405+00:00",
+      "events": [
+        "live: HTTP Error 404: Not Found"
+      ],
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-3-oct",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/3-oct.pdf"
+    },
+    {
+      "name": "13-oct",
+      "source": "https://poll.forumresearch.com/data/1fd427fb-bc3a-467e-9799-b06249743aa1Ward%2013%20News%20Release%20%282%29.pdf",
+      "retrieved_url": "https://web.archive.org/web/20221023134010id_/http://poll.forumresearch.com/data/1fd427fb-bc3a-467e-9799-b06249743aa1Ward%2013%20News%20Release%20(2).pdf",
+      "status": "acquired",
+      "size": 410681,
+      "sha256": "447d1ff444322d378ab3f25ccbfca2d49b836413e7bf112b6826bcc5fd53b677",
+      "acquired_at": "2026-10-02T23:00:59.828231+00:00",
+      "events": [
+        "live: HTTP Error 503: Service Unavailable"
+      ],
+      "previous_attempt": {
+        "name": "13-oct",
+        "source": "https://poll.forumresearch.com/data/1fd427fb-bc3a-467e-9799-b06249743aa1Ward%2013%20News%20Release%20%282%29.pdf",
+        "status": "failed",
+        "events": [
+          "live: HTTP Error 503: Service Unavailable",
+          "archive: HTTP Error 503: Service Unavailable"
+        ]
+      },
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-13-oct",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/13-oct.pdf"
+    },
+    {
+      "name": "16-oct",
+      "source": "https://poll.forumresearch.com/data/49ae2b2d-076c-4e6b-b5c6-5f00b1f55858Ward%2016%20News%20Release%20%282%29.pdf",
+      "retrieved_url": "https://web.archive.org/web/20221023012922id_/https://poll.forumresearch.com/data/49ae2b2d-076c-4e6b-b5c6-5f00b1f55858Ward%2016%20News%20Release%20(2).pdf",
+      "status": "acquired",
+      "size": 415954,
+      "sha256": "20cb572be926d9a1b8c6cbedc7e713a51afab76cdaa2dda14e4ba22e2cec56a0",
+      "acquired_at": "2026-10-02T22:58:56.615416+00:00",
+      "events": [
+        "live: HTTP Error 503: Service Unavailable"
+      ],
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-16-oct",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/16-oct.pdf"
+    },
+    {
+      "name": "23-oct",
+      "source": "https://poll.forumresearch.com/data/a97b9d54-6e26-4c61-85f1-e424f292559dWard%2023%20News%20Release%20%282%29.pdf",
+      "retrieved_url": "https://web.archive.org/web/20221023045916id_/https://poll.forumresearch.com/data/a97b9d54-6e26-4c61-85f1-e424f292559dWard%2023%20News%20Release%20(2).pdf",
+      "status": "acquired",
+      "size": 409690,
+      "sha256": "f5cd3201de9bd52aa5e0172ebd241d7d7b42e0e94bd0c3fa4076e912d321639e",
+      "acquired_at": "2026-10-02T23:01:01.371205+00:00",
+      "events": [
+        "live: HTTP Error 503: Service Unavailable"
+      ],
+      "previous_attempt": {
+        "name": "23-oct",
+        "source": "https://poll.forumresearch.com/data/a97b9d54-6e26-4c61-85f1-e424f292559dWard%2023%20News%20Release%20%282%29.pdf",
+        "status": "failed",
+        "events": [
+          "live: HTTP Error 503: Service Unavailable",
+          "archive: The read operation timed out"
+        ]
+      },
+      "page_count": 5,
+      "visually_reviewed_pages": [
+        1,
+        2,
+        3,
+        4,
+        5
+      ],
+      "council_table_page": 2,
+      "method_page": 1,
+      "council_table_base_kind": "reported_table_base",
+      "qa_status": "all_pages_visually_reviewed",
+      "retained_first_party_bytes": true,
+      "source_document_id": "forum-2022-23-oct",
+      "mime_type": "application/pdf",
+      "visual_qa_status": "passed",
+      "redistribution_status": "not_observed",
+      "local_path": "data/source_documents/historical_council/23-oct.pdf"
+    }
+  ],
+  "datasets": [
+    {
+      "path": "/private/tmp/ward-poll-uncertainty-2026-10-02/historical/historical_council_poll_toplines_primary.csv",
+      "sha256": "420e8d1413fabc75ceab6762b1e76e52498c31293c8f7f892049dd3393753c27"
+    },
+    {
+      "path": "/private/tmp/ward-poll-uncertainty-2026-10-02/historical/historical_council_poll_toplines_audit.csv",
+      "sha256": "936f0a2f36bad9aac2ea2cc920fa3d539f37e8164c5b3f8b6b0428bdb1c1da67"
+    }
+  ]
+}
