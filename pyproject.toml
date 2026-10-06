@@ -32,6 +32,11 @@ dev = [
 
 [tool.ruff]
 line-length = 100
+# Research code and records are kept as written, outside the production checks.
+extend-exclude = ["docs/research"]
 
 [tool.ruff.lint]
 extend-select = ["I"]
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]

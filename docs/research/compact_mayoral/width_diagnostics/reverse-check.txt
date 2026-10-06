@@ -1,0 +1,8 @@
+@39 d, n=4: leader-margin PITs [0.31, 0.25, 0.87, 0.87]
+   80% coverage 4/4 (nominal 3.2); in outer 20% tails 0/4 (nominal 0.8); in middle 40% 1/4 (nominal 1.6)
+   mean |PIT-0.5| 0.29 (uniform: 0.25); KS 0.37, simulated p 0.54
+@14 d, n=7: leader-margin PITs [0.97, 0.19, 0.53, 0.38, 0.68, 0.7, 0.83]
+   80% coverage 6/7 (nominal 5.6); in outer 20% tails 1/7 (nominal 1.4); in middle 40% 4/7 (nominal 2.8)
+   mean |PIT-0.5| 0.23 (uniform: 0.25); KS 0.25, simulated p 0.68
+all 11 folds: mean |PIT-0.5| 0.26; KS 0.23, p 0.55; tails 1/11 (nominal 2.2); middle 5/11 (nominal 4.4)
+candidate-level PITs, n=66: KS 0.145, p 0.122; tails 13/66 (nominal 13.2)

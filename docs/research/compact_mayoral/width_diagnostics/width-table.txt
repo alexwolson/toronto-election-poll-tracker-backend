@@ -1,0 +1,18 @@
+run                             phi q10/q50/q90  sd now sd move sd eday sd total eday share  band  Chow div
+v2-all-population-dirichlet     24/  42/  79      6.4    10.0    17.3     20.9       0.68    51  70.2   0
+all-2026-dirichlet_era          27/  53/ 107      6.3     9.4    15.3     18.9       0.64    47  71.8   0   eday var vs baseline   -22%
+wd-2010-nodropouts              37/  69/ 139      6.3     9.7    13.3     17.5       0.57    43  73.7   0   eday var vs baseline   -40%
+wd-2026only                      6/  40/ 271      3.4     4.6    22.0     22.8       0.94    52  71.5   5   eday var vs baseline   +63%
+wd-loo-2003                     28/  54/ 105      6.4     9.5    15.5     19.0       0.65    47  71.8   0   eday var vs baseline   -19%
+wd-loo-2006                     23/  41/  76      6.4     9.9    17.2     21.0       0.68    50  71.2   0   eday var vs baseline    -1%
+wd-loo-2010                     31/  61/ 122      6.5     9.3    14.6     18.4       0.62    45  73.0   0   eday var vs baseline   -28%
+wd-loo-2014                     21/  37/  69      6.8    11.0    17.8     21.9       0.66    55  69.0   2   eday var vs baseline    +6%
+wd-loo-2018                     18/  32/  61      6.9    11.2    18.4     22.5       0.66    56  68.5   0   eday var vs baseline   +13%
+wd-loo-2022                     22/  41/  77      6.5    10.3    17.6     21.2       0.68    52  69.2   1   eday var vs baseline    +3%
+wd-loo-2023                     19/  39/  82      4.4     8.5    17.6     20.0       0.77    49  68.4   6   eday var vs baseline    +4%
+wd-nomix                        20/  31/  46      6.6    10.7    15.8     20.1       0.61    52  69.8   0   eday var vs baseline   -16%
+wd-nomix-loo-2023               13/  21/  36      4.4     8.9    18.8     21.8       0.78    56  66.8   1   eday var vs baseline   +19%
+wd-prior-phi10                  21/  37/  68      6.4     9.6    17.9     21.3       0.71    53  70.0   0   eday var vs baseline    +8%
+wd-prior-phi160                 27/  48/  91      6.3     9.9    15.4     19.3       0.63    48  70.9   0   eday var vs baseline   -20%
+wd-prior-phi40tight             27/  41/  64      6.4     9.6    16.8     20.3       0.68    50  71.0   0   eday var vs baseline    -6%
+wd-prior-phi640                 30/  55/ 109      6.4    10.0    14.9     18.9       0.61    47  72.0   0   eday var vs baseline   -25%
