@@ -17,7 +17,7 @@ from pathlib import Path
 
 import numpy as np
 
-from .readings import BACKEND, CampaignPolls, _normalize
+from .readings import BACKEND, CURRENT_KEY, CampaignPolls, _normalize
 
 TABLE = BACKEND / "data" / "raw" / "elections" / "mayoral_suspended_campaigns.csv"
 
@@ -29,6 +29,20 @@ def load_suspensions(path: Path = TABLE) -> list[dict]:
         row["announcement_date"] = date.fromisoformat(row["announcement_date"])
         row["election_date"] = date.fromisoformat(row["election_date"])
     return rows
+
+
+def current_suspension_row(spec: str) -> dict:
+    """``"Name:YYYY-MM-DD"`` -> a table-shaped row for a current-campaign suspension."""
+    name, _, day = spec.rpartition(":")
+    return {
+        "case_id": f"{CURRENT_KEY}-{_normalize(name).replace(' ', '-')}",
+        "election_cycle_id": CURRENT_KEY,
+        "city": "Toronto",
+        "candidate_name": name.strip(),
+        "announcement_date": date.fromisoformat(day),
+        "last_poll_share_pct": "",
+        "final_share_pct": "",
+    }
 
 
 def kept_fraction(row: dict) -> float | None:

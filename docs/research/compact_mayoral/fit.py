@@ -88,6 +88,12 @@ def parse_args(argv=None):
         help="S1 of backend issue 43: a shared kept fraction for Suspended Campaigns known at "
         "each campaign's cutoff (held-out campaign: election day minus the horizon)",
     )
+    parser.add_argument(
+        "--current-suspension",
+        default="",
+        help='with --suspension-signal joint: "Name:YYYY-MM-DD" for the 2026 campaign '
+        "(not used in the held-out folds; issue 43 report)",
+    )
     parser.add_argument("--min-offered", type=int, default=2)
     parser.add_argument("--denominator-rank", choices=("decided_first", "all_first"), default="decided_first")
     parser.add_argument("--warmup", type=int, default=1000)
@@ -128,6 +134,7 @@ def main(argv=None):
     from .model import build_model
     from .suspensions import (
         check_no_post_suspension_offer,
+        current_suspension_row,
         keep_distribution,
         known_suspensions,
         load_suspensions,
@@ -190,6 +197,8 @@ def main(argv=None):
         # fits (its forecast there is sealed and unused by the held-out decision).
         rows = load_suspensions()
         keep_prior = keep_distribution(rows, exclude_cities=("Toronto",))
+        if args.current_suspension:
+            rows = [*rows, current_suspension_row(args.current_suspension)]
         for c in campaigns:
             check_no_post_suspension_offer(c, rows)
             cutoff = c.election_date

@@ -84,3 +84,72 @@ the pins of `backend-2026-10-06.1`.
 
 **Committed before the rerun:** the rerun is the decision of record, whatever it shows. Both
 sweeps are reported.
+
+## Results (appended after the runs)
+
+All OBSERVED. CRPS is the mean leader-margin CRPS in points; coverage counts folds whose
+80% band holds the true margin. Full fold tables: `compare.txt` and `compare-v2.txt` in the
+session's runs (untracked, like earlier runs). Every fold sampled cleanly: at most 3 divergences,
+worst R-hat 1.0184.
+
+**Sweep 2, the decision of record (production 2026 inputs, 20:43–21:11 UTC).** The baseline
+reproduces the Ipsos Reid ticket's held-out record fold for fold (14 days: 9.27).
+
+| | Baseline | S1 (joint) | S2 (forecast side) |
+|---|---|---|---|
+| 39 days: CRPS / coverage | 9.40 / 4 of 4 | 9.39 / 3 of 4 (2023 lost, +29.6 vs band top +29.3) | 9.40 / 4 of 4 |
+| 14 days: CRPS / coverage | 9.27 / 6 of 7 | 9.28 / 6 of 7 | 9.31 / 6 of 7 |
+| Candidate KS, 39 / 14 days | 0.208 / 0.105 | 0.249 / 0.187 | 0.208 / 0.121 |
+| `phi_election` per fold | 34–71 | 66–108 | as baseline |
+
+**Verdict by the pre-registered rule: S1 passes all three rules and is adopted.** S2 also
+passes, but it is consulted only if S1 fails.
+
+**Sweep 1 (stale 8-poll 2026 input, superseded but reported).**
+- Baseline: 9.16 at 39 days, 9.20 at 14.
+- S1: 9.28 and 9.39, failing rule 1 at both horizons (+0.12, +0.19).
+- S2: 9.16 and 9.24, passing.
+
+**What the two sweeps say together (critique).**
+- The S1-minus-baseline difference moved by 0.13 points at 39 days and 0.18 at 14 between two
+  sweeps that differ only in the 2026 campaign's inputs, which do not bear on the held-out
+  question. That is larger than the rule's 0.10 tolerance. The test does not resolve S1 from the
+  baseline at its own resolution: under one input S1 is detectably worse, under the other
+  indistinguishable.
+- Seed variation was not measured. The rule did not call for it, and adding it after seeing a
+  verdict would be a fork.
+- **Consistent across both sweeps:**
+  - S1 roughly doubles `phi_election`, which narrows the election-day range, as in the 2026-09-22
+    fold-in correction.
+  - Candidate calibration is worse under S1 (KS +0.04 and +0.08 in sweep 2; +0.03 and +0.08 in
+    sweep 1).
+  - The probability given to the actual winner is better under S1 (−log P 0.281 vs 0.336 at 39
+    days).
+- **The kept fraction is the prior, not something learned from 2010.** The posterior is 0.212
+  (80% 0.181–0.249) against a prior median of 0.219. Thomson's 0.033 barely moves it.
+- **The expectation recorded beforehand (S1 fails rule 1 at both horizons)** held in sweep 1 and
+  not in the sweep of record.
+
+## 2026 consequence (report item; matched full fits, not part of the decision)
+
+The research harness was run on today's inputs: the data-repo corpus with Ipsos Reid 2010, the 14
+production polls, 4×(1000+4000), seed 20260921. S1 applies Alexander's suspension (Oct 6) to 2026
+through `--current-suspension`.
+
+| | Baseline | S1 |
+|---|---|---|
+| Alexander's election-day share (full ballot), median (80%) | 6.6 (1.9–13.6) | 1.1 (0.1–3.6) |
+| Chow / Bradford / Alexander win | 75.5 / 24.3 / 0.2 | 80.3 / 19.7 / 0.0 |
+| Chow−Bradford named margin, median (80%) | +12.9 (−12.8 to +37.0) | +13.6 (−8.0 to +34.6) |
+| `phi_election` mean | 46.5 | 80.6 |
+| Diagnostics | 1 divergence, R-hat 1.0009 | 0 divergences, R-hat 1.0007 |
+
+S1 moves Chow's win probability up about 5 points. The cause is the narrower election-day term
+(the 2026-09-22 width finding), not anything about where Alexander's voters go.
+
+**S2 on the production fit, for reference (not adopted).** `backend-2026-10-06.1` was refit at
+`20f4c11` from its pins. It reproduces the published 75.375 / 24.4125 / 0.2125 exactly (0
+divergences, worst R-hat 1.001208). Applying S2 with all seven usable cases (median kept fraction
+0.159):
+- Alexander's share goes from 6.7 (2.0–13.5) to 1.0 (0.2–3.3).
+- The win probabilities become 75.5 / 24.5 / 0.0. The Chow–Bradford split is unchanged.

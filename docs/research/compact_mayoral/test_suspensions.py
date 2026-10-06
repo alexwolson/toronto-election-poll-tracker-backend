@@ -5,7 +5,7 @@ Run from the backend root:
     uv run python -m pytest docs/research/compact_mayoral/test_suspensions.py -q
 """
 
-from datetime import timedelta
+from datetime import date, timedelta
 
 import jax
 import numpy as np
@@ -159,3 +159,14 @@ def test_no_signal_sites_without_suspensions_and_a_prior_is_required_with_them()
             suspensions={c.key: (0,)},
             keep_prior=(-1.5, 0.1),
         )
+
+
+def test_current_suspension_row_names_the_current_campaign_candidate():
+    from .readings import CURRENT_KEY
+    from .suspensions import current_suspension_row
+
+    row = current_suspension_row("Chris Alexander:2026-10-06")
+    assert row["election_cycle_id"] == CURRENT_KEY
+    assert row["candidate_name"] == "Chris Alexander"
+    assert row["announcement_date"] == date(2026, 10, 6)
+    assert kept_fraction({**row, "last_poll_share_pct": ""}) is None
