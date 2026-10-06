@@ -26,20 +26,20 @@ ALEX = "per_alex0000000000000000000000000"
 
 def test_tracked_classification_table_covers_every_register_reading() -> None:
     rows = list(csv.DictReader(CLASSIFICATION.open(encoding="utf-8")))
-    assert len(rows) == 265
+    assert len(rows) == 267
     assert {r["corpus"] for r in rows} == {"historical"}
     assert {r["measurement_class"] for r in rows} >= {
         "campaign_vote_intention",
         "alternative_ballot",
     }
     provenance = json.loads(CLASSIFICATION.with_suffix(".provenance.json").read_text())
-    assert provenance["rows"] == 265 and len(provenance["source_sha256"]) == 64
+    assert provenance["rows"] == 267 and len(provenance["source_sha256"]) == 64
 
 
 def test_historical_campaigns_from_backend_tracked_inputs() -> None:
     camps = historical_campaigns()
     assert set(camps) == {f"toronto_{y}" for y in (2003, 2006, 2010, 2014, 2018, 2022, 2023)}
-    assert sum(len(c.polls) for c in camps.values()) == 97
+    assert sum(len(c.polls) for c in camps.values()) == 98
     c = camps["toronto_2014"]
     assert set(c.names) == {"John Tory", "Doug Ford", "Olivia Chow"}
     assert c.election_date == date(2014, 10, 27)
@@ -264,6 +264,24 @@ def _bundle_inputs(tmp_path: Path) -> tuple[Path, Path]:
         ],
     )
     return polling, candidates
+
+
+def test_last_poll_offering_thomson_enters_the_2010_campaign() -> None:
+    # backend#35: Ipsos Reid, Sept 24-26, 2010 (fieldwork midpoint 30 days out), the
+    # last poll that offered Thomson before her campaign was suspended, enters as
+    # its all-respondents topline; the same-sample two-way is not an ordinary reading.
+    c = historical_campaigns()["toronto_2010"]
+    poll = next(p for p in c.polls if p.group == "ipsos_city_2010_09_26_n400")
+    assert poll.reading_id == "ipsos_2010-09-27_release__r1"
+    assert poll.days_before_election == 30
+    assert {c.names[i] for i in poll.offered} == {
+        "Rob Ford",
+        "George Smitherman",
+        "Joe Pantalone",
+        "Rocco Rossi",
+        "Sarah Thomson",
+    }
+    assert len(c.polls) == 10
 
 
 def test_current_campaign_selects_one_reading_per_sample_by_denominator_rank(
