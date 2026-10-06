@@ -25,6 +25,13 @@ HISTORICAL_TABLES = (
 )
 
 
+LEGACY_DISCOVERY_TABLES = (
+    "historical_mayoral_polls.csv",
+    "historical_mayoral_outcomes.csv",
+    "legacy_historical_poll_crosswalk.csv",
+)
+
+
 def _write_historical_tables(polling: Path) -> None:
     for table in HISTORICAL_TABLES:
         (polling / f"historical_mayoral_{table}.csv").write_text("id\n", encoding="utf-8")
@@ -82,6 +89,10 @@ def test_hydration_is_isolated_and_returns_explicit_model_paths(tmp_path: Path) 
     )
 
     _write_historical_tables(polling)
+    # Polling releases still carry the Wikipedia-era discovery tables; Backend no
+    # longer vendors them.
+    for legacy in LEGACY_DISCOVERY_TABLES:
+        (polling / legacy).write_text("legacy_poll_id\nx\n", encoding="utf-8")
 
     paths, _ = hydrate_release_inputs(project, results, polling, results_release="results-test")
 
@@ -94,6 +105,8 @@ def test_hydration_is_isolated_and_returns_explicit_model_paths(tmp_path: Path) 
     )
     assert paths.trustee_races == project / "data/upstream/results/trustee_races.json"
     assert paths.model_polls == project / "data/upstream/model/polls"
+    for legacy in LEGACY_DISCOVERY_TABLES:
+        assert not (paths.model_polls / legacy).exists()
     responses = (paths.model_polls / "poll_responses.csv").read_text(encoding="utf-8")
     assert "candidate_id" in responses.splitlines()[0]
     assert "person-chow" in responses
