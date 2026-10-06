@@ -1,0 +1,109 @@
+poll_reading_id,response_option_id,response_kind,candidate_id,candidate_name,candidate_observation_status,response_label,option_order,reported_value,share,notes
+dart_2018_head_to_head,candidate-tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,,62,0.62,Published only in factum prose; no response-option order or missing remainder is inferred.
+dart_2018_head_to_head,candidate-keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmaat,,27,0.27,Published only in factum prose; no response-option order or missing remainder is inferred.
+probit_2018_all,candidate-tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,Tory,1,43,0.43,Source-exact chart label retained.
+probit_2018_all,candidate-keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Keesmaat,2,21,0.21,Source-exact chart label retained.
+probit_2018_all,candidate-goldy-faith,candidate,per_64fc452958e758909ab756ebba731391,Faith Goldy,individually_published,Goldy,3,2,0.02,Faith Goldy is a named candidate response and is not folded into residual support.
+probit_2018_all,other,other,,,,Other,4,1,0.01,Other is a published poll response and not an Unmeasured Candidate Tail estimate.
+probit_2018_all,undecided,undecided,,,,Undecided,5,33,0.33,Source-exact chart category retained.
+probit_2018_undecideds_removed,candidate-tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,Tory,1,64,0.64,Dependent undecideds-removed chart.
+probit_2018_undecideds_removed,candidate-keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Keesmaat,2,31,0.31,Dependent undecideds-removed chart.
+probit_2018_undecideds_removed,candidate-goldy-faith,candidate,per_64fc452958e758909ab756ebba731391,Faith Goldy,individually_published,Goldy,3,3,0.03,Faith Goldy is a named candidate response and is not folded into residual support.
+probit_2018_undecideds_removed,other,other,,,,Other,4,2,0.02,Other is a published poll response and not an Unmeasured Candidate Tail estimate.
+forum_2018_jul27_decided_leaning,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,70,0.7,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_jul27_decided_leaning,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmaat,2,30,0.3,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_aug27_decided_leaning,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,65,0.65,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_aug27_decided_leaning,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmaat,2,35,0.35,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_sep06_decided_leaning,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,55,0.55,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_sep06_decided_leaning,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmaat,2,30,0.3,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_sep06_decided_leaning,another-candidate,other,,,,Another candidate,3,15,0.15,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_sep24_decided_leaning,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,56,0.56,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_sep24_decided_leaning,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmaat,2,28,0.28,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_sep24_decided_leaning,another-candidate,other,,,,Another candidate,3,16,0.16,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_oct05_decided_leaning,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,56,0.56,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_oct05_decided_leaning,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmaat,2,29,0.29,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_oct05_decided_leaning,another-candidate,other,,,,Another candidate,3,15,0.15,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_oct10_decided_leaning,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,56,0.56,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_oct10_decided_leaning,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmaat,2,29,0.29,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+forum_2018_oct10_decided_leaning,another-candidate,other,,,,Another candidate,3,15,0.15,Source-published numeric token and label preserved exactly; no normalization or inferred remainder.
+mainstreet_2018_sep16_report__r1,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,45.5,0.455,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep16_report__r1,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmat,2,19,0.19,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep16_report__r1,goldy,candidate,per_64fc452958e758909ab756ebba731391,Faith Goldy,individually_published,Faith Goldy,3,4.4,0.044,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep16_report__r1,another-candidate,other,,,,Another Candidate,4,4.7,0.047,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep16_report__r1,undecided,undecided,,,,Undecided,5,26.4,0.264,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep16_report__r2,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,61.8,0.618,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep16_report__r2,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmat,2,25.8,0.258,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep16_report__r2,goldy,candidate,per_64fc452958e758909ab756ebba731391,Faith Goldy,individually_published,Faith Goldy,3,6,0.06,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep16_report__r2,another-candidate,other,,,,Another Candidate,4,6.4,0.064,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r1,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,48.4,0.484,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r1,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmat,2,20.3,0.203,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r1,climenhaga,candidate,per_79d654cb934c519998b37e8bfc06f367,Sarah Climenhaga,individually_published,Sarah Climenhaga,3,1,0.01,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r1,gebresellassi,candidate,per_8ebbc038b64a5e2b80600f5f8f018c84,Saron Gebresellassi,individually_published,Saron Gebresellassi,4,0.8,0.008,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r1,goldy,candidate,per_64fc452958e758909ab756ebba731391,Faith Goldy,individually_published,Faith Goldy,5,1.1,0.011,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r1,another-candidate,other,,,,Another Candidate,6,1,0.01,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r1,undecided,undecided,,,,Undecided,7,27.4,0.274,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r2,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,63.7,0.637,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r2,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmat,2,30.7,0.307,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r2,climenhaga,candidate,per_79d654cb934c519998b37e8bfc06f367,Sarah Climenhaga,individually_published,Sarah Climenhaga,3,1.4,0.014,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r2,gebresellassi,candidate,per_8ebbc038b64a5e2b80600f5f8f018c84,Saron Gebresellassi,individually_published,Saron Gebresellassi,4,1.1,0.011,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r2,goldy,candidate,per_64fc452958e758909ab756ebba731391,Faith Goldy,individually_published,Faith Goldy,5,1.6,0.016,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep25_report__r2,another-candidate,other,,,,Another Candidate,6,1.5,0.015,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep06_report__r1,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,41.7,0.417,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep06_report__r1,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmaat,2,18.4,0.184,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep06_report__r1,another-candidate,other,,,,Another Candidate,3,6.6,0.066,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep06_report__r1,undecided,undecided,,,,Undecided,4,33.2,0.332,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep06_report__r2,tory,candidate,per_a9eb70da799659daaa285f92cfed1674,John Tory,individually_published,John Tory,1,62.6,0.626,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep06_report__r2,keesmaat,candidate,per_49a098eb192452f988a3a579ef7f9cca,Jennifer Keesmaat,individually_published,Jennifer Keesmaat,2,27.7,0.277,Source-published token preserved; agreed across two reads.
+mainstreet_2018_sep06_report__r2,another-candidate,other,,,,Another Candidate,3,9.6,0.096,Source-published token preserved; agreed across two reads.
+ekos_2010_oct13_21_decided,candidate-rob-ford,candidate,per_85286126260c5826bb10831e39d8b19f,Rob Ford,individually_published,Rob Ford,1,43.9,0.439,
+ekos_2010_oct13_21_decided,candidate-smitherman,candidate,per_58016e26ffa55f6bbdc8f7490273a4a5,George Smitherman,individually_published,George Smitherman,2,35.6,0.356,
+ekos_2010_oct13_21_decided,candidate-pantalone,candidate,per_d2a78a2d0b1c5d21804593dc11d87914,Joe Pantalone,individually_published,Joe Pantalone,3,15,0.15,
+ekos_2010_oct13_21_decided,other,other,,,,Other,4,5.5,0.055,
+ekos_2010_oct20_22_decided,candidate-rob-ford,candidate,per_85286126260c5826bb10831e39d8b19f,Rob Ford,individually_published,Rob Ford,1,48.2,0.482,
+ekos_2010_oct20_22_decided,candidate-smitherman,candidate,per_58016e26ffa55f6bbdc8f7490273a4a5,George Smitherman,individually_published,George Smitherman,2,33.3,0.333,
+ekos_2010_oct20_22_decided,candidate-pantalone,candidate,per_d2a78a2d0b1c5d21804593dc11d87914,Joe Pantalone,individually_published,Joe Pantalone,3,14.7,0.147,
+ekos_2010_oct20_22_decided,other,other,,,,Other,4,3.8,0.038,
+pollara_2010_sep_all,candidate-rob-ford,candidate,per_85286126260c5826bb10831e39d8b19f,Rob Ford,individually_published,Rob Ford,1,36,0.36,
+pollara_2010_sep_all,candidate-smitherman,candidate,per_58016e26ffa55f6bbdc8f7490273a4a5,George Smitherman,individually_published,George Smitherman,2,19,0.19,
+pollara_2010_sep_all,candidate-pantalone,candidate,per_d2a78a2d0b1c5d21804593dc11d87914,Joe Pantalone,individually_published,Joe Pantalone,3,9,0.09,
+pollara_2010_sep_all,candidate-thomson,candidate,per_e9c195ba937751869154a92d57592773,Sarah Thomson,individually_published,Sarah Thomson,4,8,0.08,
+pollara_2010_sep_all,candidate-rossi,candidate,per_0e32707dc0ef54e69f20d2ee7c0507aa,Rocco Rossi,individually_published,Rocco Rossi,5,6,0.06,
+pollara_2010_sep_all,other,other,,,,Other,6,1,0.01,
+pollara_2010_sep_all,undecided,undecided,,,,Undecided,7,22,0.22,
+angusreid_2010_sep_decided,candidate-rob-ford,candidate,per_85286126260c5826bb10831e39d8b19f,Rob Ford,individually_published,Rob Ford,1,39,0.39,
+angusreid_2010_sep_decided,candidate-smitherman,candidate,per_58016e26ffa55f6bbdc8f7490273a4a5,George Smitherman,individually_published,George Smitherman,2,26,0.26,
+angusreid_2010_sep_decided,candidate-pantalone,candidate,per_d2a78a2d0b1c5d21804593dc11d87914,Joe Pantalone,individually_published,Joe Pantalone,3,13,0.13,
+angusreid_2010_sep_decided,candidate-thomson,candidate,per_e9c195ba937751869154a92d57592773,Sarah Thomson,individually_published,Sarah Thomson,4,11,0.11,
+angusreid_2010_sep_decided,candidate-rossi,candidate,per_0e32707dc0ef54e69f20d2ee7c0507aa,Rocco Rossi,individually_published,Rocco Rossi,5,8,0.08,
+angusreid_2010_sep_decided,other,other,,,,Other,6,3,0.03,
+nanos_2010_sep_decided,candidate-rob-ford,candidate,per_85286126260c5826bb10831e39d8b19f,Rob Ford,individually_published,Rob Ford,1,45.8,0.458,
+nanos_2010_sep_decided,candidate-smitherman,candidate,per_58016e26ffa55f6bbdc8f7490273a4a5,George Smitherman,individually_published,George Smitherman,2,21.3,0.213,
+nanos_2010_sep_decided,candidate-pantalone,candidate,per_d2a78a2d0b1c5d21804593dc11d87914,Joe Pantalone,individually_published,Joe Pantalone,3,16.8,0.168,
+nanos_2010_sep_decided,candidate-rossi,candidate,per_0e32707dc0ef54e69f20d2ee7c0507aa,Rocco Rossi,individually_published,Rocco Rossi,4,9.7,0.097,
+nanos_2010_sep_decided,candidate-thomson,candidate,per_e9c195ba937751869154a92d57592773,Sarah Thomson,individually_published,Sarah Thomson,5,6.4,0.064,
+ipsos_2010_oct08_all,candidate-smitherman,candidate,per_58016e26ffa55f6bbdc8f7490273a4a5,George Smitherman,individually_published,George Smitherman,1,31,0.31,
+ipsos_2010_oct08_all,candidate-rob-ford,candidate,per_85286126260c5826bb10831e39d8b19f,Rob Ford,individually_published,Rob Ford,2,30,0.3,
+ipsos_2010_oct08_all,candidate-pantalone,candidate,per_d2a78a2d0b1c5d21804593dc11d87914,Joe Pantalone,individually_published,Joe Pantalone,3,11,0.11,
+ipsos_2010_oct08_all,candidate-rossi,candidate,per_0e32707dc0ef54e69f20d2ee7c0507aa,Rocco Rossi,individually_published,Rocco Rossi,4,4,0.04,
+ipsos_2010_oct08_all,undecided,undecided,,,,Undecided,5,25,0.25,
+angusreid_2010_oct_decided,candidate-rob-ford,candidate,per_85286126260c5826bb10831e39d8b19f,Rob Ford,individually_published,Rob Ford,1,41,0.41,
+angusreid_2010_oct_decided,candidate-smitherman,candidate,per_58016e26ffa55f6bbdc8f7490273a4a5,George Smitherman,individually_published,George Smitherman,2,40,0.4,
+angusreid_2010_oct_decided,candidate-pantalone,candidate,per_d2a78a2d0b1c5d21804593dc11d87914,Joe Pantalone,individually_published,Joe Pantalone,3,16,0.16,
+angusreid_2010_oct_decided,other,other,,,,Other,4,3,0.03,
+nanos_2010_oct_decided,candidate-rob-ford,candidate,per_85286126260c5826bb10831e39d8b19f,Rob Ford,individually_published,Rob Ford,1,43.9,0.439,
+nanos_2010_oct_decided,candidate-smitherman,candidate,per_58016e26ffa55f6bbdc8f7490273a4a5,George Smitherman,individually_published,George Smitherman,2,40.5,0.405,
+nanos_2010_oct_decided,candidate-pantalone,candidate,per_d2a78a2d0b1c5d21804593dc11d87914,Joe Pantalone,individually_published,Joe Pantalone,3,15,0.15,
+nanos_2010_oct_decided,other,other,,,,Other,4,0.6,0.006,
+ipsos_2010_oct15_likely,candidate-rob-ford,candidate,per_85286126260c5826bb10831e39d8b19f,Rob Ford,individually_published,Rob Ford,1,39,0.39,
+ipsos_2010_oct15_likely,candidate-smitherman,candidate,per_58016e26ffa55f6bbdc8f7490273a4a5,George Smitherman,individually_published,George Smitherman,2,33,0.33,
+ipsos_2010_oct15_likely,candidate-pantalone,candidate,per_d2a78a2d0b1c5d21804593dc11d87914,Joe Pantalone,individually_published,Joe Pantalone,3,15,0.15,
+ipsos_2010_oct15_likely,undecided,undecided,,,,Undecided,4,11,0.11,
+ipsos_2010_oct15_likely,other,other,,,,Other,5,2,0.02,
+ipsos_2010-09-27_release__r1,rob-ford,candidate,per_85286126260c5826bb10831e39d8b19f,Rob Ford,individually_published,Rob Ford,1,28,0.28,Source-published token preserved; agreed across two reads.
+ipsos_2010-09-27_release__r1,smitherman,candidate,per_58016e26ffa55f6bbdc8f7490273a4a5,George Smitherman,individually_published,George Smitherman,2,23,0.23,Source-published token preserved; agreed across two reads.
+ipsos_2010-09-27_release__r1,pantalone,candidate,per_d2a78a2d0b1c5d21804593dc11d87914,Joe Pantalone,individually_published,Joe Pantalone,3,10,0.1,Source-published token preserved; agreed across two reads.
+ipsos_2010-09-27_release__r1,rossi,candidate,per_0e32707dc0ef54e69f20d2ee7c0507aa,Rocco Rossi,individually_published,Rocco Rossi,4,7,0.07,Source-published token preserved; agreed across two reads.
+ipsos_2010-09-27_release__r1,thomson,candidate,per_e9c195ba937751869154a92d57592773,Sarah Thomson,individually_published,Sara Thomson,5,7,0.07,Source-published token preserved; agreed across two reads.
+ipsos_2010-09-27_release__r1,undecided,undecided,,,,Undecided,6,17,0.17,Source-published token preserved; agreed across two reads.
+ipsos_2010-09-27_release__r2,smitherman,candidate,per_58016e26ffa55f6bbdc8f7490273a4a5,George Smitherman,individually_published,George Smitherman,1,48,0.48,Source-published token preserved; agreed across two reads.
+ipsos_2010-09-27_release__r2,rob-ford,candidate,per_85286126260c5826bb10831e39d8b19f,Rob Ford,individually_published,Rob Ford,2,45,0.45,Source-published token preserved; agreed across two reads.

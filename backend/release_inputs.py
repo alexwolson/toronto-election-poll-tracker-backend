@@ -76,6 +76,19 @@ def _manifest(bundle: Path, repository: str) -> dict:
     return manifest
 
 
+HISTORICAL_CORPUS_ASSETS = tuple(
+    f"historical_mayoral_{table}.csv"
+    for table in (
+        "source_documents",
+        "poll_sample_documents",
+        "poll_samples",
+        "poll_readings",
+        "poll_responses",
+        "reading_classification",
+    )
+)
+
+
 def validate_release_chain(
     results_bundle: str | Path, polling_bundle: str | Path, *, results_release: str
 ) -> tuple[dict, dict]:
@@ -92,6 +105,11 @@ def validate_release_chain(
     }
     if pinned != expected:
         raise ValueError("Polling release does not pin the supplied Results release exactly")
+    # The historical corpus is read from the Polling release, never from a backend
+    # copy (ADR 0060); a release without it cannot qualify a forecast (ADR 0032).
+    missing = [name for name in HISTORICAL_CORPUS_ASSETS if not (polling / name).is_file()]
+    if missing:
+        raise ValueError(f"Polling release lacks the historical corpus: {', '.join(missing)}")
     return results_manifest, polling_manifest
 
 

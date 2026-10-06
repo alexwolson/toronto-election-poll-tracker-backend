@@ -9,6 +9,7 @@ from pathlib import Path
 import pytest
 
 from backend.release_bundle import build_backend_release_bundle, publish_backend_release
+from backend.release_inputs import HISTORICAL_CORPUS_ASSETS
 
 
 def _write_json(path: Path, payload: dict) -> None:
@@ -41,6 +42,9 @@ def _upstream_bundles(tmp_path: Path) -> tuple[Path, Path]:
             },
         },
     )
+    # Every Polling release carries the historical corpus (ADR 0060).
+    for name in HISTORICAL_CORPUS_ASSETS:
+        (polling / name).write_text("id\n", encoding="utf-8")
     return results, polling
 
 
