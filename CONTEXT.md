@@ -16,6 +16,10 @@ _Avoid_: Election model, council model
 The official set of candidates eligible to receive votes after registration, withdrawal, and certification are complete. The forecasts are intended for publication only once this set is known.
 _Avoid_: Current field, target field, expected field
 
+**Suspended Campaign**:
+A Final Ballot candidate's campaign that the candidate publicly ended after the withdrawal deadline. The candidate stays on the Final Ballot and can still receive votes; Toronto cases are Thomson and Rossi (2010) and Alexander (2026).
+_Avoid_: Withdrawn candidate, dropped out, exited candidate
+
 **Internal Outcome Distribution**:
 The forecast's complete probability distribution over election-day valid-vote shares before any Publication Gates determine which summaries may be shown publicly.
 _Avoid_: Published forecast, public odds
