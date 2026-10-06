@@ -1,0 +1,84 @@
+=== dirichlet_late vs dirichlet @ 39 d: 4 shared folds ===
+  toronto_2010  crps  5.25 ->  5.44  width  44 ->  44  miss  +7.8 ->  +8.1  cov T->T  div 0
+  toronto_2014  crps  7.99 ->  8.04  width  52 ->  55  miss +13.1 -> +13.0  cov T->T  div 1
+  toronto_2018  crps 15.02 -> 14.89  width  50 ->  53  miss -25.2 -> -25.0  cov T->T  div 0
+  toronto_2023  crps  9.15 ->  9.53  width  34 ->  36  miss -14.9 -> -15.5  cov T->T  div 1
+  mean CRPS 9.35 -> 9.47 | coverage 4/4 -> 4/4 | mean band width 45 -> 47 | RMSE 16.5 -> 16.6 | -logP(winner) 0.335 -> 0.361 | max div 1 | R-hat 1.0051
+=== dirichlet_late vs dirichlet @ 14 d: 7 shared folds ===
+  toronto_2003  crps 23.60 -> 23.81  width  40 ->  41  miss -32.0 -> -32.6  cov F->F  div 0
+  toronto_2006  crps 11.64 -> 11.58  width  55 ->  59  miss +19.8 -> +19.8  cov T->T  div 0
+  toronto_2010  crps  3.89 ->  4.03  width  44 ->  46  miss  -1.2 ->  -1.1  cov T->T  div 1
+  toronto_2014  crps  5.02 ->  5.37  width  50 ->  54  miss  +5.6 ->  +5.5  cov T->T  div 2
+  toronto_2018  crps  6.70 ->  7.02  width  55 ->  58  miss  -9.6 -> -10.3  cov T->T  div 2
+  toronto_2022  crps  6.42 ->  6.70  width  52 ->  53  miss  -9.2 ->  -9.9  cov T->T  div 0
+  toronto_2023  crps  6.86 ->  7.00  width  32 ->  34  miss -11.3 -> -11.6  cov T->T  div 1
+  mean CRPS 9.16 -> 9.36 | coverage 6/7 -> 6/7 | mean band width 47 -> 49 | RMSE 15.8 -> 16.1 | -logP(winner) 0.248 -> 0.274 | max div 2 | R-hat 1.0122
+GATE (lenient): CRPS no worse than +0.10 at each horizon: False | coverage >=3/4 & >=6/7: True | sampler: True -> FAILS
+
+=== dirichlet_nomix vs dirichlet @ 39 d: 4 shared folds ===
+  toronto_2010  crps  5.25 ->  5.52  width  44 ->  43  miss  +7.8 ->  +8.3  cov T->T  div 0
+  toronto_2014  crps  7.99 ->  7.82  width  52 ->  50  miss +13.1 -> +12.7  cov T->T  div 1
+  toronto_2018  crps 15.02 -> 15.22  width  50 ->  49  miss -25.2 -> -25.3  cov T->T  div 3
+  toronto_2023  crps  9.15 ->  9.08  width  34 ->  38  miss -14.9 -> -15.0  cov T->T  div 0
+  mean CRPS 9.35 -> 9.41 | coverage 4/4 -> 4/4 | mean band width 45 -> 45 | RMSE 16.5 -> 16.6 | -logP(winner) 0.335 -> 0.366 | max div 3 | R-hat 1.0073
+=== dirichlet_nomix vs dirichlet @ 14 d: 7 shared folds ===
+  toronto_2003  crps 23.60 -> 24.05  width  40 ->  40  miss -32.0 -> -32.6  cov F->F  div 0
+  toronto_2006  crps 11.64 -> 11.36  width  55 ->  57  miss +19.8 -> +19.4  cov T->T  div 0
+  toronto_2010  crps  3.89 ->  3.87  width  44 ->  43  miss  -1.2 ->  -1.4  cov T->T  div 0
+  toronto_2014  crps  5.02 ->  4.92  width  50 ->  48  miss  +5.6 ->  +5.3  cov T->T  div 0
+  toronto_2018  crps  6.70 ->  6.57  width  55 ->  53  miss  -9.6 ->  -9.4  cov T->T  div 0
+  toronto_2022  crps  6.42 ->  6.61  width  52 ->  50  miss  -9.2 -> -10.1  cov T->T  div 0
+  toronto_2023  crps  6.86 ->  7.12  width  32 ->  35  miss -11.3 -> -11.9  cov T->T  div 1
+  mean CRPS 9.16 -> 9.21 | coverage 6/7 -> 6/7 | mean band width 47 -> 46 | RMSE 15.8 -> 16.0 | -logP(winner) 0.248 -> 0.265 | max div 1 | R-hat 1.0070
+GATE (lenient): CRPS no worse than +0.10 at each horizon: True | coverage >=3/4 & >=6/7: True | sampler: True -> PASSES
+
+=== dirichlet_phi160 vs dirichlet @ 39 d: 4 shared folds ===
+  toronto_2010  crps  5.25 ->  5.25  width  44 ->  42  miss  +7.8 ->  +8.0  cov T->T  div 1
+  toronto_2014  crps  7.99 ->  7.85  width  52 ->  49  miss +13.1 -> +12.9  cov T->T  div 0
+  toronto_2018  crps 15.02 -> 15.49  width  50 ->  50  miss -25.2 -> -25.5  cov T->T  div 0
+  toronto_2023  crps  9.15 ->  9.41  width  34 ->  33  miss -14.9 -> -15.1  cov T->T  div 0
+  mean CRPS 9.35 -> 9.50 | coverage 4/4 -> 4/4 | mean band width 45 -> 43 | RMSE 16.5 -> 16.7 | -logP(winner) 0.335 -> 0.327 | max div 1 | R-hat 1.0093
+=== dirichlet_phi160 vs dirichlet @ 14 d: 7 shared folds ===
+  toronto_2003  crps 23.60 -> 24.35  width  40 ->  37  miss -32.0 -> -32.4  cov F->F  div 0
+  toronto_2006  crps 11.64 -> 11.51  width  55 ->  52  miss +19.8 -> +19.7  cov T->T  div 0
+  toronto_2010  crps  3.89 ->  3.75  width  44 ->  42  miss  -1.2 ->  -1.3  cov T->T  div 0
+  toronto_2014  crps  5.02 ->  4.78  width  50 ->  47  miss  +5.6 ->  +5.2  cov T->T  div 0
+  toronto_2018  crps  6.70 ->  6.52  width  55 ->  52  miss  -9.6 ->  -9.6  cov T->T  div 0
+  toronto_2022  crps  6.42 ->  6.35  width  52 ->  49  miss  -9.2 ->  -9.4  cov T->T  div 1
+  toronto_2023  crps  6.86 ->  6.93  width  32 ->  31  miss -11.3 -> -11.8  cov T->T  div 0
+  mean CRPS 9.16 -> 9.17 | coverage 6/7 -> 6/7 | mean band width 47 -> 45 | RMSE 15.8 -> 16.0 | -logP(winner) 0.248 -> 0.238 | max div 1 | R-hat 1.0082
+GATE (lenient): CRPS no worse than +0.10 at each horizon: False | coverage >=3/4 & >=6/7: True | sampler: True -> FAILS
+
+=== dirichlet_phi640 vs dirichlet @ 39 d: 4 shared folds ===
+  toronto_2010  crps  5.25 ->  5.18  width  44 ->  40  miss  +7.8 ->  +7.9  cov T->T  div 0
+  toronto_2014  crps  7.99 ->  7.95  width  52 ->  47  miss +13.1 -> +13.4  cov T->T  div 0
+  toronto_2018  crps 15.02 -> 16.06  width  50 ->  48  miss -25.2 -> -26.3  cov T->T  div 1
+  toronto_2023  crps  9.15 ->  9.38  width  34 ->  32  miss -14.9 -> -15.0  cov T->T  div 0
+  mean CRPS 9.35 -> 9.64 | coverage 4/4 -> 4/4 | mean band width 45 -> 42 | RMSE 16.5 -> 17.0 | -logP(winner) 0.335 -> 0.315 | max div 1 | R-hat 1.0222
+=== dirichlet_phi640 vs dirichlet @ 14 d: 7 shared folds ===
+  toronto_2003  crps 23.60 -> 24.50  width  40 ->  36  miss -32.0 -> -32.4  cov F->F  div 0
+  toronto_2006  crps 11.64 -> 11.44  width  55 ->  52  miss +19.8 -> +19.8  cov T->T  div 0
+  toronto_2010  crps  3.89 ->  3.71  width  44 ->  40  miss  -1.2 ->  -1.6  cov T->T  div 0
+  toronto_2014  crps  5.02 ->  4.75  width  50 ->  46  miss  +5.6 ->  +5.6  cov T->T  div 0
+  toronto_2018  crps  6.70 ->  6.50  width  55 ->  51  miss  -9.6 ->  -9.8  cov T->T  div 0
+  toronto_2022  crps  6.42 ->  6.37  width  52 ->  46  miss  -9.2 ->  -9.6  cov T->T  div 1
+  toronto_2023  crps  6.86 ->  7.10  width  32 ->  28  miss -11.3 -> -11.4  cov T->T  div 0
+  mean CRPS 9.16 -> 9.20 | coverage 6/7 -> 6/7 | mean band width 47 -> 43 | RMSE 15.8 -> 16.0 | -logP(winner) 0.248 -> 0.225 | max div 1 | R-hat 1.0066
+GATE (lenient): CRPS no worse than +0.10 at each horizon: False | coverage >=3/4 & >=6/7: True | sampler: False -> FAILS
+
+=== dirichlet_late_nowd vs dirichlet_late @ 39 d: 4 shared folds ===
+  toronto_2010  crps  5.44 ->  7.57  width  44 ->  53  miss  +8.1 -> +12.1  cov T->T  div 0
+  toronto_2014  crps  8.04 ->  7.66  width  55 ->  48  miss +13.0 -> +12.7  cov T->T  div 4
+  toronto_2018  crps 14.89 -> 15.24  width  53 ->  46  miss -25.0 -> -25.1  cov T->T  div 1
+  toronto_2023  crps  9.53 ->  9.78  width  36 ->  29  miss -15.5 -> -15.3  cov T->F  div 0
+  mean CRPS 9.47 -> 10.06 | coverage 4/4 -> 3/4 | mean band width 47 -> 44 | RMSE 16.6 -> 17.1 | -logP(winner) 0.361 -> 0.296 | max div 4 | R-hat 1.0156
+=== dirichlet_late_nowd vs dirichlet_late @ 14 d: 7 shared folds ===
+  toronto_2003  crps 23.81 -> 24.82  width  41 ->  35  miss -32.6 -> -32.4  cov F->F  div 0
+  toronto_2006  crps 11.58 -> 11.97  width  59 ->  54  miss +19.8 -> +20.1  cov T->T  div 0
+  toronto_2010  crps  4.03 ->  4.57  width  46 ->  51  miss  -1.1 ->  +1.4  cov T->T  div 0
+  toronto_2014  crps  5.37 ->  4.76  width  54 ->  46  miss  +5.5 ->  +5.3  cov T->T  div 0
+  toronto_2018  crps  7.02 ->  6.67  width  58 ->  50  miss -10.3 -> -10.4  cov T->T  div 0
+  toronto_2022  crps  6.70 ->  6.61  width  53 ->  49  miss  -9.9 -> -10.0  cov T->T  div 0
+  toronto_2023  crps  7.00 ->  7.37  width  34 ->  25  miss -11.6 -> -11.7  cov T->T  div 1
+  mean CRPS 9.36 -> 9.54 | coverage 6/7 -> 6/7 | mean band width 49 -> 44 | RMSE 16.1 -> 16.1 | -logP(winner) 0.274 -> 0.229 | max div 1 | R-hat 1.0100
+GATE (lenient): CRPS no worse than +0.10 at each horizon: False | coverage >=3/4 & >=6/7: True | sampler: True -> FAILS

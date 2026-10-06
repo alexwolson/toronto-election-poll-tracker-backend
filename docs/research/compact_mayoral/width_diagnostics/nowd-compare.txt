@@ -1,0 +1,38 @@
+=== dirichlet      @ 39 d  (shared folds) ===
+  toronto_2010  band   -2.6.. +40.9 (w  44)  med  +19.9  actual  +12.1  miss   +7.8  crps  5.25  cov True  pit 0.31  logP 0.156  div 2
+  toronto_2014  band   -6.4.. +45.2 (w  52)  med  +19.8  actual   +6.7  miss  +13.1  crps  7.99  cov True  pit 0.25  logP 0.280  div 1
+  toronto_2018  band   -3.5.. +47.0 (w  50)  med  +17.7  actual  +42.9  miss  -25.2  crps 15.02  cov True  pit 0.87  logP 0.605  div 1
+  toronto_2023  band   -2.0.. +32.1 (w  34)  med  +14.7  actual  +29.6  miss  -14.9  crps  9.15  cov True  pit 0.87  logP 0.299  div 0
+  -> mean CRPS 9.35 pts | coverage 4/4 | RMSE of median 16.5 | mean -logP(winner) -0.335 | candidate KS 0.197 | max div 2 | worst R-hat 1.0064
+
+=== dirichlet      @ 14 d  (shared folds) ===
+  toronto_2003  band  -16.7.. +23.3 (w  40)  med   +3.6  actual  +35.6  miss  -32.0  crps 23.60  cov False pit 0.97  logP 0.727  div 0
+  toronto_2006  band  +16.5.. +71.9 (w  55)  med  +47.4  actual  +27.6  miss  +19.8  crps 11.64  cov True  pit 0.19  logP 0.034  div 0
+  toronto_2010  band  -12.6.. +31.3 (w  44)  med  +10.8  actual  +12.1  miss   -1.2  crps  3.89  cov True  pit 0.53  logP 0.316  div 0
+  toronto_2014  band  -12.9.. +37.0 (w  50)  med  +12.3  actual   +6.7  miss   +5.6  crps  5.02  cov True  pit 0.38  logP 0.350  div 0
+  toronto_2018  band   +4.9.. +59.9 (w  55)  med  +33.2  actual  +42.9  miss   -9.6  crps  6.70  cov True  pit 0.68  logP 0.078  div 0
+  toronto_2022  band  +12.8.. +65.3 (w  52)  med  +41.1  actual  +50.3  miss   -9.2  crps  6.42  cov True  pit 0.70  logP 0.040  div 0
+  toronto_2023  band   +2.3.. +33.8 (w  32)  med  +18.2  actual  +29.6  miss  -11.3  crps  6.86  cov True  pit 0.83  logP 0.190  div 1
+  -> mean CRPS 9.16 pts | coverage 6/7 | RMSE of median 15.8 | mean -logP(winner) -0.248 | candidate KS 0.115 | max div 1 | worst R-hat 1.0051
+
+=== dirichlet_nowd @ 39 d  (shared folds) ===
+  toronto_2010  band   -2.3.. +50.0 (w  52)  med  +24.4  actual  +12.2  miss  +12.3  crps  7.59  cov True  pit 0.26  logP 0.143  div 0
+  toronto_2014  band   -3.7.. +41.1 (w  45)  med  +20.3  actual   +6.7  miss  +13.5  crps  7.95  cov True  pit 0.22  logP 0.230  div 1
+  toronto_2018  band   -2.0.. +44.2 (w  46)  med  +17.6  actual  +42.9  miss  -25.2  crps 15.57  cov True  pit 0.89  logP 0.600  div 0
+  toronto_2023  band   +0.4.. +28.8 (w  28)  med  +14.2  actual  +29.6  miss  -15.4  crps  9.97  cov False pit 0.91  logP 0.199  div 1
+  -> mean CRPS 10.27 pts | coverage 3/4 | RMSE of median 17.4 | mean -logP(winner) -0.293 | candidate KS 0.241 | max div 1 | worst R-hat 1.0103
+
+=== dirichlet_nowd @ 14 d  (shared folds) ===
+  toronto_2003  band  -13.1.. +19.6 (w  33)  med   +3.0  actual  +35.6  miss  -32.6  crps 25.17  cov False pit 0.99  logP 0.689  div 0
+  toronto_2006  band  +19.5.. +67.5 (w  48)  med  +46.7  actual  +27.6  miss  +19.1  crps 11.42  cov True  pit 0.16  logP 0.024  div 0
+  toronto_2010  band  -12.6.. +36.1 (w  49)  med  +12.8  actual  +12.2  miss   +0.6  crps  4.40  cov True  pit 0.49  logP 0.297  div 0
+  toronto_2014  band   -8.9.. +33.1 (w  42)  med  +12.7  actual   +6.7  miss   +6.0  crps  4.60  cov True  pit 0.35  logP 0.278  div 0
+  toronto_2018  band   +8.3.. +54.2 (w  46)  med  +32.5  actual  +42.9  miss  -10.4  crps  6.58  cov True  pit 0.73  logP 0.052  div 0
+  toronto_2022  band  +16.9.. +61.1 (w  44)  med  +40.6  actual  +50.3  miss   -9.7  crps  6.21  cov True  pit 0.73  logP 0.026  div 1
+  toronto_2023  band   +5.3.. +31.1 (w  26)  med  +18.1  actual  +29.6  miss  -11.5  crps  7.15  cov True  pit 0.88  logP 0.097  div 1
+  -> mean CRPS 9.36 pts | coverage 6/7 | RMSE of median 16.0 | mean -logP(winner) -0.209 | candidate KS 0.172 | max div 1 | worst R-hat 1.0072
+
+DECISION RULE  1 CRPS no worse than +0.10 pts at each horizon: False (39 d 10.27 vs 9.35; 14 d 9.36 vs 9.16)
+               2 coverage >=3/4 and >=6/7: True (3/4, 6/7)
+               3 <=4 div/fold, R-hat<1.02: True
+VERDICT: NOT ADOPTED (sensitivity only)
