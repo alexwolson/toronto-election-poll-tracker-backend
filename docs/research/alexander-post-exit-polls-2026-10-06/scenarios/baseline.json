@@ -1,0 +1,65 @@
+{
+  "label": "baseline",
+  "kind": "none",
+  "alexander_poll_share": null,
+  "poll_count": 0,
+  "polls": [],
+  "win_probability": {
+    "chow": 0.75375,
+    "bradford": 0.244125,
+    "alexander": 0.002125
+  },
+  "bradford_win_chain_se": 0.007467638515621925,
+  "chow_minus_bradford_points": {
+    "median": 11.638169252313347,
+    "lower": -11.604449574137943,
+    "upper": 34.16578041346047
+  },
+  "election_day_full_ballot": {
+    "chow": {
+      "median": 0.48468344975690286,
+      "lower": 0.3503043186562984,
+      "upper": 0.6098914653579866
+    },
+    "bradford": {
+      "median": 0.36646859282919486,
+      "lower": 0.24382690278710276,
+      "upper": 0.49363085451886923
+    },
+    "alexander": {
+      "median": 0.06658801066273617,
+      "lower": 0.01982419578603659,
+      "upper": 0.13465936437625747
+    }
+  },
+  "alexander_current_named_support": {
+    "median": 0.08064391540595958,
+    "lower": 0.06933383707753202,
+    "upper": 0.09243382096454458
+  },
+  "chow_share_of_two_current": {
+    "median": 0.5671742603909541,
+    "lower": 0.5325085362840082,
+    "upper": 0.60080527203736
+  },
+  "qualified": true,
+  "retried": false,
+  "diagnostics": {
+    "draws_per_chain": 4000,
+    "chains": 4,
+    "divergences": 0,
+    "worst_r_hat": 1.001208005783748,
+    "min_ess": 3750.5688692752283,
+    "coordinates_over_r_hat": 0,
+    "mean_leapfrog_steps": 255.0,
+    "constant_coordinates_ignored": 83
+  },
+  "settings": {
+    "warmup": 1000,
+    "draws": 4000,
+    "chains": 4,
+    "seed": 20260921,
+    "target_accept": 0.95
+  },
+  "seconds": 161.4
+}

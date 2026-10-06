@@ -1,0 +1,124 @@
+{
+  "label": "head-to-head-n3",
+  "kind": "head_to_head",
+  "alexander_poll_share": null,
+  "poll_count": 3,
+  "polls": [
+    {
+      "firm": "Liaison Strategies",
+      "fieldwork_end": "2026-10-09",
+      "offered": [
+        0,
+        1
+      ],
+      "shares": [
+        0.5643639747934934,
+        0.43563602520650657
+      ]
+    },
+    {
+      "firm": "Mainstreet Research",
+      "fieldwork_end": "2026-10-12",
+      "offered": [
+        0,
+        1
+      ],
+      "shares": [
+        0.5643639747934934,
+        0.43563602520650657
+      ]
+    },
+    {
+      "firm": "Forum Research",
+      "fieldwork_end": "2026-10-15",
+      "offered": [
+        0,
+        1
+      ],
+      "shares": [
+        0.5643639747934934,
+        0.43563602520650657
+      ]
+    }
+  ],
+  "win_probability": {
+    "chow": 0.7736875,
+    "bradford": 0.224625,
+    "alexander": 0.0016875
+  },
+  "bradford_win_chain_se": 0.0029306213789342837,
+  "chow_minus_bradford_points": {
+    "median": 12.126618814313103,
+    "lower": -10.177186470104767,
+    "upper": 33.655690797902224
+  },
+  "election_day_full_ballot": {
+    "chow": {
+      "median": 0.48718681452357493,
+      "lower": 0.3578772279235312,
+      "upper": 0.607696205751819
+    },
+    "bradford": {
+      "median": 0.3627120608905095,
+      "lower": 0.2461121528567453,
+      "upper": 0.4858334940783079
+    },
+    "alexander": {
+      "median": 0.06741945256377,
+      "lower": 0.020088946498678338,
+      "upper": 0.13555342446079027
+    }
+  },
+  "alexander_current_named_support": {
+    "median": 0.08135920907507187,
+    "lower": 0.06835374443021555,
+    "upper": 0.09489796654479458
+  },
+  "chow_share_of_two_current": {
+    "median": 0.5712196442037829,
+    "lower": 0.5360366460869236,
+    "upper": 0.6052149949078379
+  },
+  "weekly_movement": {
+    "median": 0.0461999693830272,
+    "lower": 0.021583091697114327,
+    "upper": 0.08011697880831242
+  },
+  "gap_by_stage": {
+    "current": {
+      "median": 12.042461088329503,
+      "lower": 5.926870859587522,
+      "upper": 18.001351095204164
+    },
+    "election_support": {
+      "median": 12.006262627595415,
+      "lower": 4.291698670361413,
+      "upper": 19.59073266922765
+    },
+    "named_result": {
+      "median": 12.126618814313103,
+      "lower": -10.177186470104765,
+      "upper": 33.65569079790223
+    }
+  },
+  "qualified": true,
+  "retried": false,
+  "diagnostics": {
+    "draws_per_chain": 4000,
+    "chains": 4,
+    "divergences": 0,
+    "worst_r_hat": 1.0011497196026828,
+    "min_ess": 2327.1372013366517,
+    "coordinates_over_r_hat": 0,
+    "mean_leapfrog_steps": 255.0,
+    "constant_coordinates_ignored": 83
+  },
+  "settings": {
+    "warmup": 1000,
+    "draws": 4000,
+    "chains": 4,
+    "seed": 20260921,
+    "target_accept": 0.95
+  },
+  "seconds": 225.2
+}

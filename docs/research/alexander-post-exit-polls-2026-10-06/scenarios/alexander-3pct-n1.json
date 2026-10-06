@@ -1,0 +1,80 @@
+{
+  "label": "alexander-3pct-n1",
+  "kind": "full_field",
+  "alexander_poll_share": 0.03,
+  "poll_count": 1,
+  "polls": [
+    {
+      "firm": "Liaison Strategies",
+      "fieldwork_end": "2026-10-09",
+      "offered": [
+        0,
+        1,
+        2
+      ],
+      "shares": [
+        0.5474330555496886,
+        0.42256694445031134,
+        0.03
+      ]
+    }
+  ],
+  "win_probability": {
+    "chow": 0.7655625,
+    "bradford": 0.2338125,
+    "alexander": 0.000625
+  },
+  "bradford_win_chain_se": 0.002321491528450329,
+  "chow_minus_bradford_points": {
+    "median": 13.072522178166995,
+    "lower": -11.597794232412763,
+    "upper": 37.00305886613846
+  },
+  "election_day_full_ballot": {
+    "chow": {
+      "median": 0.49888675515844705,
+      "lower": 0.36024567310210165,
+      "upper": 0.6310397445122885
+    },
+    "bradford": {
+      "median": 0.3666987275195201,
+      "lower": 0.2407763523641152,
+      "upper": 0.4995969694242064
+    },
+    "alexander": {
+      "median": 0.05032988845026817,
+      "lower": 0.01164038250171792,
+      "upper": 0.11387174823981423
+    }
+  },
+  "alexander_current_named_support": {
+    "median": 0.06237119758852474,
+    "lower": 0.04987649958548242,
+    "upper": 0.07597334841480216
+  },
+  "chow_share_of_two_current": {
+    "median": 0.5748921429107088,
+    "lower": 0.5353370099443303,
+    "upper": 0.6151596813645347
+  },
+  "qualified": true,
+  "retried": false,
+  "diagnostics": {
+    "draws_per_chain": 4000,
+    "chains": 4,
+    "divergences": 0,
+    "worst_r_hat": 1.0011104908750212,
+    "min_ess": 3355.90100874172,
+    "coordinates_over_r_hat": 0,
+    "mean_leapfrog_steps": 218.8,
+    "constant_coordinates_ignored": 83
+  },
+  "settings": {
+    "warmup": 1000,
+    "draws": 4000,
+    "chains": 4,
+    "seed": 20260921,
+    "target_accept": 0.95
+  },
+  "seconds": 226.8
+}

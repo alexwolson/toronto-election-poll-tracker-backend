@@ -1,0 +1,94 @@
+{
+  "label": "alexander-6pct-n2",
+  "kind": "full_field",
+  "alexander_poll_share": 0.06,
+  "poll_count": 2,
+  "polls": [
+    {
+      "firm": "Liaison Strategies",
+      "fieldwork_end": "2026-10-09",
+      "offered": [
+        0,
+        1,
+        2
+      ],
+      "shares": [
+        0.5305021363058838,
+        0.40949786369411617,
+        0.06
+      ]
+    },
+    {
+      "firm": "Mainstreet Research",
+      "fieldwork_end": "2026-10-12",
+      "offered": [
+        0,
+        1,
+        2
+      ],
+      "shares": [
+        0.5305021363058838,
+        0.40949786369411617,
+        0.06
+      ]
+    }
+  ],
+  "win_probability": {
+    "chow": 0.786125,
+    "bradford": 0.212125,
+    "alexander": 0.00175
+  },
+  "bradford_win_chain_se": 0.001556237449748593,
+  "chow_minus_bradford_points": {
+    "median": 13.755342886317791,
+    "lower": -9.579549575890232,
+    "upper": 36.55229342315454
+  },
+  "election_day_full_ballot": {
+    "chow": {
+      "median": 0.500242789023637,
+      "lower": 0.36546846566610663,
+      "upper": 0.6263141542973891
+    },
+    "bradford": {
+      "median": 0.36030173238455476,
+      "lower": 0.2394949290500993,
+      "upper": 0.48594054407492215
+    },
+    "alexander": {
+      "median": 0.05614855939738015,
+      "lower": 0.014703411930458442,
+      "upper": 0.1219059094908564
+    }
+  },
+  "alexander_current_named_support": {
+    "median": 0.07001486166419574,
+    "lower": 0.05822957006452922,
+    "upper": 0.0825643852195749
+  },
+  "chow_share_of_two_current": {
+    "median": 0.5772059903317629,
+    "lower": 0.5402367032107372,
+    "upper": 0.6135101435294273
+  },
+  "qualified": true,
+  "retried": true,
+  "diagnostics": {
+    "draws_per_chain": 4000,
+    "chains": 4,
+    "divergences": 0,
+    "worst_r_hat": 1.0007489679563157,
+    "min_ess": 5185.669621043559,
+    "coordinates_over_r_hat": 0,
+    "mean_leapfrog_steps": 511.0,
+    "constant_coordinates_ignored": 83
+  },
+  "settings": {
+    "warmup": 1000,
+    "draws": 4000,
+    "chains": 4,
+    "seed": 20260922,
+    "target_accept": 0.99
+  },
+  "seconds": 638.2
+}

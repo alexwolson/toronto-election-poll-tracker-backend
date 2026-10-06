@@ -1,0 +1,50 @@
+{
+  "release": "backend-2026-10-06.1",
+  "polling_release": "polling-2026-10-06.2",
+  "results_release": "results-2026-09-30.2",
+  "model_package_sha256": {
+    "__init__.py": "24d49c58f4013294bf95fd3be92193cce29761e985f94347e87807eb92627b3b",
+    "hyperpriors.py": "397be49179b002d9acdf4310067febb9397c020c15bbc33414cc8904b892e4f2",
+    "model.py": "96c8015431107186d0f510f71024d8d5d08770d70d0901395fee2c75530b2fe9",
+    "qualification.py": "9cfed83f192cba6c3f8a09c7dce9abb0230e2e5afbcc4f7007bc6b46c0296b70",
+    "readings.py": "39dd4b51102272cf2e49ba2313d6a6717c3a9a119505da2d146c1ab093652f3f",
+    "sampling.py": "11d6ff0811922178e2d67f199b971d4d087ca2dfd831dfdf0a9f58405e932491"
+  },
+  "simple_average_named_three": [
+    0.5124985293070973,
+    0.39560076865859195,
+    0.09190070203431086
+  ],
+  "chow_share_of_two": 0.5643639747934934,
+  "schedule": [
+    {
+      "fieldwork_end": "2026-10-09",
+      "firm": "Liaison Strategies"
+    },
+    {
+      "fieldwork_end": "2026-10-12",
+      "firm": "Mainstreet Research"
+    },
+    {
+      "fieldwork_end": "2026-10-15",
+      "firm": "Forum Research"
+    }
+  ],
+  "n_eff": 800.0,
+  "head_to_head_check": {
+    "production_rule_drops_two_name_poll": true,
+    "two_of_three_rule_keeps_it": true,
+    "kept_as": [
+      {
+        "offered": [
+          0,
+          1
+        ],
+        "shares": [
+          0.56,
+          0.44
+        ]
+      }
+    ]
+  }
+}

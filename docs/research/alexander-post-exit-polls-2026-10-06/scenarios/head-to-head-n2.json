@@ -1,0 +1,90 @@
+{
+  "label": "head-to-head-n2",
+  "kind": "head_to_head",
+  "alexander_poll_share": null,
+  "poll_count": 2,
+  "polls": [
+    {
+      "firm": "Liaison Strategies",
+      "fieldwork_end": "2026-10-09",
+      "offered": [
+        0,
+        1
+      ],
+      "shares": [
+        0.5643639747934934,
+        0.43563602520650657
+      ]
+    },
+    {
+      "firm": "Mainstreet Research",
+      "fieldwork_end": "2026-10-12",
+      "offered": [
+        0,
+        1
+      ],
+      "shares": [
+        0.5643639747934934,
+        0.43563602520650657
+      ]
+    }
+  ],
+  "win_probability": {
+    "chow": 0.779625,
+    "bradford": 0.2179375,
+    "alexander": 0.0024375
+  },
+  "bradford_win_chain_se": 0.005147182684083923,
+  "chow_minus_bradford_points": {
+    "median": 12.704490054579992,
+    "lower": -9.749161092981172,
+    "upper": 34.95198534294224
+  },
+  "election_day_full_ballot": {
+    "chow": {
+      "median": 0.4897288512834329,
+      "lower": 0.35829138866238863,
+      "upper": 0.6149368549696701
+    },
+    "bradford": {
+      "median": 0.3603150834888613,
+      "lower": 0.2406112729276575,
+      "upper": 0.4834350984980267
+    },
+    "alexander": {
+      "median": 0.06671936701240243,
+      "lower": 0.019611341277443378,
+      "upper": 0.1353974154260308
+    }
+  },
+  "alexander_current_named_support": {
+    "median": 0.0809306663027077,
+    "lower": 0.06839613886302867,
+    "upper": 0.09426127113667705
+  },
+  "chow_share_of_two_current": {
+    "median": 0.5757526266204878,
+    "lower": 0.5403846474076557,
+    "upper": 0.6106301051761508
+  },
+  "qualified": true,
+  "retried": false,
+  "diagnostics": {
+    "draws_per_chain": 4000,
+    "chains": 4,
+    "divergences": 0,
+    "worst_r_hat": 1.0010245064612355,
+    "min_ess": 3053.7089894369756,
+    "coordinates_over_r_hat": 0,
+    "mean_leapfrog_steps": 255.0,
+    "constant_coordinates_ignored": 83
+  },
+  "settings": {
+    "warmup": 1000,
+    "draws": 4000,
+    "chains": 4,
+    "seed": 20260921,
+    "target_accept": 0.95
+  },
+  "seconds": 236.8
+}

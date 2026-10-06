@@ -1,0 +1,108 @@
+{
+  "label": "control-n3",
+  "kind": "full_field",
+  "alexander_poll_share": 0.09190070203431086,
+  "poll_count": 3,
+  "polls": [
+    {
+      "firm": "Liaison Strategies",
+      "fieldwork_end": "2026-10-09",
+      "offered": [
+        0,
+        1,
+        2
+      ],
+      "shares": [
+        0.5124985293070973,
+        0.39560076865859184,
+        0.09190070203431086
+      ]
+    },
+    {
+      "firm": "Mainstreet Research",
+      "fieldwork_end": "2026-10-12",
+      "offered": [
+        0,
+        1,
+        2
+      ],
+      "shares": [
+        0.5124985293070973,
+        0.39560076865859184,
+        0.09190070203431086
+      ]
+    },
+    {
+      "firm": "Forum Research",
+      "fieldwork_end": "2026-10-15",
+      "offered": [
+        0,
+        1,
+        2
+      ],
+      "shares": [
+        0.5124985293070973,
+        0.39560076865859184,
+        0.09190070203431086
+      ]
+    }
+  ],
+  "win_probability": {
+    "chow": 0.7755625,
+    "bradford": 0.2223125,
+    "alexander": 0.002125
+  },
+  "bradford_win_chain_se": 0.0036448808279558364,
+  "chow_minus_bradford_points": {
+    "median": 12.111413929371409,
+    "lower": -9.569997043639109,
+    "upper": 33.20170342593431
+  },
+  "election_day_full_ballot": {
+    "chow": {
+      "median": 0.48607367833272686,
+      "lower": 0.3587750547031121,
+      "upper": 0.6054059103954834
+    },
+    "bradford": {
+      "median": 0.361507546021851,
+      "lower": 0.24705902448032152,
+      "upper": 0.48238024970828697
+    },
+    "alexander": {
+      "median": 0.06907021592315174,
+      "lower": 0.02170620486413494,
+      "upper": 0.1359808717770149
+    }
+  },
+  "alexander_current_named_support": {
+    "median": 0.08315461310204844,
+    "lower": 0.07222861322359884,
+    "upper": 0.09497918339114318
+  },
+  "chow_share_of_two_current": {
+    "median": 0.571399512470384,
+    "lower": 0.5362027868475049,
+    "upper": 0.6045111541266681
+  },
+  "qualified": true,
+  "retried": false,
+  "diagnostics": {
+    "draws_per_chain": 4000,
+    "chains": 4,
+    "divergences": 0,
+    "worst_r_hat": 1.001515032008476,
+    "min_ess": 1739.59221692513,
+    "coordinates_over_r_hat": 0,
+    "mean_leapfrog_steps": 255.0,
+    "constant_coordinates_ignored": 83
+  },
+  "settings": {
+    "warmup": 1000,
+    "draws": 4000,
+    "chains": 4,
+    "seed": 20260921,
+    "target_accept": 0.95
+  },
+  "seconds": 224.0
+}
