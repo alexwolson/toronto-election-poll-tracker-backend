@@ -165,9 +165,6 @@ def hydrate_release_inputs(
             "source_documents.csv",
             "poll_sample_documents.csv",
             "poll_samples.csv",
-            "historical_mayoral_polls.csv",
-            "historical_mayoral_outcomes.csv",
-            "legacy_historical_poll_crosswalk.csv",
         ):
             if (polling / name).is_file():
                 shutil.copy2(polling / name, model_polls / name)

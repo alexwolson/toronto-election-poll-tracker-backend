@@ -282,11 +282,14 @@ The three response shares must be finite proportions in `[0, 1]` and sum to
 `1 ± 0.01`. Source/date pairs must be unique. Approval is contextual evidence
 and is never an input to candidate vote shares or win probabilities.
 
-# Historical mayoral reconstruction (non-live)
+# Historical mayoral inputs
 
-`backend/model/historical_mayoral.py` is the bounded, adapter-ready historical
-seam. `scripts/reconstruct_historical_mayoral.py --check` verifies its three
-generated tables without changing the live model or snapshots:
+The audited historical mayoral poll corpus and its per-reading classification
+belong to the Polling repository and reach Backend in every pinned Polling
+release as `historical_mayoral_<table>.csv` assets (ADR 0060); their contract is
+that repository's `data/raw/polls/SCHEMA.md`. Backend keeps no copy, and no
+longer keeps the Wikipedia-era discovery tables either. The compact model reads
+two Backend election tables beside them:
 
 - `data/raw/elections/mayoral_elections.csv` records election type/date,
   nomination close, a conservative Final Ballot known-by boundary with its
@@ -296,44 +299,8 @@ generated tables without changing the live model or snapshots:
   Because the source precision is a date, the derived safe replay cutoff is
   Toronto midnight at the start of the following calendar day.
 - `data/raw/elections/mayoral_outcomes.csv` records every certified mayoral
-  candidate in 2014, 2018, 2022, and 2023, with votes, valid-vote denominator,
-  exact derived share, winner flag, and source locator. `candidate_name` is the
-  canonical cross-cycle display name while `candidate_name_as_reported` keeps
-  the source ordering/spelling; `candidate_id` defines identity. It has no
-  aggregate residual row.
-- `legacy_historical_poll_crosswalk.csv` covers every legacy poll ID and marks
-  it `mapped`, `unresolved`, or `non_poll`. An unresolved staging ID is an
-  inventory lead, not a source-verified sample or reading.
-
-The canonical loader consumes a separate instance of the five-table source
-contract under `data/raw/polls/historical_mayoral/`; it does not mix historical
-rows into the current-cycle inventory above. The tracked historical bundle now
-contains 92 source documents, 93 document/sample links, 70 respondent samples,
-162 dependent readings, and 1040 response rows from visually checked first-party
-or archived sources. Sample, reading, and response identities remain separate,
-and dependent scenarios never become additional polls.
-
-The normalized tables and their hashes are tracked, while the underlying source
-artifacts remain gitignored because their redistribution terms vary. Ordinary
-historical loading therefore enforces the audited source contract without
-requiring those private local bytes. Acquisition QA separately runs
-`verify_poll_source_artifacts()` to reproduce every local artifact's size,
-SHA-256, signature, and manifest relationship. A clean checkout can consume the
-source-faithful normalized evidence without pretending it redistributes the
-documents.
-
-Published candidate rows do not by themselves establish a complete
-questionnaire choice set. Each reading retains its explicit
-`tested_choice_set_status`; missing or unknown fields are not upgraded by the
-historical adapter.
-
-## Legacy historical CSVs — discovery/staging only
-
-`historical_mayoral_polls.csv` and `historical_mayoral_outcomes.csv` are the
-lossy outputs of `scripts/fetch_historical_mayoral_polls.py`. **Do not use them
-as calibration data.** Their `source_url` values point to Wikipedia inventory
-pages; poll dates are last-fieldwork proxies rather than evidenced publication
-times; sample tokens can be misparsed; shares were normalized; residual kinds
-were combined; alternate readings can look independent; and the outcome table
-collapses minor candidates. They remain tracked only for discovery and for the
-complete legacy-ID crosswalk.
+  candidate in each historical cycle (2003–2023), with votes, valid-vote
+  denominator, exact derived share, winner flag, and source locator.
+  `candidate_name` is the canonical cross-cycle display name while
+  `candidate_name_as_reported` keeps the source ordering/spelling;
+  `candidate_id` defines identity. It has no aggregate residual row.
