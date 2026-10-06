@@ -1,11 +1,12 @@
 """Inputs for the compact model: one canonical ordinary reading per independent sample.
 
-Historical campaigns come from the backend-tracked audited corpus
-(``data/raw/polls/historical_mayoral``), the canonical outcomes table and the
-election-dates manifest, filtered by the tracked reading-classification table
-(derived from the 2026-09-12 research register). The current campaign comes from
-the hydrated Polling release's ``polls.csv`` and the hydrated Results candidate
-feed.
+Historical campaigns come from the audited corpus that every Polling release
+carries (``historical_mayoral_*.csv`` beside the 2026 tables; ADR 0060), filtered
+by the release's reading-classification table, with the canonical outcomes table
+and the election-dates manifest. The current campaign comes from the same
+release's poll tables and the hydrated Results candidate feed. One selection rule
+serves both: each sample's ordinary reading is chosen by its own
+``denominator_semantics`` (ADR 0057).
 
 Each poll enters as a *conditional composition* over the campaign's named
 reference candidates that it offered (renormalized among them), with an
@@ -32,19 +33,23 @@ from pathlib import Path
 from backend.model.mayoral_candidate_ids import mayoral_candidate_id
 
 ROOT = Path(__file__).resolve().parents[3]
-HISTORICAL = ROOT / "data" / "raw" / "polls" / "historical_mayoral"
 OUTCOMES = ROOT / "data" / "raw" / "elections" / "mayoral_outcomes.csv"
 ELECTIONS = ROOT / "data" / "raw" / "elections" / "mayoral_elections.csv"
-CLASSIFICATION = ROOT / "data" / "raw" / "polls" / "mayoral_reading_classification.csv"
+# Historical corpus tables in a Polling release directory (flat release assets).
+HISTORICAL_PREFIX = "historical_mayoral_"
 
 ORDINARY = "campaign_vote_intention"
-# Post-lean expressed choice is the reference signal; prefer views closest to it.
+# One reading per sample, every campaign alike: what the pollster did about
+# undecided respondents, best first (post-lean expressed choice is the reference
+# signal). ``other`` (turnout screens, leaner tables that keep undecideds,
+# unreported denominators) is used only when a sample publishes nothing else;
+# ties go to the reading naming more candidates, then to id. Entered per reading
+# at ingestion (Polling SCHEMA).
 DENOMINATOR_RANK = {
     "decided_plus_leaners": 0,
     "decided_only": 1,
     "all_respondents": 2,
-    "not_reported": 3,
-    "other_source_defined": 4,
+    "other": 9,
 }
 # Three old readings (Compas/Ipsos 2003, Léger 2006) publish shares with no base of
 # any kind. Rather than drop the sparsest campaigns' evidence, assume a modest base;
@@ -171,26 +176,28 @@ def with_horizon(campaign: CampaignPolls, horizon_days: int) -> CampaignPolls:
 
 
 def historical_campaigns(
+    polling_dir: Path,
     *,
-    historical_dir: Path = HISTORICAL,
     outcomes_csv: Path = OUTCOMES,
     elections_csv: Path = ELECTIONS,
-    classification_csv: Path = CLASSIFICATION,
     min_offered: int = 2,
 ) -> dict[str, CampaignPolls]:
-    """Seven historical campaigns from the audited corpus and the classification table."""
-    ordinary = [
-        r
-        for r in _read_csv(classification_csv)
-        if r["scope"] == "citywide_mayoral"
-        and r["measurement_class"] == ORDINARY
-        and r["corpus"] == "historical"
-    ]
-    samples = {r["poll_sample_id"]: r for r in _read_csv(historical_dir / "poll_samples.csv")}
-    readings = {r["poll_reading_id"]: r for r in _read_csv(historical_dir / "poll_readings.csv")}
+    """The historical campaigns from a Polling release's corpus and classification."""
+    polling_dir = Path(polling_dir)
+
+    def table(name: str) -> list[dict]:
+        return _read_csv(polling_dir / f"{HISTORICAL_PREFIX}{name}.csv")
+
+    samples = {r["poll_sample_id"]: r for r in table("poll_samples")}
+    readings = {r["poll_reading_id"]: r for r in table("poll_readings")}
     responses = defaultdict(list)
-    for row in _read_csv(historical_dir / "poll_responses.csv"):
+    for row in table("poll_responses"):
         responses[row["poll_reading_id"]].append(row)
+    ordinary = [
+        readings[r["poll_reading_id"]]
+        for r in table("reading_classification")
+        if r["scope"] == "citywide_mayoral" and r["measurement_class"] == ORDINARY
+    ]
     outcomes = defaultdict(dict)
     for row in _read_csv(outcomes_csv):
         outcomes[row["election_cycle_id"]][row["candidate_id"]] = row
@@ -201,12 +208,7 @@ def historical_campaigns(
 
     by_cycle = defaultdict(list)
     for r in ordinary:
-        # The register also classifies readings the research model recovered from
-        # source documents (e.g. Mainstreet 2023 report stages); they have no rows
-        # in the audited corpus and are not modelled here.
-        if r["poll_reading_id"] not in readings:
-            continue
-        by_cycle[r["election_cycle_id"]].append(r)
+        by_cycle[samples[r["poll_sample_id"]]["election_cycle_id"]].append(r)
 
     campaigns = {}
     for cycle, rows in sorted(by_cycle.items()):
@@ -246,8 +248,8 @@ def historical_campaigns(
         tail = 1.0 - sum(float(final[cid]["share"]) for cid in reference)
 
         groups = defaultdict(list)
-        for r in rows:
-            groups[r["same_sample_dependence_group"]].append(r)
+        for r in rows:  # a sample's readings are dependent evidence: one poll each
+            groups[r["poll_sample_id"]].append(r)
         polls = []
         for group, members in groups.items():
             candidates = []
@@ -314,18 +316,6 @@ def certified_candidates(candidates_json: Path) -> list[tuple[str, str, str]]:
     return out
 
 
-# One reading per 2026 sample, by the same rule as the historical corpus: what the
-# pollster did about undecided respondents, best first. ``other`` (turnout screens,
-# leaner tables that keep undecideds, unreported denominators) is used only when a
-# sample publishes nothing else. Entered per reading at ingestion (Polling SCHEMA).
-CURRENT_DENOMINATOR_RANK = {
-    "decided_plus_leaners": 0,
-    "decided_only": 1,
-    "all_respondents": 2,
-    "other": 9,
-}
-
-
 def _select_current_readings(polling_dir: Path, columns: list[str], require_full_field: bool):
     """(sample, reading, candidate shares by slug, present indices, base) per modelled sample.
 
@@ -369,7 +359,7 @@ def _select_current_readings(polling_dir: Path, columns: list[str], require_full
                 base_count if require_full_field else 2
             ):
                 continue
-            rank = CURRENT_DENOMINATOR_RANK.get(r["denominator_semantics"], 9)
+            rank = DENOMINATOR_RANK.get(r["denominator_semantics"], 9)
             candidates.append((rank, -len(present), r["poll_reading_id"], r, shares, present))
         if not candidates:
             continue
@@ -420,7 +410,7 @@ def current_campaign(
 ) -> CampaignPolls:
     """The 2026 campaign from the hydrated Polling bundle (certified field only by default).
 
-    One reading per sample by denominator rank (see ``CURRENT_DENOMINATOR_RANK``),
+    One reading per sample by denominator rank (see ``DENOMINATOR_RANK``),
     renormalized over the named candidates it reports, weighted by that reading's
     own base times the named share. ``extra_named`` adds (response slug, display
     name) pairs as further named candidates; a poll offers them only when it

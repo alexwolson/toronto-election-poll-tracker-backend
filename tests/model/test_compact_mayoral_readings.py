@@ -1,14 +1,14 @@
-"""Compact mayoral model adapter over the backend-tracked corpus and the release polls."""
+"""Compact mayoral model adapter over the Polling release: historical corpus and 2026 polls."""
 
 import csv
 import json
+import shutil
 from datetime import date
 from pathlib import Path
 
 import pytest
 
 from backend.model.compact_mayoral.readings import (
-    CLASSIFICATION,
     EXTRA_2026,
     CampaignPolls,
     Poll,
@@ -19,36 +19,26 @@ from backend.model.compact_mayoral.readings import (
 )
 
 ELECTION_2026 = date(2026, 10, 26)
+HISTORICAL_FIXTURE = Path(__file__).resolve().parents[1] / "fixtures" / "historical_polling"
 CHOW = "per_chow0000000000000000000000000"
 BRAD = "per_brad0000000000000000000000000"
 ALEX = "per_alex0000000000000000000000000"
 
 
-def test_tracked_classification_table_covers_every_register_reading() -> None:
-    rows = list(csv.DictReader(CLASSIFICATION.open(encoding="utf-8")))
-    assert len(rows) == 267
-    assert {r["corpus"] for r in rows} == {"historical"}
-    assert {r["measurement_class"] for r in rows} >= {
-        "campaign_vote_intention",
-        "alternative_ballot",
-    }
-    provenance = json.loads(CLASSIFICATION.with_suffix(".provenance.json").read_text())
-    assert provenance["rows"] == 267 and len(provenance["source_sha256"]) == 64
+def _historical_polling(tmp_path: Path) -> Path:
+    """A Polling release directory holding the 2010 and 2018 historical campaigns."""
+    polling = tmp_path / "historical_polling"
+    shutil.copytree(HISTORICAL_FIXTURE, polling)
+    return polling
 
 
-def test_historical_campaigns_from_backend_tracked_inputs() -> None:
-    camps = historical_campaigns()
-    assert set(camps) == {f"toronto_{y}" for y in (2003, 2006, 2010, 2014, 2018, 2022, 2023)}
-    assert sum(len(c.polls) for c in camps.values()) == 98
-    c = camps["toronto_2014"]
-    assert set(c.names) == {"John Tory", "Doug Ford", "Olivia Chow"}
-    assert c.election_date == date(2014, 10, 27)
+def test_historical_campaigns_read_the_polling_release_tables(tmp_path: Path) -> None:
+    camps = historical_campaigns(_historical_polling(tmp_path))
+    assert set(camps) == {"toronto_2010", "toronto_2018"}
+    c = camps["toronto_2018"]
+    assert {"John Tory", "Jennifer Keesmaat"} <= set(c.names)
+    assert c.election_date == date(2018, 10, 22)
     assert sum(c.outcome_shares) == pytest.approx(1.0)
-    assert c.outcome_tail == pytest.approx(0.029, abs=0.003)
-    ipsos = next(p for p in c.polls if p.group == "ipsos_city_2014_09_12_16_n596")
-    got = {c.names[i]: s for i, s in zip(ipsos.offered, ipsos.shares)}
-    assert got["John Tory"] == pytest.approx(0.43, abs=0.01)
-    assert ipsos.days_before_election == (date(2014, 10, 27) - date(2014, 9, 14)).days
     for camp in camps.values():
         assert len({p.group for p in camp.polls}) == len(camp.polls)
         assert all(len(p.offered) >= 2 and p.n_eff > 0 for p in camp.polls)
@@ -266,11 +256,11 @@ def _bundle_inputs(tmp_path: Path) -> tuple[Path, Path]:
     return polling, candidates
 
 
-def test_last_poll_offering_thomson_enters_the_2010_campaign() -> None:
+def test_last_poll_offering_thomson_enters_the_2010_campaign(tmp_path: Path) -> None:
     # backend#35: Ipsos Reid, Sept 24-26, 2010 (fieldwork midpoint 30 days out), the
     # last poll that offered Thomson before her campaign was suspended, enters as
     # its all-respondents topline; the same-sample two-way is not an ordinary reading.
-    c = historical_campaigns()["toronto_2010"]
+    c = historical_campaigns(_historical_polling(tmp_path))["toronto_2010"]
     poll = next(p for p in c.polls if p.group == "ipsos_city_2010_09_26_n400")
     assert poll.reading_id == "ipsos_2010-09-27_release__r1"
     assert poll.days_before_election == 30
@@ -282,6 +272,21 @@ def test_last_poll_offering_thomson_enters_the_2010_campaign() -> None:
         "Sarah Thomson",
     }
     assert len(c.polls) == 10
+
+
+def test_historical_selection_follows_each_readings_own_denominator(tmp_path: Path) -> None:
+    # One rule for every campaign (ADR 0057, 0060): a sample's ordinary reading is
+    # chosen by its own denominator_semantics; two "other" readings tie and go to
+    # the reading naming more candidates, then to id.
+    polling = _historical_polling(tmp_path)
+    with (polling / "historical_mayoral_poll_readings.csv").open(encoding="utf-8") as handle:
+        semantics = {
+            r["poll_reading_id"]: r["denominator_semantics"] for r in csv.DictReader(handle)
+        }
+    assert semantics["probit_2018_all"] == semantics["probit_2018_undecideds_removed"] == "other"
+    c = historical_campaigns(polling)["toronto_2018"]
+    probit = [p for p in c.polls if p.group.startswith("probit_")]
+    assert [p.reading_id for p in probit] == ["probit_2018_all"]
 
 
 def test_current_campaign_selects_one_reading_per_sample_by_denominator_rank(

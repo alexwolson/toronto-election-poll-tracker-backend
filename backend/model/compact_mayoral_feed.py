@@ -506,7 +506,7 @@ def build_compact_mayoral_forecast_feed(
     polls_csv = polling / "polls.csv"
     candidates_json = root / "data/upstream/results/mayoral_candidates.json"
     election_date = datetime.fromisoformat(live_cycle["election_date"]).date()
-    history = tuple(historical_campaigns().values())
+    history = tuple(historical_campaigns(polling).values())
     current = current_campaign(polling, candidates_json, election_date=election_date)
     hyperpriors = population_hyperpriors()
 

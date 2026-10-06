@@ -1,6 +1,7 @@
 """Schema-4 mayoral forecast feed assembled from the compact model's joint draws."""
 
 import json
+import shutil
 from datetime import date, datetime
 from pathlib import Path
 from zoneinfo import ZoneInfo
@@ -279,7 +280,8 @@ def _fixture_root(tmp_path: Path) -> Path:
         )
     )
     polls = tmp_path / "polls"
-    polls.mkdir()
+    # The release carries the historical corpus beside the 2026 tables (ADR 0060).
+    shutil.copytree(Path(__file__).resolve().parents[1] / "fixtures" / "historical_polling", polls)
     (polls / "polls.csv").write_text(
         "poll_id,firm,date_conducted,sample_size,field_tested,alexander,bradford,chow,other,sarah-mcvie\n"
         'mainstreet-2026-09-14,Mainstreet Research,2026-09-17,1000,"alexander,bradford,chow,other,sarah-mcvie",0.096,0.377,0.458,0.024,0.025\n'
