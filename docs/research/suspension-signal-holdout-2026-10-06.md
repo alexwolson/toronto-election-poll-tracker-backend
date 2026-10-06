@@ -153,3 +153,67 @@ divergences, worst R-hat 1.001208). Applying S2 with all seven usable cases (med
 0.159):
 - Alexander's share goes from 6.7 (2.0–13.5) to 1.0 (0.2–3.3).
 - The win probabilities become 75.5 / 24.5 / 0.0. The Chow–Bradford split is unchanged.
+
+## Seed-replicate test (issue 45, "Run the seed-replicate test of the Suspended Campaign signal")
+
+The maintainer held the verdict above for an explicit decision in issue 44, "Decide whether to adopt
+the joint Suspended Campaign signal". That decision called for more evidence, with a rule fixed
+before any run and an outcome that binds. The rule is issue 45's body:
+- five paired seeds;
+- horizons of 20 and 14 days, with 39 days neither run nor reported;
+- CRPS averaged across the seeds;
+- a fold counts as covered in 3 of the 5 seeds;
+- sampling checked on every fit;
+- the order S1, then S2, then neither.
+
+This section adds only the implementation readings and the expected result. Both were committed
+before any new fold ran.
+
+### Implementation readings (fixed before any new fold)
+
+1. **Layout.**
+   - Each seed's folds sit in `<runs>/seed<N>/`, named as `run_holdouts.sh` names them.
+   - The seed is passed through `fit.py --seed`, and S1 uses `--suspension-signal joint`.
+   - Every other setting is the run of record's: `dirichlet`, population hyperpriors, corpus
+     `all`, Gaussian innovations, target acceptance 0.95, 4×(1000+1000).
+   - `suspension_replicates.check_run_config` asserts each run's recorded seed, arm and settings
+     before its metrics are read.
+2. **Reuse.**
+   - Seed 20260921's 14-day folds (baseline and S1) are sweep 2's runs, copied out of
+     `/private/tmp`.
+   - Setup check: the baseline 14-day `toronto_2010` fold was re-run at seed 20260921, and its
+     draws were bit-identical to the stored run (CRPS 3.77, `phi_election` 69.261).
+3. **Inputs.**
+   - The corpus is data repo `c7c965e`, read from a detached worktree so it can't drift mid-run.
+   - `polls.csv` (sha256 `608651e2632f…`, matching sweep 2's log) and `mayoral_candidates.json`
+     (`322888c6d49e…`) come from the pins of `backend-2026-10-06.1`.
+4. **S2 per seed.**
+   - `suspension_compare.s2_fold` gains a `seed` argument whose default is the old constant, so
+     issue 43's comparison is unchanged.
+   - The replicate test passes each fit's own seed.
+5. **Coverage bar.** At each horizon the bar is the smaller of (number of folds − 1) and the
+   baseline's covered-fold count.
+6. **Where the signal fires.**
+   - At both horizons, only Thomson in the 2010 fold. His exit came 27 days out; Rossi's, 12 days
+     out, falls after both cutoffs.
+   - 2022 has no poll 20 days out, so the harness skips it there.
+   - `check_no_post_suspension_offer` passes on every campaign.
+7. **Runs.**
+   - One process per seed, with JAX's default threading, as in the run of record.
+   - The run directories are outside every repo, in `research-runs/suspension-replicates-2026-10-06/`.
+   - The decision is computed by `suspension_replicates.py`. Its rule logic is covered by
+     `test_suspension_replicates.py`.
+
+**Expected result, recorded beforehand (INFERRED).**
+- **Rule 1 (CRPS):** I expect S1 to pass it at both horizons.
+  - At 14 days, the run of record's difference is +0.01. I expect the five-seed mean to fall
+    within about 0.05 of that.
+  - At 20 days, the election-day term is a larger share of the spread than at 39 days, but the
+    run of record had S1 level with the baseline at both 39 and 14 days.
+- **Rule 2 (coverage) carries the risk.**
+  - At 20 days, 2003 rests on one poll. Both arms' 14-day bands topped out at +22.0 and +20.0
+    against an actual +35.6, so 2003 probably misses in both arms.
+  - S1's 2023 band top was +29.3 at 39 days (a miss against the actual +29.6) and +31.4 at
+    14 days (covered). At 20 days it may sit right at the actual. If S1 misses 2023 in three or
+    more seeds while the baseline covers it, S1 covers 4 of 6 and fails.
+- **Overall:** S1 is adopted, with low confidence (about 55%). The 2023 fold at 20 days decides it.

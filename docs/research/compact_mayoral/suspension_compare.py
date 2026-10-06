@@ -44,7 +44,9 @@ SHARED = {
 SEED = 20260921
 
 
-def s2_fold(run_dir: Path, base: dict, rows: list[dict], election_dates: dict) -> dict:
+def s2_fold(
+    run_dir: Path, base: dict, rows: list[dict], election_dates: dict, seed: int = SEED
+) -> dict:
     """The baseline fold with S2 applied to the held-out campaign's election-day draws."""
     campaign, horizon = base["campaign"], base["horizon"]
     cutoff = election_dates[campaign] - timedelta(days=horizon)
@@ -67,7 +69,7 @@ def s2_fold(run_dir: Path, base: dict, rows: list[dict], election_dates: dict) -
     with np.load(run_dir / "draws.npz") as draws:
         named = np.asarray(draws[f"{campaign}/named_result"])
     named = named.reshape(-1, named.shape[-1])
-    keep = np.exp(np.random.default_rng(SEED).normal(mu, sigma, size=(named.shape[0], 1)))
+    keep = np.exp(np.random.default_rng(seed).normal(mu, sigma, size=(named.shape[0], 1)))
     named = suspend(named, found, np.minimum(keep, 1.0))
     held = record["holdout"]
     truth = np.asarray(held["actual_named_shares"], dtype=float)
