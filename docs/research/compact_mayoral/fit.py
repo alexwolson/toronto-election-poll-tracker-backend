@@ -22,7 +22,7 @@ import json
 import os
 import sys
 import time
-from datetime import date
+from datetime import date, timedelta
 from pathlib import Path
 
 ELECTION_2026 = date(2026, 10, 26)
@@ -81,6 +81,13 @@ def parse_args(argv=None):
         help="model the certified minor candidates some 2026 polls report (McVie, Paloma Parker) "
         "as named candidates instead of leaving them in the residual pool",
     )
+    parser.add_argument(
+        "--suspension-signal",
+        choices=("none", "joint"),
+        default="none",
+        help="S1 of backend issue 43: a shared kept fraction for Suspended Campaigns known at "
+        "each campaign's cutoff (held-out campaign: election day minus the horizon)",
+    )
     parser.add_argument("--min-offered", type=int, default=2)
     parser.add_argument("--denominator-rank", choices=("decided_first", "all_first"), default="decided_first")
     parser.add_argument("--warmup", type=int, default=1000)
@@ -119,6 +126,12 @@ def main(argv=None):
 
     from .hyperpriors import load_hyperpriors, population_hyperpriors
     from .model import build_model
+    from .suspensions import (
+        check_no_post_suspension_offer,
+        keep_distribution,
+        known_suspensions,
+        load_suspensions,
+    )
     from .readings import (
         EXTRA_2026,
         current_campaign,
@@ -171,6 +184,26 @@ def main(argv=None):
             held, outcome_shares=None, outcome_tail=None
         )
     campaigns = tuple(campaigns)
+    suspensions, keep_prior = {}, None
+    if args.suspension_signal == "joint":
+        # The table holds the recorded historical cases; 2026 gets no signal inside these
+        # fits (its forecast there is sealed and unused by the held-out decision).
+        rows = load_suspensions()
+        keep_prior = keep_distribution(rows, exclude_cities=("Toronto",))
+        for c in campaigns:
+            check_no_post_suspension_offer(c, rows)
+            cutoff = c.election_date
+            if c.key == args.holdout and args.horizon_days is not None:
+                cutoff = c.election_date - timedelta(days=args.horizon_days)
+            found = known_suspensions(c, rows, cutoff)
+            if found:
+                suspensions[c.key] = found
+        print(
+            "suspension signal:",
+            {k: [c.names[i] for c in campaigns if c.key == k for i in v] for k, v in suspensions.items()},
+            f"keep prior log-normal({keep_prior[0]:.4f}, {keep_prior[1]:.4f})",
+            flush=True,
+        )
     hyperpriors = (
         population_hyperpriors()
         if args.hyperpriors == "population"
@@ -183,6 +216,8 @@ def main(argv=None):
         innovations=args.innovations,
         election_mixing=not args.fixed_election_mixing,
         late_movement=args.late_movement,
+        suspensions=suspensions,
+        keep_prior=keep_prior,
     )
 
     args.out.mkdir(parents=True, exist_ok=False)
@@ -297,6 +332,13 @@ def main(argv=None):
     summary = {
         "config": {**{k: (str(v) if isinstance(v, Path) else v) for k, v in vars(args).items()}},
         "hyperpriors": {"mode": hyperpriors["mode"], "source": hyperpriors.get("source")},
+        "suspension_signal": {
+            "applied": {
+                k: [c.names[i] for c in campaigns if c.key == k for i in v]
+                for k, v in suspensions.items()
+            },
+            "keep_prior_log_normal": keep_prior,
+        },
         "elapsed_seconds": round(elapsed, 1),
         "draws_per_chain": args.draws,
         "chains": args.chains,
@@ -325,6 +367,7 @@ def main(argv=None):
                 "tau_reference",
                 "mu_tail",
                 "sigma_tail",
+                "keep_fraction",
             )
             if name in flat
         },

@@ -40,6 +40,7 @@ from numpyro.distributions import constraints
 
 from .hyperpriors import prior_distribution
 from .readings import CampaignPolls
+from .suspensions import suspend
 
 T_DF = 5.0
 LATE_DAYS = 14.0  # final-stretch window for the `late_movement` option (width defence, 2026-09-22; fixed, not tuned)
@@ -184,9 +185,20 @@ def build_model(
     innovations: str = "gaussian",
     election_mixing: bool = True,
     late_movement: bool = False,
+    suspensions: dict[str, tuple[int, ...]] | None = None,
+    keep_prior: tuple[float, float] | None = None,
 ):
+    """``suspensions`` maps a campaign key to the named candidates whose Suspended
+    Campaign is known at that campaign's cutoff; their election-day support is
+    multiplied by one shared ``keep_fraction`` (log-normal prior ``keep_prior``)
+    before the Dirichlet reading (backend issue 43, S1)."""
     if variant not in {"isotropic", "leaders", "support_scaled", "dirichlet"}:
         raise ValueError("variant must be 'isotropic', 'leaders', 'support_scaled' or 'dirichlet'")
+    suspensions = {k: tuple(v) for k, v in (suspensions or {}).items() if v}
+    if suspensions and keep_prior is None:
+        raise ValueError("suspensions need a keep_prior (log mean, log sd)")
+    if suspensions and variant != "dirichlet":
+        raise ValueError("the Suspended Campaign signal is implemented for the dirichlet variant")
     if innovations not in {"gaussian", "student_t"}:
         raise ValueError("innovations must be 'gaussian' or 'student_t'")
     heavy_tailed = innovations == "student_t"
@@ -207,6 +219,10 @@ def build_model(
         mu_tail = shared("mu_tail")
         sigma_tail = shared("sigma_tail")
         late = shared("late_move") if late_movement else None
+        keep = None
+        if suspensions:
+            log_keep = numpyro.sample("log_keep_fraction", dist.Normal(*keep_prior))
+            keep = numpyro.deterministic("keep_fraction", jnp.minimum(jnp.exp(log_keep), 1.0))
         gamma = phi_election = None
         if variant == "dirichlet":
             phi_election = shared("phi_election")
@@ -291,6 +307,11 @@ def build_model(
             support = numpyro.deterministic(
                 prefix + "election_support", jax.nn.softmax(contrasts[-1] @ basis.T)
             )
+            if P.key in suspensions:
+                support = numpyro.deterministic(
+                    prefix + "election_support_suspended",
+                    suspend(support, suspensions[P.key], keep),
+                )
             mixing = (
                 numpyro.sample(prefix + "election_mixing", dist.Gamma(T_DF / 2.0, T_DF / 2.0))
                 if election_mixing
