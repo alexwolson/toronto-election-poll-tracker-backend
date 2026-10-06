@@ -69,3 +69,18 @@ here changes a feed, release or deployment.
     held-out folds.
 
 **Expectation, from issue 43, recorded beforehand (INFERRED).** S1 fails rule 1 at both horizons.
+
+## Input correction before the decision of record (2026-10-06, 20:50 UTC)
+
+The first sweep (runs `runs/`, 20:15–20:42 UTC) read the 2026 campaign from a stale local
+hydrate: 8 polls from the Sept 23 archive instead of the 14 in production. Every fold fits 2026
+jointly with the history, so the shared scales and fold scores depend on it. Baseline and S1 used
+the same stale input, so that comparison was internally consistent.
+
+The first sweep's verdict was S1 failing rule 1 (+0.12 at 39 days, +0.19 at 14) and S2 passing.
+The S1 failure at 39 days is narrow, so the sweep was rerun with the production 2026 inputs:
+`polls.csv` and `mayoral_candidates.json` from `polling-2026-10-06.2` and `results-2026-09-30.2`,
+the pins of `backend-2026-10-06.1`.
+
+**Committed before the rerun:** the rerun is the decision of record, whatever it shows. Both
+sweeps are reported.
