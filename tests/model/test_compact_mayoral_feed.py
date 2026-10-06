@@ -374,7 +374,10 @@ def test_end_to_end_feed_from_the_joint_fit_on_fixture_inputs(tmp_path: Path) ->
     assert [h["polls"] for h in history] == [1, 2, 3]
     for point in history:
         assert set(point["win_probability"]) == {CHOW, BRAD, ALEX}
-        assert sum(point["win_probability"].values()) == pytest.approx(1.0, abs=1e-6)
+        # Each chance is rounded to six places on its own, so the sum may miss 1 by up
+        # to half the last place per candidate (150 draws: 11% of splits exceed 1e-6).
+        chances = point["win_probability"].values()
+        assert sum(chances) == pytest.approx(1.0, abs=len(chances) * 5e-7)
         assert point["diagnostics"]["divergences"] >= 0
     assert history[-1]["win_probability"] == {
         cid: card["probability"] for cid, card in feed["candidate_win"].items()
