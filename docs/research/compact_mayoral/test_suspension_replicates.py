@@ -124,3 +124,18 @@ def test_run_config_must_match_its_seed_arm_and_the_record_settings(tmp_path):
     loose = write_summary(tmp_path / "c" / "holdout20-toronto_2010-dirichlet", target_accept=0.9)
     with pytest.raises(AssertionError):
         check_run_config(loose, seed=20260922, joint=False)
+
+
+def test_the_corrected_sampling_bar_is_the_baselines_failing_fit_count():
+    """Maintainer decision 2026-10-07: as for coverage, a baseline that misses sets the bar."""
+    bad = fold(r_hat=1.021)
+    base = arm({(SEEDS[4], 14, "toronto_2023"): bad})
+    same = arm({(SEEDS[4], 20, "toronto_2006"): bad})
+    assert not rules(same, base)["3_sampler"]  # as written: any failing fit fails the arm
+    assert rules(same, base, baseline_sampling_bar=True)["3_sampler"]
+    worse = arm(
+        {(SEEDS[4], 20, "toronto_2006"): bad, (SEEDS[0], 14, "toronto_2014"): fold(divergences=5)}
+    )
+    assert not rules(worse, base, baseline_sampling_bar=True)["3_sampler"]
+    # A clean baseline keeps the bar at zero.
+    assert not rules(same, arm(), baseline_sampling_bar=True)["3_sampler"]

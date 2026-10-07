@@ -217,3 +217,85 @@ before any new fold ran.
     14 days (covered). At 20 days it may sit right at the actual. If S1 misses 2023 in three or
     more seeds while the baseline covers it, S1 covers 4 of 6 and fails.
 - **Overall:** S1 is adopted, with low confidence (about 55%). The 2023 fold at 20 days decides it.
+
+### Results (appended after the runs)
+
+All OBSERVED.
+- **The sweep:** 2026-10-06 23:06 UTC to 2026-10-07 00:08 UTC, at `1d7d0ea`, one process per seed.
+- **Fits:** 130 in total, 116 new plus seed 20260921's 14 reused 14-day folds.
+- **Failures:** the only fits that didn't run are 2022 at 20 days (no poll that early), as expected.
+- **Load check:** the reused fold re-run under the full parallel load was again bit-identical (all
+  124 saved arrays), so the reused and new folds are comparable.
+- **Outputs:** the comparison is `compare-replicates.txt` and `suspension_replicates_evaluation.json`
+  in `research-runs/suspension-replicates-2026-10-06/` (untracked, outside every repo).
+
+| | Baseline | S1 (joint) | S2 (forecast side) |
+|---|---|---|---|
+| 20 days: CRPS averaged over seeds / covered folds | 12.20 / 4 of 6 | 12.37 / 4 of 6 | 12.29 / 4 of 6 |
+| 14 days: CRPS averaged over seeds / covered folds | 9.25 / 6 of 7 | 9.30 / 6 of 7 | 9.29 / 6 of 7 |
+| Variant minus baseline, 20 / 14 days | | +0.17 / +0.05 | +0.09 / +0.04 |
+| Seed spread of that difference (sd), 20 / 14 days | | 0.10 / 0.03 | 0.001 / 0.002 |
+| Fits breaking the sampling rule (of 65) | 1 | 1 | 1 (the baseline's) |
+| `phi_election` per fit | 34–72 | 63–112 | as baseline |
+
+- **CRPS.**
+  - S1 is worse than the baseline at 20 days in every seed: +0.20, +0.14, +0.24, +0.25, +0.01.
+  - By fold at 20 days: 2003 +1.20, 2006 +0.47, 2010 +0.37, 2014 −0.66, 2018 −0.37, 2023 0.00.
+  - S2's difference is +0.09 at 20 days and +0.03 to +0.04 at 14 days in every seed.
+- **Coverage.**
+  - Every arm misses 2003 and 2006 at 20 days, in all five seeds; each of those folds has one poll.
+    Every arm misses 2003 at 14 days.
+  - The baseline therefore covers 4 of 6 at 20 days, and the pre-registered fallback set that
+    horizon's bar at 4. 2023 is covered in every arm and seed.
+- **Sampling.** No fit had more than 4 divergences. Two fits had a worst R-hat above 1.02, both at
+  seed 20260925, and the same folds passed in the other four seeds:
+  - the baseline's 2023 fold at 14 days (R-hat 1.0211), which S2 inherits because it is computed
+    from the baseline's draws;
+  - S1's 2006 fold at 20 days (1.0219).
+- **The 2010 fold, the only one where the signal fires (Thomson known):** both variants are worse
+  than the baseline.
+  - Baseline: 3.95 at 20 days, 3.65 at 14.
+  - S1: 4.32 and 3.70.
+  - S2: 4.49 and 3.92.
+
+  S2's +0.09 at 20 days is entirely this fold. Its other five 20-day folds equal the baseline.
+- **Kept fraction under S1:** posterior means of 0.211–0.222 across all fits, against a prior median
+  of 0.219. It is still the prior.
+
+**Verdict as written: neither.**
+- S1 fails rule 1 at 20 days (+0.17 > 0.10) and rule 3.
+- S2 passes rules 1 and 2 and fails rule 3, only through the baseline fit it inherits.
+
+**Correction and decision of record (maintainer, 2026-10-07): S2.**
+- **Why rule 3 was mis-scaled.** As written, any failing fit fails the arm. About 1 fit in 90 lands
+  at R-hat 1.02 or above: 2 of 130 here and 0 of 44 in issue 43's sweeps. At that rate, an arm of 11
+  fits (issue 43) fails about 1 time in 9, and an arm of 65 fits fails about half the time
+  (INFERRED).
+- **The evidence:** the baseline, the production specification, fails the as-written bar itself
+  (1 of 65). A bar the baseline cannot clear does not separate variants.
+- **The correction** applies the principle the rule already used for coverage: when the baseline
+  falls short, a variant passes by doing no worse, meaning no more failing fits than the baseline.
+  It applies to both variants alike. S1's verdict does not change, because S1 fails rule 1
+  regardless.
+- **The decision of record is therefore S2.** The as-written verdict is kept and printed beside it
+  (`suspension_replicates.py`, `baseline_sampling_bar`).
+
+**The expectation recorded beforehand was wrong on rule 1.** S1 failed it at 20 days. The coverage
+risk turned out to be 2006, missed by every arm, not 2023.
+
+**Consequences, from the rule fixed in issue 43:**
+- Under S2 the fitted model is unchanged.
+- Any share a Post-Suspension Reading reports for Alexander is set aside.
+- On the production fit with all seven usable cases (section above), Alexander's election-day share
+  goes from 6.7 (2.0–13.5) to 1.0 (0.2–3.3), and the win probabilities become 75.5 / 24.5 / 0.0.
+- The forecast-history chart is unchanged.
+
+**For the ADR (findings, not rules):**
+1. **The gate's resolution.**
+   - The 2026 inputs alone moved the 14-day S1-minus-baseline difference by 0.18 between issue 43's
+     sweeps.
+   - Seeds move it by 0.10 (sd) at 20 days and 0.03 at 14 days for S1, and by about 0.002 for S2.
+2. **The sampling rule's scaling with the number of fits,** and the correction above.
+3. **Proportional reallocation of a suspended candidate's share made the 2010 forecast worse** at
+   both horizons, as in the 2026-09-22 fold-in test. Where the freed share goes is not learned from
+   the record; that question belongs to the transfer-assumption view.

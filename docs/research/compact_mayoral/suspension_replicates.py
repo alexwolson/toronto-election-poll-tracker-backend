@@ -93,7 +93,23 @@ def covered_folds(arm: dict, h: int) -> int:
     )
 
 
-def rules(variant: dict, base: dict) -> dict:
+def failing_fits(arm: dict) -> int:
+    """Fits breaking the sampling rule: more than 4 divergences or worst R-hat >= 1.02."""
+    return sum(
+        not (f["divergences"] <= 4 and f["worst_r_hat"] < 1.02)
+        for h in HORIZONS
+        for f in _folds(arm, h)
+    )
+
+
+def rules(variant: dict, base: dict, *, baseline_sampling_bar: bool = False) -> dict:
+    """The pre-registered rule; ``baseline_sampling_bar`` is the 2026-10-07 correction.
+
+    As written, any failing fit fails the arm. With the correction (maintainer decision
+    after the sweep, because the baseline itself failed the as-written bar at 65 fits),
+    a variant passes sampling with no more failing fits than the baseline, as coverage
+    already allowed.
+    """
     crps = {h: mean_crps(variant, h) for h in HORIZONS}
     base_crps = {h: mean_crps(base, h) for h in HORIZONS}
     cover = {h: covered_folds(variant, h) for h in HORIZONS}
@@ -101,17 +117,16 @@ def rules(variant: dict, base: dict) -> dict:
     bar = {h: min(len(HORIZONS[h]) - 1, base_cover[h]) for h in HORIZONS}
     ok_crps = all(crps[h] <= base_crps[h] + TOLERANCE for h in HORIZONS)
     ok_cover = all(cover[h] >= bar[h] for h in HORIZONS)
-    ok_sampler = all(
-        f["divergences"] <= 4 and f["worst_r_hat"] < 1.02
-        for h in HORIZONS
-        for f in _folds(variant, h)
-    )
+    failing, base_failing = failing_fits(variant), failing_fits(base)
+    ok_sampler = failing <= (base_failing if baseline_sampling_bar else 0)
     return {
         "crps": crps,
         "baseline_crps": base_crps,
         "coverage": cover,
         "baseline_coverage": base_cover,
         "coverage_bar": bar,
+        "failing_fits": failing,
+        "baseline_failing_fits": base_failing,
         "1_crps": ok_crps,
         "2_coverage": ok_cover,
         "3_sampler": ok_sampler,
@@ -181,35 +196,44 @@ def main(argv=None):
                 f" (per seed {', '.join(f'{100 * c:.2f}' for c in per_seed)})"
                 f" | covered folds {covered_folds(arms[name], h)}/{len(races)}"
             )
-    s1 = rules(arms["dirichlet_joint"], base)
-    s2 = rules(arms["dirichlet_s2"], base)
     spread = {
         name: {h: seed_spread(arms[name], base, h) for h in HORIZONS}
         for name in ("dirichlet_joint", "dirichlet_s2")
     }
-    verdict = adopted(s1, s2)
-    print("S1 rules:", s1)
-    print("S2 rules:", s2, "(consulted only if S1 fails)")
     print(
         "seed spread of the variant-minus-baseline mean CRPS (points):",
         {n: {h: round(100 * v, 3) for h, v in d.items()} for n, d in spread.items()},
     )
-    print("ADOPTED:", verdict)
+    verdicts = {}
+    for label, corrected in (("as_written", False), ("baseline_sampling_bar", True)):
+        s1 = rules(arms["dirichlet_joint"], base, baseline_sampling_bar=corrected)
+        s2 = rules(arms["dirichlet_s2"], base, baseline_sampling_bar=corrected)
+        verdicts[label] = {"s1": s1, "s2": s2, "adopted": adopted(s1, s2)}
+        print(f"[{label}] S1 rules:", s1)
+        print(f"[{label}] S2 rules:", s2, "(consulted only if S1 fails)")
+        print(f"[{label}] ADOPTED:", verdicts[label]["adopted"])
+    print(
+        "DECISION OF RECORD (sampling bar corrected, 2026-10-07):",
+        verdicts["baseline_sampling_bar"]["adopted"],
+    )
+
+    def keyed(d: dict) -> dict:
+        return {
+            k: ({str(h): x for h, x in v.items()} if isinstance(v, dict) else v)
+            for k, v in d.items()
+        }
+
     out = {
         "folds": {
             n: {str(s): {str(h): d for h, d in hs.items()} for s, hs in a.items()}
             for n, a in arms.items()
         },
-        "s1": {
-            k: ({str(h): x for h, x in v.items()} if isinstance(v, dict) else v)
-            for k, v in s1.items()
-        },
-        "s2": {
-            k: ({str(h): x for h, x in v.items()} if isinstance(v, dict) else v)
-            for k, v in s2.items()
+        "verdicts": {
+            label: {"s1": keyed(v["s1"]), "s2": keyed(v["s2"]), "adopted": v["adopted"]}
+            for label, v in verdicts.items()
         },
         "seed_spread": {n: {str(h): v for h, v in d.items()} for n, d in spread.items()},
-        "adopted": verdict,
+        "adopted": verdicts["baseline_sampling_bar"]["adopted"],
     }
     (runs / "suspension_replicates_evaluation.json").write_text(json.dumps(out, indent=1) + "\n")
     return out
