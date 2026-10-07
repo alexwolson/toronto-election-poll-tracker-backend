@@ -376,3 +376,28 @@ other six cases each time.
   reported above.
 - **Expected (INFERRED, from a calculation that assumed the posterior stays at the prior):** S1
   covers 3 of 7 (Thomson, Rossi, Caranci and Fortier miss), with a mean absolute log error near 0.40.
+
+**S1 benchmark results (appended after the fits; OBSERVED).**
+- **Fits:** the five refits and the reference were clean (no divergences, worst R-hat 1.0052).
+- **Reference:** it reproduces S1's posterior, 0.212 (80% 0.181–0.249).
+- **Priors:** each refit's recorded configuration names the case it left out.
+
+| Held-out case | Kept fraction | S1 median (80%) | Covered | Log error: S1 / S2 / current model |
+|---|---|---|---|---|
+| Toronto 2010, Thomson | 0.033 | 0.220 (0.187–0.258) | no | 1.89 / 1.83 / 3.41 |
+| Toronto 2010, Rossi | 0.154 | 0.220 (0.187–0.258) | no | 0.36 / 0.04 / 1.87 |
+| Calgary 2010, Hawkesworth | 0.225 | 0.208 (0.175–0.249) | yes | 0.08 / 0.40 / 1.49 |
+| Calgary 2010, Stewart | 0.213 | 0.211 (0.176–0.253) | yes | 0.01 / 0.34 / 1.54 |
+| Calgary 2010, Burrows | 0.234 | 0.207 (0.173–0.248) | yes | 0.12 / 0.45 / 1.45 |
+| London 2014, Caranci | 0.179 | 0.228 (0.209–0.249) | no | 0.24 / 0.14 / 1.72 |
+| Montreal 2017, Fortier | 0.252 | 0.205 (0.177–0.238) | no | 0.21 / 0.54 / 1.38 |
+
+- **Summary:** S1 covers 3 of 7 with a mean absolute log error of 0.42. S2 covers 6 of 7 with 0.53;
+  the current model has 1.84.
+- **Why S1 is sharper but under-covers:** S1 fits one kept fraction shared by every suspension, so
+  its band describes the average case rather than a new one. It centres on the tight non-Toronto
+  cluster, which makes it sharper there and too narrow for case-to-case variation.
+- **Why S2 is better calibrated:** S2 draws each case from a spread that includes Toronto's cases.
+- **For Alexander:** the two agree (1.1% against 1.0%).
+- **The verdict between them still rests on the margin do-no-harm check,** which S1 failed.
+- **The calculation recorded beforehand held:** 3 of 7, and 0.40 against an observed 0.42.
