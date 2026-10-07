@@ -36,7 +36,6 @@ import tempfile
 import time
 from datetime import UTC, date, datetime
 from pathlib import Path
-from zoneinfo import ZoneInfo
 
 import numpy as np
 
@@ -53,11 +52,9 @@ from backend.model.compact_mayoral.readings import (
     with_horizon,
 )
 from backend.model.compact_mayoral.sampling import PRODUCTION, FitResult
-from backend.model.compact_mayoral_feed import _qualified_fit
+from backend.model.compact_mayoral_feed import TORONTO, _qualified_fit
 from backend.model.publication_manifest import load_live_cycle
 from backend.release_inputs import ReleaseInputPaths, load_release_input_paths, sha256_file
-
-TORONTO = ZoneInfo("America/Toronto")
 
 
 def holdout_campaigns(
@@ -210,6 +207,10 @@ def _production_inputs(production_dir: Path, inputs: ReleaseInputPaths) -> tuple
     return datetime.fromisoformat(forecast["analysis_cutoff"]), pins
 
 
+# Paths whose contents must match the production release's source commit.
+TRACKED = ("backend", "data/raw")
+
+
 def _git(*args: str) -> str:
     return subprocess.run(
         ["git", *args], cwd=ROOT, check=True, capture_output=True, text=True
@@ -232,6 +233,10 @@ def main(argv: list[str] | None = None) -> None:
     commit = _git("rev-parse", "HEAD")
     inputs = load_release_input_paths(args.input_manifest)
     cutoff, pins = _production_inputs(args.production_release, inputs)
+    # The model code and the tracked election tables (outcomes, dates, live cycle)
+    # must be production's too, not only the hydrated releases.
+    if _git("diff", "--name-only", pins["production_source_commit"], "HEAD", "--", *TRACKED):
+        parser.error("model code or tracked inputs differ from the production release's commit")
     live_cycle = load_live_cycle(ROOT / "data" / "raw" / "elections" / "live_cycle.json")
 
     started = time.monotonic()
