@@ -89,6 +89,11 @@ HISTORICAL_CORPUS_ASSETS = tuple(
 )
 
 
+# The 2026 reading classification (Polling ``data/raw/polls/reading_classification.csv``):
+# the forecast reads it for the full-field-beats-head-to-head rule (backend issue 31).
+READING_CLASSIFICATION_ASSET = "reading_classification.csv"
+
+
 def validate_release_chain(
     results_bundle: str | Path, polling_bundle: str | Path, *, results_release: str
 ) -> tuple[dict, dict]:
@@ -110,6 +115,10 @@ def validate_release_chain(
     missing = [name for name in HISTORICAL_CORPUS_ASSETS if not (polling / name).is_file()]
     if missing:
         raise ValueError(f"Polling release lacks the historical corpus: {', '.join(missing)}")
+    if not (polling / READING_CLASSIFICATION_ASSET).is_file():
+        raise ValueError(
+            f"Polling release lacks the 2026 reading classification: {READING_CLASSIFICATION_ASSET}"
+        )
     return results_manifest, polling_manifest
 
 

@@ -2,7 +2,7 @@
 """Build the frontend publication package (INT).
 
 Emits the typed data feeds the frontend ingests into an explicit output directory:
-  - mayoral_forecast.json  schema 4: joint election-day distributions from the
+  - mayoral_forecast.json  schema 5: joint election-day distributions from the
                            compact model (ADR 0054); the fit must pass the
                            numerical qualification gate or this build fails
   - manifest.json          model index + live-cycle Final-Ballot state
@@ -82,7 +82,7 @@ def main() -> None:
     live_cycle = load_live_cycle(RAW / "elections" / "live_cycle.json")
     # The compact model reads the release's descriptive polls.csv for the current
     # campaign (hydrated into the polling bundle dir) and the backend-tracked audited
-    # corpus for history; it fits, qualifies (fail closed) and assembles schema 4.
+    # corpus for history; it fits, qualifies (fail closed) and assembles schema 5.
     forecast = build_compact_mayoral_forecast_feed(
         ROOT,
         live_cycle,

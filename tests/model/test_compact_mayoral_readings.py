@@ -8,6 +8,7 @@ from pathlib import Path
 
 import pytest
 
+from backend.model.compact_mayoral.exits import Exit, kept_fraction_prior, load_cases
 from backend.model.compact_mayoral.readings import (
     EXTRA_2026,
     CampaignPolls,
@@ -44,26 +45,32 @@ def test_historical_campaigns_read_the_polling_release_tables(tmp_path: Path) ->
         assert all(len(p.offered) >= 2 and p.n_eff > 0 for p in camp.polls)
 
 
-def _bundle_inputs(tmp_path: Path) -> tuple[Path, Path]:
-    """A polling-bundle directory (samples, readings, responses) and the certified field."""
-    candidates = tmp_path / "mayoral_candidates.json"
-    candidates.write_text(
+def _candidates_feed(path: Path, *, alexander_suspended_on: str | None = None) -> Path:
+    """The Results candidates feed at schema 6 (``campaign_suspended_on`` on every row)."""
+    rows = [
+        (CHOW, "Olivia Chow", None),
+        (BRAD, "Brad Bradford", None),
+        (ALEX, "Chris Alexander", alexander_suspended_on),
+        ("per_mcvie000000000000000000000000", "Sarah McVie", None),
+    ]
+    path.write_text(
         json.dumps(
             {
-                "schema_version": 5,
+                "schema_version": 6,
                 "ballot_certified": True,
                 "candidates": [
-                    {"person_id": CHOW, "display_name": "Olivia Chow"},
-                    {"person_id": BRAD, "display_name": "Brad Bradford"},
-                    {"person_id": ALEX, "display_name": "Chris Alexander"},
-                    {
-                        "person_id": "per_mcvie000000000000000000000000",
-                        "display_name": "Sarah McVie",
-                    },
+                    {"person_id": pid, "display_name": name, "campaign_suspended_on": day}
+                    for pid, name, day in rows
                 ],
             }
         )
     )
+    return path
+
+
+def _bundle_inputs(tmp_path: Path) -> tuple[Path, Path]:
+    """A polling-bundle directory (samples, readings, responses) and the certified field."""
+    candidates = _candidates_feed(tmp_path / "mayoral_candidates.json")
     polling = tmp_path / "polling"
     polling.mkdir()
 
@@ -253,6 +260,159 @@ def _bundle_inputs(tmp_path: Path) -> tuple[Path, Path]:
             *responses("forum_w13_mayor", {"chow": 0.5, "bradford": 0.4, "alexander": 0.1}),
         ],
     )
+    # Polling's 2026 reading classification: every reading classified once.
+    with (polling / "poll_readings.csv").open(encoding="utf-8") as handle:
+        ids = [r["poll_reading_id"] for r in csv.DictReader(handle)]
+    write(
+        "reading_classification.csv",
+        ["poll_reading_id", "scope", "measurement_class"],
+        [
+            {
+                "poll_reading_id": rid,
+                "scope": "citywide_mayoral",
+                "measurement_class": "campaign_vote_intention",
+            }
+            for rid in ids
+        ],
+    )
+    return polling, candidates
+
+
+def _append(polling: Path, name: str, rows: list[dict]) -> None:
+    """Append rows to a bundle table, filling absent columns with blanks."""
+    with (polling / name).open(encoding="utf-8") as handle:
+        columns = next(csv.reader(handle))
+    with (polling / name).open("a", newline="", encoding="utf-8") as handle:
+        csv.DictWriter(handle, fieldnames=columns, restval="").writerows(rows)
+
+
+def _add_sample(polling, sid, end, readings, *, firm="Forum Research", start=None, n="1000"):
+    """One citywide 2026 sample with its readings: (id, semantics, base, class, shares)."""
+    _append(
+        polling,
+        "poll_samples.csv",
+        [
+            {
+                "poll_sample_id": sid,
+                "election_cycle_id": "toronto-2026",
+                "pollster": firm,
+                "geography_type": "citywide",
+                "fieldwork_end": end,
+                "recruited_sample_size": n,
+                "extraction_status": "extracted",
+            }
+        ],
+    )
+    slugs = {"chow": CHOW, "bradford": BRAD, "alexander": ALEX}
+    for rid, semantics, base, measurement, shares in readings:
+        _append(
+            polling,
+            "poll_readings.csv",
+            [
+                {
+                    "poll_reading_id": rid,
+                    "poll_sample_id": sid,
+                    "contest_type": "mayoral",
+                    "reading_purpose": "general_vote_intention",
+                    "denominator_semantics": semantics,
+                    "weighted_base": base,
+                }
+            ],
+        )
+        _append(
+            polling,
+            "poll_responses.csv",
+            [
+                {
+                    "poll_reading_id": rid,
+                    "response_kind": "candidate",
+                    "person_id": slugs[key],
+                    "source_candidate_id": key,
+                    "share": str(value),
+                }
+                for key, value in shares.items()
+            ],
+        )
+        _append(
+            polling,
+            "reading_classification.csv",
+            [
+                {
+                    "poll_reading_id": rid,
+                    "scope": "citywide_mayoral",
+                    "measurement_class": measurement,
+                }
+            ],
+        )
+
+
+CUTOFF_2026 = date(2026, 10, 7)
+FULL = "campaign_vote_intention"
+H2H = "alternative_ballot"
+
+
+def _post_exit_inputs(tmp_path: Path) -> tuple[Path, Path]:
+    """The bundle plus Alexander's Suspended Campaign (Oct 6) and five later samples."""
+    polling, candidates = _bundle_inputs(tmp_path)
+    _candidates_feed(candidates, alexander_suspended_on="2026-10-06")
+    # Fieldwork ends the day before the exit and omits Alexander: still pre-exit, so
+    # it needs all three named candidates and is left out.
+    _add_sample(
+        polling,
+        "liaison-2026-10-05",
+        "2026-10-05",
+        [("liaison_1005_dl", "decided_plus_leaners", "900", FULL, {"chow": 0.5, "bradford": 0.4})],
+        firm="Liaison Strategies",
+    )
+    # Ends on the exit day without naming him: a Post-Suspension Reading.
+    _add_sample(
+        polling,
+        "forum-2026-10-06",
+        "2026-10-06",
+        [("forum_1006_dl", "decided_plus_leaners", "1400", FULL, {"chow": 0.46, "bradford": 0.42})],
+    )
+    # Still names him: his share is set aside, and the base scales with what remains.
+    _add_sample(
+        polling,
+        "mainstreet-2026-10-08",
+        "2026-10-08",
+        [
+            (
+                "mainstreet_1008_dl",
+                "decided_plus_leaners",
+                "800",
+                FULL,
+                {"chow": 0.47, "bradford": 0.43, "alexander": 0.02},
+            )
+        ],
+        firm="Mainstreet Research",
+    )
+    # Full field and a head-to-head in one sample: the full field wins even though the
+    # head-to-head has the better denominator.
+    _add_sample(
+        polling,
+        "pallas-2026-10-09",
+        "2026-10-09",
+        [
+            ("pallas_1009_all", "all_respondents", "700", FULL, {"chow": 0.40, "bradford": 0.35}),
+            (
+                "pallas_1009_h2h",
+                "decided_plus_leaners",
+                "650",
+                H2H,
+                {"chow": 0.52, "bradford": 0.48},
+            ),
+        ],
+        firm="Pallas Data",
+    )
+    # A head-to-head that is the sample's only general vote-intention reading counts.
+    _add_sample(
+        polling,
+        "nanos-2026-10-10",
+        "2026-10-10",
+        [("nanos_1010_h2h", "decided_only", "600", H2H, {"chow": 0.55, "bradford": 0.45})],
+        firm="Nanos Research",
+    )
     return polling, candidates
 
 
@@ -293,7 +453,7 @@ def test_current_campaign_selects_one_reading_per_sample_by_denominator_rank(
     tmp_path: Path,
 ) -> None:
     polling, candidates = _bundle_inputs(tmp_path)
-    c = current_campaign(polling, candidates, election_date=ELECTION_2026)
+    c = current_campaign(polling, candidates, election_date=ELECTION_2026, cutoff=CUTOFF_2026)
     assert c.key == "toronto-2026"
     assert c.candidates == (CHOW, BRAD, ALEX)
     assert c.names == ("Olivia Chow", "Brad Bradford", "Chris Alexander")
@@ -325,7 +485,11 @@ def test_current_campaign_selects_one_reading_per_sample_by_denominator_rank(
 def test_current_campaign_can_widen_to_the_pre_certified_field(tmp_path: Path) -> None:
     polling, candidates = _bundle_inputs(tmp_path)
     wide = current_campaign(
-        polling, candidates, election_date=ELECTION_2026, require_full_field=False
+        polling,
+        candidates,
+        election_date=ELECTION_2026,
+        cutoff=CUTOFF_2026,
+        require_full_field=False,
     )
     assert wide.polls[0].group == "liaison-2026-07-26"
     assert wide.polls[0].offered == (0, 1)
@@ -336,7 +500,11 @@ def test_current_campaign_can_widen_to_the_pre_certified_field(tmp_path: Path) -
 def test_current_campaign_can_name_minor_candidates(tmp_path: Path) -> None:
     polling, candidates = _bundle_inputs(tmp_path)
     c = current_campaign(
-        polling, candidates, election_date=ELECTION_2026, extra_named=EXTRA_2026[:1]
+        polling,
+        candidates,
+        election_date=ELECTION_2026,
+        cutoff=CUTOFF_2026,
+        extra_named=EXTRA_2026[:1],
     )
     assert c.names[-1] == "Sarah McVie" and c.candidates[-1] == "per_mcvie000000000000000000000000"
     assert c.polls[-1].offered == (0, 1, 2, 3)
@@ -344,8 +512,8 @@ def test_current_campaign_can_name_minor_candidates(tmp_path: Path) -> None:
 
 
 def test_current_reading_selection_is_published_for_the_feed(tmp_path: Path) -> None:
-    polling, _ = _bundle_inputs(tmp_path)
-    chosen = current_reading_selection(polling)
+    polling, candidates = _bundle_inputs(tmp_path)
+    chosen = current_reading_selection(polling, candidates, cutoff=CUTOFF_2026)
     assert [row["poll_sample_id"] for row in chosen] == [
         "liaison-2026-09-05",
         "ipsos-2026-09-08",
@@ -356,6 +524,85 @@ def test_current_reading_selection_is_published_for_the_feed(tmp_path: Path) -> 
     assert liaison["denominator_semantics"] == "decided_plus_leaners"
     assert liaison["base"] == pytest.approx(900)
     assert liaison["named_share"] == pytest.approx(0.99)
+    assert all(row["post_suspension"] is False and row["set_aside"] == [] for row in chosen)
+
+
+def test_without_a_suspended_campaign_the_current_campaign_has_no_exit(tmp_path: Path) -> None:
+    polling, candidates = _bundle_inputs(tmp_path)
+    c = current_campaign(polling, candidates, election_date=ELECTION_2026, cutoff=CUTOFF_2026)
+    assert c.exits == ()
+
+
+def test_post_suspension_readings_enter_over_the_remaining_candidates(tmp_path: Path) -> None:
+    polling, candidates = _post_exit_inputs(tmp_path)
+    c = current_campaign(polling, candidates, election_date=ELECTION_2026, cutoff=CUTOFF_2026)
+    # The exit: Alexander, Oct 6, 20 days out, with the ten-case kept-fraction prior.
+    mu, sigma = kept_fraction_prior(load_cases())
+    assert c.exits == (Exit(2, date(2026, 10, 6), 20, mu, sigma),)
+    by_group = {p.group: p for p in c.polls}
+    assert "liaison-2026-10-05" not in by_group  # pre-exit, two names only
+    assert [p.group for p in c.polls][:3] == [
+        "liaison-2026-09-05",
+        "ipsos-2026-09-08",
+        "mainstreet-2026-09-14",
+    ]
+    assert by_group["ipsos-2026-09-08"].offered == (0, 1, 2)  # pre-exit readings unchanged
+    forum = by_group["forum-2026-10-06"]
+    assert forum.offered == (0, 1) and forum.days_before_election == 20
+    assert forum.shares == pytest.approx((0.46 / 0.88, 0.42 / 0.88))
+    assert forum.n_eff == pytest.approx(1400 * 0.88)
+    mainstreet = by_group["mainstreet-2026-10-08"]
+    assert mainstreet.offered == (0, 1)  # his 2% is set aside
+    assert mainstreet.shares == pytest.approx((0.47 / 0.90, 0.43 / 0.90))
+    assert mainstreet.n_eff == pytest.approx(800 * 0.90)
+    pallas = by_group["pallas-2026-10-09"]
+    assert pallas.reading_id == "pallas_1009_all"  # full field beats the head-to-head
+    assert pallas.n_eff == pytest.approx(700 * 0.75)
+    assert by_group["nanos-2026-10-10"].reading_id == "nanos_1010_h2h"
+
+
+def test_post_suspension_selection_is_published_for_the_feed(tmp_path: Path) -> None:
+    polling, candidates = _post_exit_inputs(tmp_path)
+    chosen = {
+        row["poll_sample_id"]: row
+        for row in current_reading_selection(polling, candidates, cutoff=CUTOFF_2026)
+    }
+    assert chosen["ipsos-2026-09-08"]["post_suspension"] is False
+    assert chosen["ipsos-2026-09-08"]["set_aside"] == []
+    assert chosen["forum-2026-10-06"]["post_suspension"] is True
+    assert chosen["forum-2026-10-06"]["set_aside"] == []  # it did not name him
+    assert chosen["mainstreet-2026-10-08"]["set_aside"] == [ALEX]
+    assert chosen["mainstreet-2026-10-08"]["named_share"] == pytest.approx(0.90)
+    assert chosen["pallas-2026-10-09"]["poll_reading_id"] == "pallas_1009_all"
+    assert "liaison-2026-10-05" not in chosen
+
+
+def test_a_suspended_campaign_after_the_cutoff_is_not_applied(tmp_path: Path) -> None:
+    polling, candidates = _post_exit_inputs(tmp_path)
+    c = current_campaign(polling, candidates, election_date=ELECTION_2026, cutoff=date(2026, 10, 5))
+    assert c.exits == ()
+    # Before the exit is known every reading still needs all three named candidates.
+    assert {p.group for p in c.polls} == {
+        "liaison-2026-09-05",
+        "ipsos-2026-09-08",
+        "mainstreet-2026-09-14",
+        "mainstreet-2026-10-08",
+    }
+
+
+def test_the_forecast_requires_the_results_feed_at_schema_6(tmp_path: Path) -> None:
+    polling, candidates = _bundle_inputs(tmp_path)
+    feed = json.loads(candidates.read_text())
+    candidates.write_text(json.dumps({**feed, "schema_version": 5}))
+    with pytest.raises(ValueError, match="schema 6"):
+        current_campaign(polling, candidates, election_date=ELECTION_2026, cutoff=CUTOFF_2026)
+
+
+def test_the_forecast_requires_the_2026_reading_classification(tmp_path: Path) -> None:
+    polling, candidates = _bundle_inputs(tmp_path)
+    (polling / "reading_classification.csv").unlink()
+    with pytest.raises(FileNotFoundError):
+        current_campaign(polling, candidates, election_date=ELECTION_2026, cutoff=CUTOFF_2026)
 
 
 def test_with_horizon_truncates_and_recomputes_leaders() -> None:

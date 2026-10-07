@@ -35,6 +35,10 @@ LEGACY_DISCOVERY_TABLES = (
 def _write_historical_tables(polling: Path) -> None:
     for table in HISTORICAL_TABLES:
         (polling / f"historical_mayoral_{table}.csv").write_text("id\n", encoding="utf-8")
+    # The 2026 reading classification ships beside the 2026 poll tables.
+    (polling / "reading_classification.csv").write_text(
+        "poll_reading_id,scope,measurement_class\n", encoding="utf-8"
+    )
 
 
 def test_hydration_is_isolated_and_returns_explicit_model_paths(tmp_path: Path) -> None:
@@ -150,5 +154,42 @@ def test_hydration_refuses_a_polling_release_without_the_historical_corpus(
     _write_historical_tables(polling)
     (polling / f"historical_mayoral_{table}.csv").unlink()
     with pytest.raises(ValueError, match="historical"):
+        hydrate_release_inputs(project, results, polling, results_release="results-test")
+    assert not (project / "data" / "upstream").exists()
+
+
+def test_hydration_refuses_a_polling_release_without_the_2026_reading_classification(
+    tmp_path: Path,
+) -> None:
+    # The full-field-beats-head-to-head rule reads the 2026 classification from the
+    # pinned Polling release (backend issues 31, 46); without it hydration fails closed.
+    project = tmp_path / "backend"
+    project.mkdir()
+    results = tmp_path / "results"
+    polling = tmp_path / "polling"
+    results.mkdir()
+    polling.mkdir()
+    _write_json(
+        results / "release_manifest.json",
+        {"repository": "alexwolson/toronto-election-results", "source_commit": "c"},
+    )
+    sha = hashlib.sha256((results / "release_manifest.json").read_bytes()).hexdigest()
+    _write_json(
+        polling / "release_manifest.json",
+        {
+            "repository": "alexwolson/toronto-election-poll-tracker-data",
+            "dependencies": {
+                "results": {
+                    "repository": "alexwolson/toronto-election-results",
+                    "release": "results-test",
+                    "source_commit": "c",
+                    "manifest_sha256": sha,
+                }
+            },
+        },
+    )
+    _write_historical_tables(polling)
+    (polling / "reading_classification.csv").unlink()
+    with pytest.raises(ValueError, match="reading classification"):
         hydrate_release_inputs(project, results, polling, results_release="results-test")
     assert not (project / "data" / "upstream").exists()
