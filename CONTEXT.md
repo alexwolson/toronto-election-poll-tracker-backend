@@ -17,8 +17,16 @@ The official set of candidates eligible to receive votes after registration, wit
 _Avoid_: Current field, target field, expected field
 
 **Suspended Campaign**:
-A Final Ballot candidate's campaign that the candidate publicly ended after the withdrawal deadline. The candidate stays on the Final Ballot and can still receive votes; Toronto cases are Thomson and Rossi (2010) and Alexander (2026).
+A Final Ballot candidate's campaign that the candidate publicly ended after the withdrawal deadline. The candidate stays on the Final Ballot and can still receive votes; Toronto cases are Thomson and Rossi (2010), Davis and Mammoliti (2023 by-election) and Alexander (2026).
 _Avoid_: Withdrawn candidate, dropped out, exited candidate
+
+**Kept Fraction**:
+The share of a suspended candidate's last pre-suspension poll support that they still receive on election day.
+_Avoid_: Retained share, kept share
+
+**Exit Allocation**:
+How a Suspended Campaign's support beyond its Kept Fraction divides among the remaining named candidates. It starts from a split in proportion to their support and is learned from Post-Suspension Readings.
+_Avoid_: Transfer, redistribution assumption
 
 **Internal Outcome Distribution**:
 The forecast's complete probability distribution over election-day valid-vote shares before any Publication Gates determine which summaries may be shown publicly.
@@ -115,6 +123,14 @@ _Avoid_: Independent sample, poll count, repeated release
 **Poll Candidate Observation Status**:
 The evidence state for a candidate in one Poll Reading: individually published, offered but not individually published, known not offered, or tested-ballot status unknown. These states are not interchangeable and none implies zero support.
 _Avoid_: Missing candidate, other
+
+**Post-Suspension Reading**:
+A Poll Reading whose fieldwork overlaps or follows the public start of a Suspended Campaign. It is evidence about the remaining candidates on the same Final Ballot, whether or not it names the suspended candidate.
+_Avoid_: Post-exit poll, post-withdrawal poll
+
+**Head-to-Head Reading**:
+A Poll Reading whose question offers exactly two named candidates and no other-candidate option while the Final Ballot holds more. A reading naming two candidates plus "someone else" is not one.
+_Avoid_: Two-way poll, matchup, forced choice
 
 **Irreducible Election Error**:
 The non-zero election-day uncertainty remaining after the latest evidence, including turnout composition, poll-to-result error, unresolved candidate-tail support, and other unobserved variation. It prevents the Internal Outcome Distribution from collapsing onto even a late Poll Reading.
