@@ -154,3 +154,116 @@ days, +0.019). Rule 2 passes (4 = 4 and 6 = 6). Rule 3 fails (4 failing fits aga
 
 **Target check (report only).** In every seed at both horizons, the uniform arm's 2010 pool band (about 2.0-15.8,
 median about 5.9) covers the actual pool share including Thomson (4.93%).
+
+## Diagnosis (issue 50, report only, 2026-10-07)
+
+Issue: [Diagnose how the uniform rule fails in 2010 and 2023](https://github.com/alexwolson/toronto-election-poll-tracker-backend/issues/50).
+No pass rule and no verdict. Outputs: `research-runs/uniform-rule-2026-10-07/diagnostics/` (`diagnose_2010.*`,
+`coordinates_2023.*`, `pairs_2023.*`, `divergences_2023*`, `failure_rates_2023.txt`, `runs/`). Code:
+`uniform_rule_diagnose.py`, plus `fit.py --save-sampler-stats`.
+
+### 2010: the loss is the arithmetic of reallocating Thomson in proportion (OBSERVED unless marked)
+
+**What each fold sees.** All four 2010 polls in the 20-day fold offered Thomson: Pollara (45 days out, 8% of
+all respondents), Angus Reid (41 days, 11%), Nanos (40 days, 6.4%) and Ipsos Reid Sept 24-26 (30 days, 7%).
+The 14-day fold adds Ipsos Reid Oct 8 (16 days), which does not offer him (Smitherman 31, Ford 30).
+- Folding him out divides every other share by one minus his share. Ford's lead grows in each poll: Pollara
+  +21.8 to +24.3, Angus Reid +13.4 to +15.1, Nanos +24.5 to +26.1, Ipsos +6.6 to +7.4.
+
+**Ford minus Smitherman on election day** (mean over 5 seeds; actual +12.1):
+
+| | 20 d median (80%) | 20 d CRPS | 14 d median (80%) | 14 d CRPS |
+|---|---|---|---|---|
+| Baseline | +16.0 (-4.7..+35.3) | 3.95 | +11.3 (-10.2..+30.8) | 3.65 |
+| Uniform | +17.7 (-5.1..+38.4) | 4.54 | +12.3 (-11.1..+33.2) | 3.88 |
+| S2 | +17.2 (-5.1..+38.0) | 4.49 | +12.3 (-11.0..+33.1) | 3.92 |
+
+- **CRPS change against the baseline, split into centre and width:**
+  - uniform at 20 d: +0.59 = centre +0.42 + width +0.17;
+  - uniform at 14 d: +0.23 = centre -0.01 + width +0.25;
+  - S2 at 20 d: +0.53 = centre +0.30 + width +0.24;
+  - S2 at 14 d: +0.27 = centre -0.01 + width +0.28.
+- **The whole margin distribution is stretched by about 8%:** uniform's band is x1.087 and S2's x1.077. One
+  over one minus Thomson's election-day share in the baseline (7.7%) is 1.083 (INFERRED as the mechanism).
+  - At 20 days the baseline's median was already above the result, so the stretch moves the centre away from
+    it and widens the band.
+  - At 14 days the baseline sat just below the result, so only the wider band costs.
+- **Where his support goes (counterfactuals on the baseline draws).**
+  - Giving S2's freed share to Smitherman instead of in proportion scores 4.05 at 20 days, near the baseline,
+    with centre -0.06.
+  - But it scores 5.39 at 14 days (centre +1.63), because Ipsos Oct 8 had already pulled that fold's centre
+    below the result.
+  - Giving Thomson's whole share to Smitherman scores 4.59 at 20 days and 6.31 at 14.
+  - So the direction matters, but no reallocation beats the baseline at both horizons. The baseline wins on
+    this metric by not moving or stretching the margin.
+- **Full-ballot shares against the count (20 d medians):**
+  - Ford 38.2 (baseline), 42.2 (uniform), 41.2 (S2), against 47.1 counted;
+  - Smitherman 23.4 / 25.9 / 25.2 against 35.6;
+  - Pantalone 12.3 / 13.7 / 13.3 against 11.7;
+  - Rossi 7.6 / 8.4 / 8.2 against 0.6;
+  - Thomson 7.7 in the baseline and 1.7 under S2, against 0.23.
+
+  Uniform and S2 are closer to the count for the two leaders. Only the leader margin, which is what the test
+  scores, gets worse.
+
+### 2023: a fragile fold in both arms, not a uniform-rule defect (OBSERVED unless marked)
+
+- **The held-out 2023 campaign has 15 named candidates, many under 1%.** Its unobserved election-day result is
+  a 15-way Dirichlet whose precision (`phi_election` times a Gamma mixing variable) has no outcome to anchor it
+  (INFERRED as the source of the difficult geometry).
+- **Same-seed re-runs reproduce the stored fits bit-identically,** so the failures are deterministic,
+  seed-specific events. Per-coordinate R-hat and ESS: in 4 of the 5 failing fits the worst coordinates are
+  2023's `election_precision` and `election_mixing` and `phi_election`, with ESS 254-512. The exception is
+  uniform seed 25 at 20 d.
+- **Divergences sit in one chain per fit** ([0,19,0,0], [0,0,1,0], [0,4,0,1], [1,0,0,96]) and in two
+  geometries:
+  - **Precision funnel.** 2023's election precision and `phi_election` are at the top of their posteriors at
+    divergent transitions (median rank 0.94-1.00).
+    - Seen in uniform seed 22 (14 d) and seed 32 (20 d).
+    - Also seen in the baseline's own failing fits from the extra seeds (seed 34, 14 d and 20 d).
+    - The baseline's original failing fit (seed 25, 14 d) has no divergences: its chains disagree on
+      `phi_election` (means 50.8, 45.8, 43.0, 42.9).
+  - **Movement funnel.** `m_move` sits at the bottom of its posterior (rank 0.00-0.01), `omega_move` at the
+    top (0.98-1.00), and 2026's weekly movement at the bottom.
+    - Seen only in uniform seeds 24 and 25 at 20 d.
+    - In seed 25, one chain (96 of the 97 divergences, acceptance 0.83) drifted into that region: `m_move`
+      0.073 against 0.080, `omega_move` 0.466 against 0.39.
+- **Failure rate over 15 seeds** (the original 5 plus 10 new, both horizons, 30 fits per arm, research
+  settings):
+  - research bar: baseline 3 of 30, uniform 5 of 30 (Fisher exact p = 0.71);
+  - production bar: baseline 20 of 30, uniform 24 of 30;
+  - total divergences: baseline 53, uniform 143, of which 97 are the one stuck chain.
+  - The 4-against-1 in the binding test is mostly seed luck (INFERRED from the rates).
+- **Production's retry (target acceptance 0.99, seed + 1) on the four failing uniform fits:**
+
+  | Failing fit | Retry result | Production bar | Research bar |
+  |---|---|---|---|
+  | seed 22, 14 d | 0 divergences, R-hat 1.0056, ESS 503 | passes | passes |
+  | seed 23, 14 d | 1 divergence, R-hat 1.0044, ESS 444 | fails | passes |
+  | seed 24, 20 d | 0 divergences, R-hat 1.0086, ESS 446 | passes | passes |
+  | seed 25, 20 d | 0 divergences, R-hat 1.0104, ESS 396 | fails | passes |
+
+  Production also draws 4,000 per chain rather than 1,000, so its ESS would be higher (INFERRED).
+- **Passing pairs** (20 d seeds 21-23, 14 d seeds 21 and 24): the shared hyperparameters and 2023's own
+  parameters differ by 5% or less between the arms.
+  - `omega_move` -4.5%, `tau_reference` +2.2%, `phi_election` +0.8%, 2023's election precision +0.1%.
+  - 2023's mixing and precision ESS are similar (582 against 651, 489 against 511).
+- **Reading 2026 with two named candidates.**
+  - **Prior-only in both arms:** 2026's election mixing and precision have no outcome to learn from, so their
+    posterior spread equals the prior's (sd 0.625 against 0.632). This is not new to the uniform rule.
+  - **Slightly less identified:** 2026's movement z widens a little (sd 0.80 to 0.84).
+  - **Movement shifts:** 2026's weekly movement is 8% higher, which Forum Oct 6 explains.
+  - **Not implicated:** 2026's movement ESS is not lower (median 2,298 against 2,132), and no 2026 coordinate
+    is among the worst R-hat in any failing fit. The one exception is the stuck chain, where 2026's movement
+    is part of the movement funnel.
+
+Two hypotheses tested and not supported: the uniform rule raises the 2023 failure rate; and two named 2026
+candidates leave a parameter weakly identified that drives the failures.
+
+### Unexplained
+
+- Whether the movement funnel is more frequent under the uniform rule: seen in 2 of 5 uniform failures and in
+  none of the 3 baseline failures examined, too few to tell.
+- Why seed 25's fourth chain drifted.
+- Whether production settings (4,000 draws per chain, with the retry) would make the held-out 2023 fold pass
+  routinely in either arm.

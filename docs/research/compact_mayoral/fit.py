@@ -125,6 +125,11 @@ def parse_args(argv=None):
         help="fold the held-out campaign's candidates suspended on or before the cutoff into "
         "the pool, in its readings and its target (issue 48 uniform arm)",
     )
+    parser.add_argument(
+        "--save-sampler-stats",
+        action="store_true",
+        help="also write sampler.npz (diverging, accept_prob, num_steps by chain; issue 50)",
+    )
     parser.add_argument("--min-offered", type=int, default=2)
     parser.add_argument(
         "--denominator-rank", choices=("decided_first", "all_first"), default="decided_first"
@@ -308,6 +313,10 @@ def main(argv=None):
     flat = {k: np.asarray(v).reshape((-1,) + np.asarray(v).shape[2:]) for k, v in grouped.items()}
     extras = mcmc.get_extra_fields(group_by_chain=True)
     np.savez_compressed(args.out / "draws.npz", **{k: np.asarray(v) for k, v in grouped.items()})
+    if args.save_sampler_stats:
+        np.savez_compressed(
+            args.out / "sampler.npz", **{k: np.asarray(v) for k, v in extras.items()}
+        )
 
     # Diagnostics over every sampled and deterministic coordinate.
     # Constant coordinates (deterministic functions of observed results) carry no
