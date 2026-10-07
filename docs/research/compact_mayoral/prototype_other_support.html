@@ -1,0 +1,577 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Other Support Prototype</title>
+<style>
+  :root {
+    --bg: #faf9f6; --fg: #1d1d1f; --muted: #66666c; --line: #e2e0da; --card: #ffffff;
+    --accent: #0e6b6b; --accent-soft: #e2f0ef; --note: #7a5200; --note-soft: #fbf2df;
+  }
+  @media (prefers-color-scheme: dark) {
+    :root:not([data-theme="light"]) {
+      --bg: #141517; --fg: #ececec; --muted: #a2a2a8; --line: #2d2f34; --card: #1c1d21;
+      --accent: #5ec6c1; --accent-soft: #17312f; --note: #e6b763; --note-soft: #30271a;
+    }
+  }
+  * { box-sizing: border-box; }
+  body { margin: 0; background: var(--bg); color: var(--fg);
+    font: 15px/1.5 -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif; }
+  main { max-width: 1080px; margin: 0 auto; padding: 28px 16px 64px; }
+  h1 { font-size: 24px; margin: 0 0 4px; letter-spacing: -0.01em; }
+  h2 { font-size: 16px; margin: 0 0 10px; }
+  h3 { font-size: 14px; margin: 14px 0 6px; color: var(--muted); font-weight: 600; text-transform: uppercase; letter-spacing: .04em; }
+  p { margin: 0 0 10px; }
+  .lede { color: var(--muted); margin-bottom: 14px; }
+  .banner { background: var(--note-soft); color: var(--note); border-radius: 8px; padding: 10px 14px; margin: 0 0 18px; font-size: 14px; }
+  .question { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 14px 16px; margin-bottom: 18px; }
+  .grid { display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 1fr); gap: 18px; align-items: start; }
+  @media (max-width: 860px) { .grid { grid-template-columns: 1fr; } }
+  .card { background: var(--card); border: 1px solid var(--line); border-radius: 10px; padding: 16px; }
+  .row { display: flex; flex-wrap: wrap; gap: 6px; margin-bottom: 10px; }
+  .label { font-size: 12px; color: var(--muted); text-transform: uppercase; letter-spacing: .05em; margin: 10px 0 4px; }
+  button { font: inherit; font-size: 14px; border: 1px solid var(--line); background: var(--card); color: var(--fg);
+    border-radius: 7px; padding: 6px 11px; cursor: pointer; }
+  button:hover { border-color: var(--accent); }
+  button.on { background: var(--accent); border-color: var(--accent); color: #fff; }
+  @media (prefers-color-scheme: dark) { :root:not([data-theme="light"]) button.on { color: #0b1414; } }
+  .slider { display: grid; grid-template-columns: 1fr 56px; gap: 8px; align-items: center; margin: 4px 0 2px; }
+  .slider input { width: 100%; accent-color: var(--accent); }
+  .slider output { text-align: right; font-variant-numeric: tabular-nums; }
+  .hint { font-size: 12.5px; color: var(--muted); margin: 0 0 8px; }
+  table { width: 100%; border-collapse: collapse; font-variant-numeric: tabular-nums; }
+  th, td { text-align: left; padding: 5px 6px; border-bottom: 1px solid var(--line); font-size: 14px; }
+  th { font-weight: 600; color: var(--muted); font-size: 12.5px; }
+  td.num, th.num { text-align: right; }
+  .bar { height: 8px; background: var(--accent); border-radius: 4px; opacity: .85; }
+  .bar.ghost { background: var(--muted); opacity: .35; }
+  .big { display: grid; grid-template-columns: repeat(auto-fit, minmax(150px, 1fr)); gap: 10px; margin: 12px 0; }
+  .stat { border: 1px solid var(--line); border-radius: 8px; padding: 8px 10px; }
+  .stat .v { font-size: 22px; font-weight: 650; font-variant-numeric: tabular-nums; }
+  .stat .k { font-size: 12px; color: var(--muted); }
+  .changed { background: var(--accent-soft); border-radius: 8px; padding: 8px 12px; margin: 10px 0; font-size: 14px; }
+  ul.explain { margin: 6px 0 0; padding-left: 18px; }
+  ul.explain li { margin-bottom: 4px; }
+  .tabs { display: flex; flex-wrap: wrap; gap: 4px; border-bottom: 1px solid var(--line); margin: 6px 0 12px; }
+  .tabs button { border: none; border-bottom: 2px solid transparent; border-radius: 0; background: none; padding: 8px 10px; }
+  .tabs button.on { color: var(--accent); border-bottom-color: var(--accent); background: none; }
+  ol.steps { padding-left: 20px; margin: 8px 0 0; }
+  ol.steps li { margin-bottom: 6px; }
+  ol.steps button.done { opacity: .6; }
+  .muted { color: var(--muted); }
+  .src { font-size: 12.5px; color: var(--muted); margin-top: 8px; }
+</style>
+</head>
+<body>
+<main>
+  <h1>Where does "other" support go?</h1>
+  <p class="lede">Prototype for the Suspended Campaign map (C and D). Throwaway, not production.</p>
+
+  <div class="question">
+    <strong>The question.</strong> When a candidate ends their campaign but stays on the ballot, where should their supporters' votes go in the forecast, and what should we do with the "someone else" answers in polls? This page compares four rules on the two real cases we have polls for: Chris Alexander (2026) and Sarah Thomson (2010).
+    <ul class="explain">
+      <li><strong>A. Split in proportion</strong> (what both current versions do): the departed candidate keeps a small share; the rest goes to the other candidates in proportion to their own support.</li>
+      <li><strong>B. Carry forward</strong> (the old model): the departed candidate keeps their whole last poll share to election day.</li>
+      <li><strong>C. Learn the split</strong>: compare the same pollster's polls before and after the exit, and learn from that where the support went.</li>
+      <li><strong>D. Count "someone else" as real support</strong>: other candidates' election-day share comes from the polls' "someone else" answers instead of past elections.</li>
+    </ul>
+  </div>
+
+  <div class="banner">This is illustrative arithmetic, not the forecast model. It starts from the model's real forecast before each exit and applies each rule's logic to one pair of polls from the same pollster. The model's real numbers differ; compare the rules with each other.</div>
+
+  <div class="grid">
+    <section class="card" id="state"></section>
+
+    <section>
+      <div class="card" style="margin-bottom:18px">
+        <h2>Try it yourself</h2>
+        <div class="label">Election</div>
+        <div class="row" id="electionBtns"></div>
+        <div class="label">Polls in hand</div>
+        <div class="row" id="pollBtns"></div>
+        <div class="label">Rule</div>
+        <div class="row" id="ruleBtns"></div>
+
+        <div class="label">How far one new poll moves the forecast</div>
+        <div class="slider"><input type="range" id="trust" min="0" max="1" step="0.05"><output id="trustOut"></output></div>
+        <p class="hint">The real model moved about 30% of the way toward Forum's Oct. 6 poll.</p>
+
+        <div class="label">Rule C: other movement between the two polls (points)</div>
+        <div class="slider"><input type="range" id="movement" min="0" max="5" step="0.25"><output id="movementOut"></output></div>
+        <p class="hint">How much the race could have moved for reasons that have nothing to do with the exit. More movement means C credits less of the change to the exit.</p>
+
+        <div class="label">Rule C: how firmly to start from a proportional split</div>
+        <div class="slider"><input type="range" id="priorStrength" min="0" max="100" step="1"><output id="priorStrengthOut"></output></div>
+        <p class="hint">0 means no starting opinion. 100 means it takes a lot of evidence to move away from proportional.</p>
+
+        <div class="label">Rule D: share of "someone else" answers that become votes for minor candidates</div>
+        <div class="slider"><input type="range" id="elseSurvival" min="0" max="1" step="0.05"><output id="elseSurvivalOut"></output></div>
+        <p class="hint">Not yet measured. The model today ignores these answers and uses 5.6% from past elections.</p>
+
+        <div class="label">Share of their own support the departed candidate keeps</div>
+        <div class="slider"><input type="range" id="kept" min="0" max="0.5" step="0.01"><output id="keptOut"></output></div>
+        <p class="hint">The ten-case record puts this at about 16% (range 3 to 25%). Set it to 0 to see the uniform rule.</p>
+
+        <div class="row" style="margin-top:12px"><button id="resetBtn">Reset</button></div>
+      </div>
+
+      <div class="card">
+        <h2>Guided walkthroughs</h2>
+        <div class="tabs" id="tabs"></div>
+        <div id="tabBody"></div>
+      </div>
+    </section>
+  </div>
+</main>
+
+<script>
+/* ===== Logic module: pure, no DOM. Lift-able. ===== */
+const OtherSupport = (() => {
+  const SCENARIOS = {
+    "2026": {
+      title: "Toronto 2026: Chris Alexander",
+      departed: "Alexander",
+      remaining: ["Chow", "Bradford"],
+      leaders: ["Chow", "Bradford"],
+      names: { Chow: "Olivia Chow", Bradford: "Brad Bradford", Alexander: "Chris Alexander" },
+      exitNote: "Chris Alexander ended his campaign on Oct. 6 and stays on the ballot.",
+      pollLabels: { before: "Polls to Oct. 4", after: "Add Forum, Oct. 6" },
+      // The model's forecast before the exit (production rule, 14 polls): medians 48.5 / 36.6 / 6.6, pool 5.6,
+      // rescaled so the named candidates add to 94.4.
+      anchor: { Chow: 49.93, Bradford: 37.68, Alexander: 6.79 },
+      anchorPool: 5.6,
+      anchorNote: "Starting point: the model's forecast before the exit (Chow 48.5, Bradford 36.6, Alexander 6.6, other candidates 5.6; medians rescaled to add to 100).",
+      pairBefore: { label: "Forum, Sept. 23", detail: "decided and leaning, 908 respondents", n: 908, shares: { Chow: 46, Bradford: 35, Alexander: 6 }, someoneElse: 13 },
+      pairAfter: { label: "Forum, Oct. 6", detail: "decided and leaning, 1,488 respondents; Alexander not offered", n: 1488, shares: { Chow: 46, Bradford: 42 }, someoneElse: 12 },
+      result: null,
+      references: [
+        "Forum's Oct. 6 poll: Chow 52.3% of the Chow–Bradford vote.",
+        "Real model with Forum's poll: 55.5% under the decided treatment and 55.6% under the uniform rule (election day, two-way).",
+        "Real model before Forum's poll: 57.0%."
+      ]
+    },
+    "2010": {
+      title: "Toronto 2010: Sarah Thomson",
+      departed: "Thomson",
+      remaining: ["Ford", "Smitherman", "Pantalone", "Rossi"],
+      leaders: ["Ford", "Smitherman"],
+      names: { Ford: "Rob Ford", Smitherman: "George Smitherman", Pantalone: "Joe Pantalone", Rossi: "Rocco Rossi", Thomson: "Sarah Thomson" },
+      exitNote: "Sarah Thomson's campaign ended on Sept. 28 with an endorsement of Smitherman; Thomson stayed on the ballot and got 0.2%. Rocco Rossi's campaign ended on Oct. 13, after both of these polls, so here Rossi is still running.",
+      pollLabels: { before: "20 days out (Oct. 5)", after: "14 days out: add Ipsos, Oct. 8–10" },
+      // The model's 20-day forecast (carry-forward rule): medians 38.2 / 23.4 / 12.3 / 7.6 / 7.7, pool about 5.8,
+      // rescaled so the named candidates add to 94.2.
+      anchor: { Ford: 40.34, Smitherman: 24.71, Pantalone: 12.99, Rossi: 8.03, Thomson: 8.13 },
+      anchorPool: 5.8,
+      anchorNote: "Starting point: the model's forecast 20 days out (Ford 38.2, Smitherman 23.4, Pantalone 12.3, Rossi 7.6, Thomson 7.7; medians rescaled to add to 100, other candidates about 5.8).",
+      pairBefore: { label: "Ipsos Reid, Sept. 24–26", detail: "400 adults; 17% undecided, 8% not reported", n: 400,
+        shares: { Ford: 28, Smitherman: 23, Pantalone: 10, Rossi: 7, Thomson: 7 }, someoneElse: null },
+      pairAfter: { label: "Ipsos Reid, Oct. 8–10", detail: "400 adults; 25% undecided; Thomson not offered", n: 400,
+        shares: { Ford: 30, Smitherman: 31, Pantalone: 11, Rossi: 4 }, someoneElse: null },
+      result: { Ford: 47.11, Smitherman: 35.61, Pantalone: 11.73, Rossi: 0.62, Thomson: 0.23, Other: 4.70 },
+      references: [
+        "The count: Ford 47.1, Smitherman 35.6, so Ford by 11.5 and 57.0% of the two-way.",
+        "Real model, 20 days out: Ford by 16.0 carrying Thomson forward, by 17.7 under the uniform rule (on the model's own scale, where the count is Ford by 12.1)."
+      ]
+    }
+  };
+
+  const RULES = {
+    A: "Split in proportion",
+    B: "Carry forward",
+    C: "Learn the split",
+    D: "Count \"someone else\"",
+    DC: "D + C"
+  };
+
+  const initialState = {
+    election: "2026", polls: "before", rule: "A",
+    trust: 0.3, movement: 1.0, priorStrength: 4, elseSurvival: 0.5, kept: 0.16
+  };
+
+  function reducer(state, action) {
+    switch (action.type) {
+      case "reset": return { ...initialState, ...(action.with || {}) };
+      case "election": return { ...state, election: action.value };
+      case "polls": return { ...state, polls: action.value };
+      case "rule": return { ...state, rule: action.value };
+      case "set": return { ...state, [action.key]: action.value };
+      default: return state;
+    }
+  }
+
+  // Shares among those who named a choice (named candidates plus "someone else").
+  function decided(poll) {
+    const named = Object.values(poll.shares).reduce((a, b) => a + b, 0);
+    const base = named + (poll.someoneElse || 0);
+    const shares = {};
+    for (const [k, v] of Object.entries(poll.shares)) shares[k] = (v * 100) / base;
+    return { shares, someoneElse: ((poll.someoneElse || 0) * 100) / base };
+  }
+
+  function twoWay(shares, lead, second) {
+    return shares[lead] / (shares[lead] + shares[second]);
+  }
+
+  // Rule C: posterior for a = fraction of the freed support that went to the second candidate,
+  // from the same pollster's polls before and after the exit.
+  function learnSplit(sc, state) {
+    const [lead, second] = sc.leaders;
+    const d = sc.departed;
+    const p = decided(sc.pairBefore).shares;
+    const q = decided(sc.pairAfter).shares;
+    const freed = p[d] * (1 - state.kept);
+    const rest = sc.remaining.filter(r => r !== second);
+    const leadShareOfRest = p[lead] / rest.reduce((s, r) => s + p[r], 0);
+    const predicted = a => {
+      const L = p[lead] + freed * (1 - a) * leadShareOfRest;
+      const S = p[second] + freed * a;
+      return L / (L + S);
+    };
+    const tBefore = twoWay(p, lead, second);
+    const tObs = twoWay(q, lead, second);
+    // Respondents who chose one of the two leaders in each poll.
+    const nBefore = sc.pairBefore.n * (sc.pairBefore.shares[lead] + sc.pairBefore.shares[second]) / 100;
+    const nAfter = sc.pairAfter.n * (sc.pairAfter.shares[lead] + sc.pairAfter.shares[second]) / 100;
+    const sd = Math.sqrt(
+      (tBefore * (1 - tBefore)) / nBefore + (tObs * (1 - tObs)) / nAfter + (state.movement / 100) ** 2
+    );
+    const anchorRemaining = sc.remaining.reduce((s, r) => s + sc.anchor[r], 0);
+    const a0 = sc.anchor[second] / anchorRemaining;
+    const pRemaining = sc.remaining.reduce((s, r) => s + p[r], 0);
+    const a0Poll = p[second] / pRemaining;
+    const alpha = 1 + state.priorStrength * a0;
+    const beta = 1 + state.priorStrength * (1 - a0);
+    const grid = [];
+    for (let i = 0; i < 200; i++) {
+      const a = (i + 0.5) / 200;
+      const logPrior = (alpha - 1) * Math.log(a) + (beta - 1) * Math.log(1 - a);
+      const z = (tObs - predicted(a)) / sd;
+      grid.push({ a, logW: logPrior - 0.5 * z * z });
+    }
+    const maxLog = Math.max(...grid.map(g => g.logW));
+    let total = 0;
+    for (const g of grid) { g.w = Math.exp(g.logW - maxLog); total += g.w; }
+    let mean = 0, cum = 0, lo = null, hi = null;
+    for (const g of grid) {
+      g.w /= total;
+      mean += g.a * g.w;
+      cum += g.w;
+      if (lo === null && cum >= 0.1) lo = g.a;
+      if (hi === null && cum >= 0.9) hi = g.a;
+    }
+    return {
+      a: mean, lo, hi, a0, freedPoll: freed,
+      tBefore, tObs,
+      tIfProportional: predicted(a0Poll),
+      tIfAllToSecond: predicted(1),
+      tIfAllToLead: predicted(0)
+    };
+  }
+
+  // Election-day shares for a given rule; aOverride lets C be evaluated at its interval ends.
+  function compute(state, aOverride) {
+    const sc = SCENARIOS[state.election];
+    const d = sc.departed;
+    const [lead, second] = sc.leaders;
+    const shares = {};
+    sc.remaining.forEach(r => { shares[r] = sc.anchor[r]; });
+    let departed = sc.anchor[d];
+    let other = sc.anchorPool;
+    let foldedIntoOther = false;
+    let alloc = null;
+    const usesC = state.rule === "C" || state.rule === "DC";
+    const usesD = state.rule === "D" || state.rule === "DC";
+
+    if (state.rule !== "B") {
+      const keep = sc.anchor[d] * state.kept;
+      const freed = sc.anchor[d] - keep;
+      const anchorRemaining = sc.remaining.reduce((s, r) => s + sc.anchor[r], 0);
+      alloc = {};
+      if (usesC && (aOverride !== undefined || state.polls === "after")) {
+        const a = aOverride !== undefined ? aOverride : learnSplit(sc, state).a;
+        const rest = sc.remaining.filter(r => r !== second);
+        const restTotal = rest.reduce((s, r) => s + sc.anchor[r], 0);
+        alloc[second] = a;
+        rest.forEach(r => { alloc[r] = (1 - a) * sc.anchor[r] / restTotal; });
+      } else {
+        sc.remaining.forEach(r => { alloc[r] = sc.anchor[r] / anchorRemaining; });
+      }
+      sc.remaining.forEach(r => { shares[r] += freed * alloc[r]; });
+      departed = keep;
+    }
+
+    if (usesD) {
+      const latest = state.polls === "after" ? sc.pairAfter : sc.pairBefore;
+      if (latest.someoneElse === null) {
+        other = sc.anchorPool;
+      } else {
+        other = state.elseSurvival * decided(latest).someoneElse;
+      }
+      other += departed;
+      departed = 0;
+      foldedIntoOther = true;
+      const named = sc.remaining.reduce((s, r) => s + shares[r], 0);
+      const target = 100 - other;
+      sc.remaining.forEach(r => { shares[r] *= target / named; });
+    }
+
+    let tPicture = twoWay(shares, lead, second);
+    if (state.polls === "after") {
+      const tObs = twoWay(decided(sc.pairAfter).shares, lead, second);
+      const sum = shares[lead] + shares[second];
+      const tNew = tPicture + state.trust * (tObs - tPicture);
+      shares[lead] = tNew * sum;
+      shares[second] = (1 - tNew) * sum;
+    }
+    return { shares, departed, other, foldedIntoOther, alloc, tPicture };
+  }
+
+  function forecast(state) {
+    const sc = SCENARIOS[state.election];
+    const [lead, second] = sc.leaders;
+    const base = compute(state);
+    const usesC = state.rule === "C" || state.rule === "DC";
+    const usesD = state.rule === "D" || state.rule === "DC";
+    let split = null, twoWayRange = null;
+    if (usesC && state.polls === "after") {
+      split = learnSplit(sc, state);
+      const loS = compute(state, split.lo).shares, hiS = compute(state, split.hi).shares;
+      const t1 = twoWay(loS, lead, second) * 100, t2 = twoWay(hiS, lead, second) * 100;
+      twoWayRange = [Math.min(t1, t2), Math.max(t1, t2)];
+    }
+    const s = base.shares;
+    const rows = sc.remaining.map(r => ({ key: r, name: sc.names[r], share: s[r], actual: sc.result ? sc.result[r] : null }));
+    if (!base.foldedIntoOther) {
+      rows.push({ key: sc.departed, name: sc.names[sc.departed] + " (campaign ended)", share: base.departed,
+        actual: sc.result ? sc.result[sc.departed] : null });
+    }
+    rows.push({
+      key: "Other",
+      name: base.foldedIntoOther ? "Other candidates, including " + sc.names[sc.departed].split(" ")[1] : "Other candidates",
+      share: base.other,
+      actual: sc.result ? sc.result.Other + (base.foldedIntoOther ? sc.result[sc.departed] : 0) : null
+    });
+
+    const explain = [];
+    const dName = sc.names[sc.departed];
+    const keptPct = Math.round(state.kept * 100);
+    if (state.rule === "B") {
+      explain.push(`${dName} keeps the whole share from before the exit (${sc.anchor[sc.departed].toFixed(1)}%) all the way to election day.`);
+    } else if (usesC && state.polls === "after") {
+      explain.push(`${dName} keeps ${keptPct}% of their support. The rest is split by what ${sc.pairBefore.label.split(",")[0]}'s polls before and after the exit show: about ${Math.round(split.a * 100)}% to ${sc.names[second]} (80% range ${Math.round(split.lo * 100)} to ${Math.round(split.hi * 100)}%), against ${Math.round(split.a0 * 100)}% if it split in proportion.`);
+    } else if (usesC) {
+      explain.push(`No poll after the exit yet, so there is nothing to learn from: ${dName}'s support is split in proportion, as in rule A.`);
+    } else {
+      explain.push(`${dName} keeps ${keptPct}% of their support. The rest goes to the other named candidates in proportion to their own support.`);
+    }
+    if (usesD) {
+      const latest = state.polls === "after" ? sc.pairAfter : sc.pairBefore;
+      if (latest.someoneElse === null) {
+        explain.push(`${latest.label.split(",")[0]} did not report a "someone else" figure, so rule D has nothing to go on and falls back to the past-elections figure (${sc.anchorPool}%).`);
+      } else {
+        explain.push(`Other candidates = ${Math.round(state.elseSurvival * 100)}% of the latest poll's "someone else" answers (${decided(latest).someoneElse.toFixed(0)}%) plus what ${dName} keeps, instead of the past-elections figure (${sc.anchorPool}%).`);
+      }
+    } else {
+      explain.push(`Other candidates comes from past elections (${sc.anchorPool}%). The polls' "someone else" answers are ignored.`);
+    }
+    if (state.polls === "after") {
+      const tObs = twoWay(decided(sc.pairAfter).shares, lead, second) * 100;
+      explain.push(`${sc.pairAfter.label} then moves the forecast ${Math.round(state.trust * 100)}% of the way toward its own ${sc.names[lead].split(" ")[1]}–${sc.names[second].split(" ")[1]} split (${tObs.toFixed(1)}%), as ordinary campaign movement.`);
+      if (usesC) explain.push("Because rule C has already credited part of that poll to the exit, less of it is left over to count as movement.");
+    }
+
+    return {
+      scenario: sc,
+      rows,
+      margin: s[lead] - s[second],
+      twoWay: twoWay(s, lead, second) * 100,
+      twoWayRange,
+      split,
+      explain,
+      actualMargin: sc.result ? sc.result[lead] - sc.result[second] : null,
+      actualTwoWay: sc.result ? twoWay(sc.result, lead, second) * 100 : null
+    };
+  }
+
+  return { SCENARIOS, RULES, initialState, reducer, forecast };
+})();
+</script>
+
+<script>
+/* ===== Page shell: renders state, wires buttons. Throwaway. ===== */
+let state = OtherSupport.reducer(undefined, { type: "reset" });
+let lastChange = "Starting point: the model's forecast before Alexander's exit, with today's proportional rule.";
+
+const WALKTHROUGHS = [
+  {
+    title: "2026: Forum's poll",
+    text: "Start from the model's forecast before Alexander's exit. See where his support goes under each rule, then add Forum's Oct. 6 poll. Watch Chow's share of the two-way vote: Forum had 52.3%.",
+    steps: [
+      ["Start: 2026, polls to Oct. 4, rule A", [{ type: "reset" }]],
+      ["Carry Alexander forward (B)", [{ type: "rule", value: "B" }]],
+      ["Split his support in proportion (A)", [{ type: "rule", value: "A" }]],
+      ["Add Forum's Oct. 6 poll", [{ type: "polls", value: "after" }]],
+      ["Learn the split from Forum's two polls (C)", [{ type: "rule", value: "C" }]],
+      ["Assume the race could have moved 3 points anyway", [{ type: "set", key: "movement", value: 3 }]],
+      ["Start from a firm belief in a proportional split", [{ type: "set", key: "priorStrength", value: 50 }]]
+    ]
+  },
+  {
+    title: "2010, 20 days out",
+    text: "Thomson's campaign ended on Sept. 28, but no poll since has measured the field without Thomson. Ford's lead is already too high in the model. What can each rule do?",
+    steps: [
+      ["Start: 2010, 20 days out, rule A", [{ type: "reset", with: { election: "2010", polls: "before" } }]],
+      ["Carry Thomson forward (B)", [{ type: "rule", value: "B" }]],
+      ["Learn the split (C): nothing to learn yet", [{ type: "rule", value: "C" }]],
+      ["Count \"someone else\" (D): Ipsos didn't report it", [{ type: "rule", value: "D" }]]
+    ]
+  },
+  {
+    title: "2010, 14 days out",
+    text: "Ipsos polled again on Oct. 8–10 without Thomson. Smitherman jumped. Thomson's voters really did go mostly to Smitherman, but Ford still won by 11.5. Does learning the split help or hurt?",
+    steps: [
+      ["Start: 2010, 14 days out, rule A", [{ type: "reset", with: { election: "2010", polls: "after" } }]],
+      ["Learn the split from the two Ipsos polls (C)", [{ type: "rule", value: "C" }]],
+      ["Assume the race could have moved 3 points anyway", [{ type: "set", key: "movement", value: 3 }]],
+      ["Carry Thomson forward (B)", [{ type: "rule", value: "B" }]]
+    ]
+  },
+  {
+    title: "D: \"someone else\"",
+    text: "Rule D replaces the past-elections figure for other candidates with the polls' own \"someone else\" answers. Forum had 12% saying someone else. The open question is how much of that turns into real votes.",
+    steps: [
+      ["Start: 2026 with Forum's Oct. 6 poll, rule A", [{ type: "reset", with: { polls: "after" } }]],
+      ["Count \"someone else\" (D)", [{ type: "rule", value: "D" }]],
+      ["Fewer of those answers become votes (25%)", [{ type: "set", key: "elseSurvival", value: 0.25 }]],
+      ["More of them become votes (75%)", [{ type: "set", key: "elseSurvival", value: 0.75 }]],
+      ["Combine with learning the split (D + C)", [{ type: "rule", value: "DC" }]]
+    ]
+  }
+];
+let activeTab = 0;
+let doneSteps = new Set();
+
+function fmt(x, d = 1) { return x.toFixed(d); }
+function signed(x) { return (x >= 0 ? "+" : "−") + Math.abs(x).toFixed(1); }
+
+function dispatch(actions, label) {
+  const before = OtherSupport.forecast(state);
+  for (const a of actions) state = OtherSupport.reducer(state, a);
+  const after = OtherSupport.forecast(state);
+  const [lead, second] = after.scenario.leaders;
+  if (before.scenario === after.scenario) {
+    const dm = after.margin - before.margin, dt = after.twoWay - before.twoWay;
+    lastChange = `${label}: ${after.scenario.names[lead].split(" ")[1]}'s lead ${signed(dm)} points, two-way share ${signed(dt)} points.`;
+  } else {
+    lastChange = `${label}: switched to ${after.scenario.title}.`;
+  }
+  render();
+}
+
+function render() {
+  const f = OtherSupport.forecast(state);
+  const sc = f.scenario;
+  const [lead, second] = sc.leaders;
+  const L = sc.names[lead].split(" ")[1], S = sc.names[second].split(" ")[1];
+  const maxShare = Math.max(...f.rows.map(r => Math.max(r.share, r.actual || 0)));
+  const hasActual = !!sc.result;
+
+  let html = `<h2>${sc.title}</h2>
+    <p class="muted" style="font-size:14px">${sc.exitNote}</p>
+    <p style="font-size:14px"><strong>Polls in hand:</strong> ${sc.pollLabels[state.polls]} · <strong>Rule:</strong> ${state.rule === "DC" ? "D + C" : state.rule + ". " + OtherSupport.RULES[state.rule]}</p>
+    <div class="changed">${lastChange}</div>
+    <div class="big">
+      <div class="stat"><div class="k">${L}'s lead over ${S}</div><div class="v">${signed(f.margin)}</div>${hasActual ? `<div class="k">count: ${signed(f.actualMargin)}</div>` : ""}</div>
+      <div class="stat"><div class="k">${L}'s share of the ${L}–${S} vote</div><div class="v">${fmt(f.twoWay)}%</div>${f.twoWayRange ? `<div class="k">C's range: ${fmt(f.twoWayRange[0])} to ${fmt(f.twoWayRange[1])}%</div>` : hasActual ? `<div class="k">count: ${fmt(f.actualTwoWay)}%</div>` : ""}</div>
+    </div>
+    <h3>Election-day vote</h3>
+    <table><thead><tr><th>Candidate</th><th class="num">Forecast</th>${hasActual ? '<th class="num">Count</th>' : ""}<th style="width:34%"></th></tr></thead><tbody>`;
+  for (const r of f.rows) {
+    html += `<tr><td>${r.name}</td><td class="num">${fmt(r.share)}%</td>${hasActual ? `<td class="num">${r.actual === null ? "" : fmt(r.actual) + "%"}</td>` : ""}
+      <td><div class="bar" style="width:${(100 * r.share / maxShare).toFixed(1)}%"></div>${hasActual && r.actual !== null ? `<div class="bar ghost" style="margin-top:3px;width:${(100 * r.actual / maxShare).toFixed(1)}%"></div>` : ""}</td></tr>`;
+  }
+  html += `</tbody></table>`;
+  if (hasActual) html += `<p class="src">Dark bar: this forecast. Light bar: the count.</p>`;
+
+  html += `<h3>What this rule did</h3><ul class="explain">${f.explain.map(e => `<li>${e}</li>`).join("")}</ul>`;
+
+  if (f.split) {
+    const sp = f.split;
+    html += `<h3>What ${sc.pairBefore.label.split(",")[0]}'s two polls say</h3>
+      <table><tbody>
+        <tr><td>${sc.pairBefore.label} (${sc.pairBefore.detail})</td><td class="num">${L} ${fmt(sp.tBefore * 100)}%</td></tr>
+        <tr><td>After the exit, if the support split in proportion</td><td class="num">${fmt(sp.tIfProportional * 100)}%</td></tr>
+        <tr><td>After the exit, if it all went to ${S}</td><td class="num">${fmt(sp.tIfAllToSecond * 100)}%</td></tr>
+        <tr><td>After the exit, if it all went to ${L}</td><td class="num">${fmt(sp.tIfAllToLead * 100)}%</td></tr>
+        <tr><td><strong>${sc.pairAfter.label}</strong> (${sc.pairAfter.detail})</td><td class="num"><strong>${fmt(sp.tObs * 100)}%</strong></td></tr>
+      </tbody></table>
+      <p class="src">Shares are ${L}'s share of the ${L}–${S} vote in each poll. The learned split weighs this against polling noise and the "other movement" setting.</p>`;
+  }
+
+  html += `<h3>For comparison</h3><ul class="explain">${sc.references.map(r => `<li>${r}</li>`).join("")}</ul>
+    <p class="src">${sc.anchorNote}</p>`;
+  document.getElementById("state").innerHTML = html;
+
+  // Controls reflect state.
+  setButtons("electionBtns", [["2026", "2026: Alexander"], ["2010", "2010: Thomson"]], state.election, v => dispatch([{ type: "election", value: v }], "Election"));
+  setButtons("pollBtns", [["before", sc.pollLabels.before], ["after", sc.pollLabels.after]], state.polls, v => dispatch([{ type: "polls", value: v }], "Polls in hand"));
+  setButtons("ruleBtns", [["A", "A. Proportional"], ["B", "B. Carry forward"], ["C", "C. Learn the split"], ["D", "D. Count \"someone else\""], ["DC", "D + C"]], state.rule, v => dispatch([{ type: "rule", value: v }], "Rule " + (v === "DC" ? "D + C" : v)));
+  for (const [key, fmtFn] of [["trust", v => Math.round(v * 100) + "%"], ["movement", v => v.toFixed(2)], ["priorStrength", v => String(v)], ["elseSurvival", v => Math.round(v * 100) + "%"], ["kept", v => Math.round(v * 100) + "%"]]) {
+    document.getElementById(key).value = state[key];
+    document.getElementById(key + "Out").textContent = fmtFn(state[key]);
+  }
+  renderTabs();
+}
+
+function setButtons(id, options, current, onClick) {
+  const el = document.getElementById(id);
+  el.innerHTML = "";
+  for (const [value, label] of options) {
+    const b = document.createElement("button");
+    b.textContent = label;
+    if (value === current) b.className = "on";
+    b.onclick = () => onClick(value);
+    el.appendChild(b);
+  }
+}
+
+function renderTabs() {
+  const tabs = document.getElementById("tabs");
+  tabs.innerHTML = "";
+  WALKTHROUGHS.forEach((w, i) => {
+    const b = document.createElement("button");
+    b.textContent = w.title;
+    if (i === activeTab) b.className = "on";
+    b.onclick = () => { activeTab = i; doneSteps = new Set(); renderTabs(); };
+    tabs.appendChild(b);
+  });
+  const w = WALKTHROUGHS[activeTab];
+  const body = document.getElementById("tabBody");
+  body.innerHTML = `<p style="font-size:14px">${w.text}</p><ol class="steps"></ol>`;
+  const ol = body.querySelector("ol");
+  w.steps.forEach(([label, actions], i) => {
+    const li = document.createElement("li");
+    const b = document.createElement("button");
+    b.textContent = label;
+    if (doneSteps.has(i)) b.className = "done";
+    b.onclick = () => {
+      if (i === 0) doneSteps = new Set();
+      doneSteps.add(i);
+      dispatch(actions, label);
+    };
+    li.appendChild(b);
+    ol.appendChild(li);
+  });
+}
+
+for (const key of ["trust", "movement", "priorStrength", "elseSurvival", "kept"]) {
+  document.getElementById(key).addEventListener("input", e => {
+    dispatch([{ type: "set", key, value: parseFloat(e.target.value) }], "Setting changed");
+  });
+}
+document.getElementById("resetBtn").onclick = () => { doneSteps = new Set(); dispatch([{ type: "reset" }], "Reset"); };
+render();
+</script>
+</body>
+</html>
