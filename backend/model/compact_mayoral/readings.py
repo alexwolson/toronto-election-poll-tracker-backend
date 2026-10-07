@@ -19,6 +19,13 @@ polled in an ordinary (``campaign_vote_intention``) reading AND on the final
 ballot. The 2026 reference is the certified three-name field; certified minor
 candidates that a poll reports individually stay in the residual pool unless
 ``extra_named`` asks for them.
+
+Once a Suspended Campaign has started (its date from the Results candidates feed,
+schema 6), a 2026 reading whose fieldwork overlaps or follows that date is a
+Post-Suspension Reading: a composition over the remaining named candidates, with
+any share it reports for the suspended candidate set aside, and in its sample the
+full field beats a head-to-head (Polling's ``reading_classification.csv``; backend
+issue 31). Earlier readings still need all three named candidates.
 """
 
 from __future__ import annotations
@@ -30,7 +37,8 @@ from dataclasses import dataclass
 from datetime import date, timedelta
 from pathlib import Path
 
-from backend.model.mayoral_candidate_ids import mayoral_candidate_id
+from backend.model.compact_mayoral.exits import Exit, kept_fraction_prior, load_cases
+from backend.model.mayoral_candidate_ids import load_campaign_suspensions, mayoral_candidate_id
 
 ROOT = Path(__file__).resolve().parents[3]
 OUTCOMES = ROOT / "data" / "raw" / "elections" / "mayoral_outcomes.csv"
@@ -99,6 +107,8 @@ class CampaignPolls:
     outcome_shares: tuple[float, ...] | None  # renormalized among ``candidates``
     outcome_tail: float | None  # ballot share outside ``candidates``
     leaders: tuple[int, int]  # top two by the latest polls (pre-outcome information)
+    # Suspended Campaigns applied in this campaign (the forecast campaign only; C2).
+    exits: tuple[Exit, ...] = ()
 
 
 def _read_csv(path: Path) -> list[dict]:
@@ -139,7 +149,9 @@ def _leaders(polls: tuple[Poll, ...], count: int) -> tuple[int, int]:
     return (ranked[0], ranked[1])
 
 
-def _campaign_polls(key, candidate_ids, names, election_date, polls, outcome_shares, tail):
+def _campaign_polls(
+    key, candidate_ids, names, election_date, polls, outcome_shares, tail, exits=()
+):
     polls = tuple(sorted(polls, key=lambda p: (-p.days_before_election, p.reading_id)))
     if not polls:
         raise ValueError(f"{key}: no usable polls")
@@ -152,6 +164,7 @@ def _campaign_polls(key, candidate_ids, names, election_date, polls, outcome_sha
         outcome_shares=outcome_shares,
         outcome_tail=tail,
         leaders=_leaders(polls, len(candidate_ids)),
+        exits=tuple(exits),
     )
 
 
@@ -316,8 +329,44 @@ def certified_candidates(candidates_json: Path) -> list[tuple[str, str, str]]:
     return out
 
 
-def _select_current_readings(polling_dir: Path, columns: list[str], require_full_field: bool):
-    """(sample, reading, candidate shares by slug, present indices, base) per modelled sample.
+# Polling's 2026 reading classification, shipped in every Polling release beside the
+# poll tables; an explicit head-to-head is an ``alternative_ballot`` reading.
+READING_CLASSIFICATION = "reading_classification.csv"
+ALTERNATIVE_BALLOT = "alternative_ballot"
+
+
+def _current_field(candidates_json: Path, extra_named: tuple[tuple[str, str], ...]):
+    """(poll column slugs, display names, canonical ids) of the named 2026 candidates."""
+    display = {_normalize(name): cid for cid, name, _ in certified_candidates(candidates_json)}
+    field = (*CURRENT_FIELD, *extra_named)
+    columns = [column for column, _ in field]
+    names = tuple(name for _, name in field)
+    ids = tuple(display.get(_normalize(name), column) for column, name in field)
+    return columns, names, ids
+
+
+def _suspended(candidates_json: Path, ids: tuple[str, ...], cutoff: date) -> dict[int, date]:
+    """Named candidates whose Suspended Campaign started on or before ``cutoff``.
+
+    The dates come from the Results candidates feed, which must be at schema 6.
+    """
+    starts = load_campaign_suspensions(candidates_json)
+    suspended = {
+        i: starts[cid] for i, cid in enumerate(ids) if cid in starts and starts[cid] <= cutoff
+    }
+    base = range(len(CURRENT_FIELD))
+    if len([i for i in base if i not in suspended]) < 2:
+        raise ValueError("fewer than two named candidates remain after the Suspended Campaigns")
+    return suspended
+
+
+def _select_current_readings(
+    polling_dir: Path,
+    columns: list[str],
+    require_full_field: bool,
+    suspended: dict[int, date],
+):
+    """(sample, reading, shares by slug, present indices, base, departed) per modelled sample.
 
     A reading is eligible when it is a general vote-intention reading of the mayoral
     contest whose published candidates cover the certified three (or any two of them
@@ -325,8 +374,20 @@ def _select_current_readings(polling_dir: Path, columns: list[str], require_full
     denominator wins; ties go to the reading naming more candidates, then to id.
     The base is the chosen reading's own (weighted, reported, unweighted), never the
     recruited sample size unless the reading reports no base at all.
+
+    A Post-Suspension Reading is one whose fieldwork overlaps or follows the start of a
+    Suspended Campaign in ``suspended`` (its fieldwork ends on or after that date). It
+    is a composition over the remaining named candidates, who must all be present
+    when the field is required; any share it reports for a ``departed`` candidate is
+    set aside. In a Post-Suspension sample the full field beats a head-to-head: an
+    ``alternative_ballot`` reading counts only when it is the sample's only general
+    vote-intention reading, whatever its denominator (backend issue 31).
     """
     polling_dir = Path(polling_dir)
+    classes = {
+        r["poll_reading_id"]: r["measurement_class"]
+        for r in _read_csv(polling_dir / READING_CLASSIFICATION)
+    }
     samples = [
         s
         for s in _read_csv(polling_dir / "poll_samples.csv")
@@ -348,16 +409,31 @@ def _select_current_readings(polling_dir: Path, columns: list[str], require_full
         key = row.get("source_candidate_id") or row.get("candidate_id") or ""
         if key:
             shares_by_reading[row["poll_reading_id"]][key] = float(row["share"])
+
+    def measurement(reading: dict) -> str:
+        rid = reading["poll_reading_id"]
+        if rid not in classes:
+            raise ValueError(f"2026 reading {rid} has no reading classification")
+        return classes[rid]
+
     base_count = len(CURRENT_FIELD)
     selected = []
     for s in samples:
+        end = date.fromisoformat(s["fieldwork_end"])
+        departed = tuple(sorted(i for i, start in suspended.items() if start <= end))
+        remaining = base_count - len([i for i in departed if i < base_count])
+        need = remaining if require_full_field else 2
+        options = readings[s["poll_sample_id"]]
+        if departed:
+            full_field = [r for r in options if measurement(r) != ALTERNATIVE_BALLOT]
+            options = full_field or options
         candidates = []
-        for r in readings[s["poll_sample_id"]]:
+        for r in options:
             shares = shares_by_reading[r["poll_reading_id"]]
-            present = [i for i, column in enumerate(columns) if column in shares]
-            if len([i for i in present if i < base_count]) < (
-                base_count if require_full_field else 2
-            ):
+            present = [
+                i for i, column in enumerate(columns) if column in shares and i not in departed
+            ]
+            if len([i for i in present if i < base_count]) < need:
                 continue
             rank = DENOMINATOR_RANK.get(r["denominator_semantics"], 9)
             candidates.append((rank, -len(present), r["poll_reading_id"], r, shares, present))
@@ -369,21 +445,28 @@ def _select_current_readings(polling_dir: Path, columns: list[str], require_full
         )
         if base is None:
             continue
-        selected.append((s, r, shares, present, base))
+        selected.append((s, r, shares, present, base, departed))
     return selected
 
 
 def current_reading_selection(
     polling_dir: Path,
+    candidates_json: Path,
     *,
+    cutoff: date,
     require_full_field: bool = True,
     extra_named: tuple[tuple[str, str], ...] = (),
 ) -> list[dict]:
-    """The reading chosen for each modelled 2026 sample, for the feed's model record."""
-    columns = [column for column, _ in (*CURRENT_FIELD, *extra_named)]
+    """The reading chosen for each modelled 2026 sample, for the feed's model record.
+
+    ``post_suspension`` marks a Post-Suspension Reading; ``set_aside`` lists the
+    suspended candidates whose reported share it carried but the model did not use.
+    """
+    columns, _, ids = _current_field(candidates_json, extra_named)
+    suspended = _suspended(candidates_json, ids, cutoff)
     rows = []
-    for s, r, shares, present, base in _select_current_readings(
-        polling_dir, columns, require_full_field
+    for s, r, shares, present, base, departed in _select_current_readings(
+        polling_dir, columns, require_full_field, suspended
     ):
         rows.append(
             {
@@ -394,6 +477,8 @@ def current_reading_selection(
                 "denominator_semantics": r["denominator_semantics"],
                 "base": base,
                 "named_share": sum(shares[columns[i]] for i in present),
+                "post_suspension": bool(departed),
+                "set_aside": [ids[i] for i in departed if columns[i] in shares],
             }
         )
     rows.sort(key=lambda row: (row["fieldwork_end"], row["poll_sample_id"]))
@@ -405,6 +490,7 @@ def current_campaign(
     candidates_json: Path,
     *,
     election_date: date,
+    cutoff: date,
     require_full_field: bool = True,
     extra_named: tuple[tuple[str, str], ...] = (),
 ) -> CampaignPolls:
@@ -416,16 +502,17 @@ def current_campaign(
     name) pairs as further named candidates; a poll offers them only when it
     reported them, otherwise its composition is conditional on the names it did
     report. The certified-field rule applies to the base three only.
-    """
-    display = {_normalize(name): cid for cid, name, _ in certified_candidates(candidates_json)}
-    field = (*CURRENT_FIELD, *extra_named)
-    columns = [column for column, _ in field]
-    names = tuple(name for _, name in field)
-    ids = tuple(display.get(_normalize(name), column) for column, name in field)
 
+    Suspended Campaigns that started on or before ``cutoff`` (Results feed, schema 6)
+    become the campaign's ``exits`` (C2, ``exits.py``), each with the ten-case
+    kept-fraction prior; Post-Suspension Readings enter over the remaining named
+    candidates (see ``_select_current_readings``).
+    """
+    columns, names, ids = _current_field(candidates_json, extra_named)
+    suspended = _suspended(candidates_json, ids, cutoff)
     polls = []
-    for s, r, shares, present, base in _select_current_readings(
-        polling_dir, columns, require_full_field
+    for s, r, shares, present, base, _ in _select_current_readings(
+        polling_dir, columns, require_full_field, suspended
     ):
         raw = [shares[columns[i]] for i in present]
         total = sum(raw)
@@ -440,7 +527,14 @@ def current_campaign(
                 shares=tuple(x / total for x in raw),
             )
         )
-    return _campaign_polls(CURRENT_KEY, ids, names, election_date, polls, None, None)
+    exits = ()
+    if suspended:
+        mu, sigma = kept_fraction_prior(load_cases())
+        exits = tuple(
+            Exit(i, start, (election_date - start).days, mu, sigma)
+            for i, start in sorted(suspended.items(), key=lambda item: (item[1], item[0]))
+        )
+    return _campaign_polls(CURRENT_KEY, ids, names, election_date, polls, None, None, exits)
 
 
 def _certified_field_rows(polls_csv: Path, columns: list[str], require_full_field: bool):

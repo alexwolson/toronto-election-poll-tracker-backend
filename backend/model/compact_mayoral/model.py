@@ -22,6 +22,12 @@ ballot share outside the named reference. Shared scales are drawn from
   candidate (the ADR 0054 specification, kept as a sensitivity refit).
 * ``leaders``: ``tau_lead`` for the two candidates leading the latest polls and
   ``tau_rest`` for everyone else (a stress test; its scale is fragile).
+
+A campaign with ``exits`` (the forecast campaign once a Suspended Campaign has started;
+C2, ``exits.py``) gains a latent date at each exit; its readings, today's estimate and
+election day read the latent support after the exit transform (``exit_support``). Under
+``isotropic`` and ``leaders`` the election-day shock is centred on that transformed
+support. A campaign without exits is modelled exactly as before.
 """
 
 from __future__ import annotations
@@ -36,6 +42,7 @@ import numpyro
 import numpyro.distributions as dist
 from numpyro.distributions import constraints
 
+from .exits import ALLOCATION_CONCENTRATION, Exit, exit_transform
 from .hyperpriors import prior_distribution
 from .readings import CampaignPolls
 
@@ -99,13 +106,20 @@ class Prepared:
     outcome_contrasts: np.ndarray | None  # (K-1,) Helmert contrasts of log outcome shares
     outcome_shares: np.ndarray | None  # (K,) named result, floored and renormalized
     outcome_logit_tail: float | None
+    dates: np.ndarray  # (T,) days before election day of each latent date
+    exits: tuple[Exit, ...]  # in date order
 
 
 def prepare(campaign: CampaignPolls) -> Prepared:
+    """Latent dates are the poll dates, election day and each exit day (no reading)."""
     count = len(campaign.candidates)
     if count < 2:
         raise ValueError(f"{campaign.key}: need at least two reference candidates")
-    dates = sorted({p.days_before_election for p in campaign.polls} | {0}, reverse=True)
+    exits = tuple(sorted(campaign.exits, key=lambda e: (-e.day, e.candidate)))
+    dates = sorted(
+        {p.days_before_election for p in campaign.polls} | {0} | {e.day for e in exits},
+        reverse=True,
+    )
     position = {day: i for i, day in enumerate(dates)}
     firms = sorted({p.firm for p in campaign.polls})
     firm_index = {firm: i for i, firm in enumerate(firms)}
@@ -152,7 +166,31 @@ def prepare(campaign: CampaignPolls) -> Prepared:
         outcome_contrasts=outcome,
         outcome_shares=outcome_shares,
         outcome_logit_tail=tail,
+        dates=np.asarray(dates, dtype=int),
+        exits=exits,
     )
+
+
+def exit_support(prefix: str, P: Prepared, contrasts):
+    """Latent named support with each exit applied on and after its date (C2)."""
+    s = jax.nn.softmax(contrasts @ jnp.asarray(P.basis).T, axis=-1)
+    departed: list[int] = []
+    for j, e in enumerate(P.exits):
+        node = int(np.flatnonzero(P.dates == e.day)[0])
+        post = P.dates <= e.day
+        remaining = [i for i in range(P.count) if i != e.candidate and i not in departed]
+        rem = jnp.asarray(remaining)
+        centre = s[node, rem] / s[node, rem].sum()
+        allocation = numpyro.sample(
+            prefix + f"allocation_{j}", dist.Dirichlet(ALLOCATION_CONCENTRATION * centre)
+        )
+        log_keep = numpyro.sample(prefix + f"log_keep_{j}", dist.Normal(e.keep_mu, e.keep_sigma))
+        keep = numpyro.deterministic(
+            prefix + f"keep_fraction_{j}", jnp.minimum(jnp.exp(log_keep), 1.0)
+        )
+        s = exit_transform(s, post, e.candidate, rem, keep, allocation)
+        departed.append(e.candidate)
+    return numpyro.deterministic(prefix + "post_exit_support", s)
 
 
 def build_model(
@@ -238,7 +276,14 @@ def build_model(
                 firm_scale = firm_scale * jnp.sqrt(firm_mixing)[:, None]
             firm = numpyro.deterministic(prefix + "firm", firm_z * firm_scale)
 
-            logits = (contrasts[P.poll_time] + firm[P.poll_firm]) @ basis.T
+            if P.exits:
+                latent = exit_support(prefix, P, contrasts)
+                logits = (
+                    jnp.log(jnp.clip(latent, 1e-12, None))[P.poll_time]
+                    + (firm @ basis.T)[P.poll_firm]
+                )
+            else:
+                logits = (contrasts[P.poll_time] + firm[P.poll_firm]) @ basis.T
             mask = jnp.asarray(P.mask)
             probabilities = jax.nn.softmax(jnp.where(mask, logits, -jnp.inf), axis=1)
             phi = 1.0 / (kappa / jnp.asarray(P.n_eff) + tau_reference**2 / 4.0)
@@ -249,7 +294,10 @@ def build_model(
             )
 
             numpyro.deterministic(
-                prefix + "current", jax.nn.softmax(contrasts[P.current_time] @ basis.T)
+                prefix + "current",
+                latent[P.current_time]
+                if P.exits
+                else jax.nn.softmax(contrasts[P.current_time] @ basis.T),
             )
 
             # Election-day discrepancy: per-candidate log-share shocks with a shared
@@ -257,8 +305,11 @@ def build_model(
             # a per-contrast variance of tau^2 / 2.
             # Latent named support at election day, before the discrepancy is applied.
             support = numpyro.deterministic(
-                prefix + "election_support", jax.nn.softmax(contrasts[-1] @ basis.T)
+                prefix + "election_support",
+                latent[-1] if P.exits else jax.nn.softmax(contrasts[-1] @ basis.T),
             )
+            # Centre of the log-odds election-day shock (isotropic, leaders).
+            centre = jnp.log(jnp.clip(support, 1e-12, None)) @ basis if P.exits else contrasts[-1]
             mixing = numpyro.sample(prefix + "election_mixing", dist.Gamma(T_DF / 2.0, T_DF / 2.0))
             if phi_election is not None:
                 # Dirichlet election day (ADR 0055): the result is one more composition
@@ -288,12 +339,12 @@ def build_model(
                     )
                     election = numpyro.deterministic(
                         prefix + "election",
-                        contrasts[-1] + jnp.linalg.cholesky(covariance) @ election_z,
+                        centre + jnp.linalg.cholesky(covariance) @ election_z,
                     )
                 else:
                     election = numpyro.sample(
                         prefix + "election",
-                        dist.MultivariateNormal(contrasts[-1], covariance_matrix=covariance),
+                        dist.MultivariateNormal(centre, covariance_matrix=covariance),
                         obs=jnp.asarray(P.outcome_contrasts),
                     )
                 named = numpyro.deterministic(

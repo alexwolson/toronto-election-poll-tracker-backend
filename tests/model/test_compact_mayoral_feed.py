@@ -1,5 +1,7 @@
-"""Schema-4 mayoral forecast feed assembled from the compact model's joint draws."""
+"""Schema-5 mayoral forecast feed assembled from the compact model's joint draws."""
 
+import csv
+import dataclasses
 import json
 import shutil
 from datetime import date, datetime
@@ -9,6 +11,8 @@ from zoneinfo import ZoneInfo
 import numpy as np
 import pytest
 
+from backend.model.compact_mayoral.exits import Exit, kept_fraction_prior, load_cases
+from backend.model.compact_mayoral.model import helmert_basis
 from backend.model.compact_mayoral.readings import CampaignPolls, Poll
 from backend.model.compact_mayoral.sampling import FitSettings
 from backend.model.compact_mayoral_feed import (
@@ -17,7 +21,9 @@ from backend.model.compact_mayoral_feed import (
     assemble_forecast_feed,
     build_compact_mayoral_forecast_feed,
     history_cutoffs,
+    kept_fraction_cases_record,
     margin_bins,
+    suspended_campaigns_record,
 )
 
 CHOW = "per_chow0000000000000000000000000"
@@ -86,7 +92,7 @@ def test_margin_bins_partition_the_signed_margin_and_sum_to_one() -> None:
     assert bins[-1]["probability"] == pytest.approx(2 / 7)  # 99.9 and the closed upper edge
 
 
-def test_assembled_feed_is_schema_4_and_internally_coherent() -> None:
+def test_assembled_feed_is_schema_5_and_internally_coherent() -> None:
     draws = _draws()
     feed = assemble_forecast_feed(
         campaign=_campaign(),
@@ -113,7 +119,7 @@ def test_assembled_feed_is_schema_4_and_internally_coherent() -> None:
         ],
         residual_candidate_count=50,
     )
-    assert feed["schema_version"] == MAYORAL_FORECAST_FEED_SCHEMA_VERSION == 4
+    assert feed["schema_version"] == MAYORAL_FORECAST_FEED_SCHEMA_VERSION == 5
     assert feed["publication_policy"] == PUBLICATION_POLICY == "margin-first-joint-draws-v1"
     assert feed["election_cycle_id"] == "toronto_2026" and feed["election_date"] == "2026-10-26"
     assert feed["analysis_cutoff"] == CUTOFF.isoformat()
@@ -149,6 +155,13 @@ def test_assembled_feed_is_schema_4_and_internally_coherent() -> None:
     assert pool["win_probability"] == 0.0 and pool["candidate_count"] == 50
     assert pool["named_in_polls"][0]["display_name"] == "X"
     assert pool["median"] == pytest.approx(float(np.median(draws["toronto-2026/tail"])), abs=1e-6)
+    # With no Suspended Campaign, "Other candidates" is exactly the residual pool.
+    other = e["other_candidates"]
+    assert other["label"] == "Other candidates" and other["includes"] == []
+    assert {k: other[k] for k in ("median", "lower", "upper")} == {
+        k: pool[k] for k in ("median", "lower", "upper")
+    }
+    assert "win_probability" not in other
     m = e["pairwise_margin"]
     assert m["leader_candidate_id"] == CHOW and m["challenger_candidate_id"] == BRAD
     assert m["unit"] == "vote_share_points" and m["bin_width"] == 5 and m["range"] == [-100, 100]
@@ -255,30 +268,33 @@ def test_uncertainty_block_isolates_each_source_and_ends_at_the_published_margin
         assert combined[key] == margin[key]
 
 
-def _fixture_root(tmp_path: Path) -> Path:
-    results = tmp_path / "data/upstream/results"
-    results.mkdir(parents=True)
-    (results / "mayoral_candidates.json").write_text(
+def _write_candidates(root: Path, alexander_suspended_on: str | None = None) -> None:
+    """The Results candidates feed at schema 6 (``campaign_suspended_on`` on every row)."""
+    rows = [
+        (CHOW, "Olivia Chow", None),
+        (BRAD, "Brad Bradford", None),
+        (ALEX, "Chris Alexander", alexander_suspended_on),
+        ("per_mcvie000000000000000000000000", "Sarah McVie", None),
+        ("per_x0000000000000000000000000000", "Someone Else", None),
+    ]
+    (root / "data/upstream/results/mayoral_candidates.json").write_text(
         json.dumps(
             {
-                "schema_version": 5,
+                "schema_version": 6,
                 "ballot_certified": True,
                 "candidates": [
-                    {"person_id": CHOW, "display_name": "Olivia Chow"},
-                    {"person_id": BRAD, "display_name": "Brad Bradford"},
-                    {"person_id": ALEX, "display_name": "Chris Alexander"},
-                    {
-                        "person_id": "per_mcvie000000000000000000000000",
-                        "display_name": "Sarah McVie",
-                    },
-                    {
-                        "person_id": "per_x0000000000000000000000000000",
-                        "display_name": "Someone Else",
-                    },
+                    {"person_id": pid, "display_name": name, "campaign_suspended_on": day}
+                    for pid, name, day in rows
                 ],
             }
         )
     )
+
+
+def _fixture_root(tmp_path: Path) -> Path:
+    results = tmp_path / "data/upstream/results"
+    results.mkdir(parents=True)
+    _write_candidates(tmp_path)
     polls = tmp_path / "polls"
     # The release carries the historical corpus beside the 2026 tables (ADR 0060).
     shutil.copytree(Path(__file__).resolve().parents[1] / "fixtures" / "historical_polling", polls)
@@ -325,7 +341,49 @@ def _fixture_root(tmp_path: Path) -> Path:
             kind = "other" if slug == "other" else "candidate"
             rows.append(f"{rid},{kind},{slug if kind == 'candidate' else ''},,{share}")
     (polls / "poll_responses.csv").write_text("\n".join(rows) + "\n")
+    _classify(polls)
     return tmp_path
+
+
+def _classify(polls: Path, alternative: tuple[str, ...] = ()) -> None:
+    """Polling's 2026 reading classification: every reading classified once."""
+    with (polls / "poll_readings.csv").open(encoding="utf-8") as handle:
+        ids = [r["poll_reading_id"] for r in csv.DictReader(handle)]
+    (polls / "reading_classification.csv").write_text(
+        "poll_reading_id,scope,measurement_class\n"
+        + "".join(
+            f"{rid},citywide_mayoral,"
+            f"{'alternative_ballot' if rid in alternative else 'campaign_vote_intention'}\n"
+            for rid in ids
+        )
+    )
+
+
+def _with_suspended_campaign(root: Path) -> Path:
+    """Alexander's Suspended Campaign (Oct 6) and a Post-Suspension sample, published
+    Oct 7, whose all-respondents full field (Chow and Bradford only) sits beside a
+    decided-and-leaning head-to-head."""
+    _write_candidates(root, alexander_suspended_on="2026-10-06")
+    polls = root / "polls"
+    with (polls / "poll_samples.csv").open("a") as handle:
+        handle.write(
+            "forum-2026-10-06,toronto-2026,Forum Research,citywide,2026-10-06,2026-10-07,1604,extracted\n"
+        )
+    with (polls / "poll_readings.csv").open("a") as handle:
+        handle.write(
+            "forum_1006_all,forum-2026-10-06,mayoral,general_vote_intention,all_respondents,1604,,\n"
+            "forum_1006_h2h,forum-2026-10-06,mayoral,general_vote_intention,decided_plus_leaners,1500,,\n"
+        )
+    with (polls / "poll_responses.csv").open("a") as handle:
+        handle.write(
+            "forum_1006_all,candidate,chow,,0.40\n"
+            "forum_1006_all,candidate,bradford,,0.37\n"
+            "forum_1006_all,other,,,0.10\n"
+            "forum_1006_h2h,candidate,chow,,0.52\n"
+            "forum_1006_h2h,candidate,bradford,,0.48\n"
+        )
+    _classify(polls, alternative=("forum_1006_h2h",))
+    return root
 
 
 def test_end_to_end_feed_from_the_joint_fit_on_fixture_inputs(tmp_path: Path) -> None:
@@ -340,7 +398,7 @@ def test_end_to_end_feed_from_the_joint_fit_on_fixture_inputs(tmp_path: Path) ->
         sensitivity_settings=fast,
         qualification=None,
     )
-    assert feed["schema_version"] == 4
+    assert feed["schema_version"] == 5
     assert feed["final_field_samples"] == [
         "pallas-2026-08-21",
         "liaison-2026-09-05",
@@ -359,9 +417,14 @@ def test_end_to_end_feed_from_the_joint_fit_on_fixture_inputs(tmp_path: Path) ->
     assert feed["model"]["specification"] == {
         "discrepancy": "dirichlet",
         "innovations": "gaussian",
-        "polls": "certified_field_only",
+        "polls": "certified_field_with_post_suspension",
         "hyperpriors": "population_joint_refit",
+        "exits": "learned_allocation",
     }
+    assert feed["model"]["suspended_campaigns"] == []
+    assert feed["election_day"]["other_candidates"]["includes"] == []
+    assert len(feed["model"]["kept_fraction_cases"]) == 10
+    assert all(r["post_suspension"] is False for r in feed["model"]["current_readings"])
     # Forecast history: one point per publication date, each a refit on the polls
     # published by then; the last point is the main fit itself.
     history = feed["history"]
@@ -532,3 +595,200 @@ def test_history_cache_location_follows_the_environment(monkeypatch, tmp_path: P
         history_cache_dir_from_env()
         == tmp_path / "xdg" / "toronto-election-backend" / "compact-history"
     )
+
+
+def _exited_campaign() -> CampaignPolls:
+    mu, sigma = kept_fraction_prior(load_cases())
+    return dataclasses.replace(_campaign(), exits=(Exit(2, date(2026, 10, 6), 20, mu, sigma),))
+
+
+def test_other_candidates_adds_each_suspended_candidate_to_the_pool_draw_by_draw() -> None:
+    draws = _draws()
+    feed = assemble_forecast_feed(
+        campaign=_exited_campaign(),
+        draws=draws,
+        live_cycle=LIVE,
+        analysis_cutoff=CUTOFF,
+        model_record={"name": "compact_mayoral", "qualification_passed": True},
+        sensitivity=[],
+        residual_named=[],
+        residual_candidate_count=50,
+    )
+    e = feed["election_day"]
+    pool, other = e["residual_pool"], e["other_candidates"]
+    summed = draws["toronto-2026/tail"] + draws["toronto-2026/full_ballot"][:, 2]
+    assert other["label"] == "Other candidates"
+    assert other["median"] == pytest.approx(float(np.median(summed)), abs=1e-6)
+    assert other["lower"] == pytest.approx(float(np.quantile(summed, 0.1)), abs=1e-6)
+    assert other["upper"] == pytest.approx(float(np.quantile(summed, 0.9)), abs=1e-6)
+    for bound in ("lower", "median", "upper"):
+        assert other[bound] >= pool[bound]
+    assert 0 <= other["lower"] <= other["median"] <= other["upper"] <= 1
+    assert other["includes"] == [
+        {
+            "candidate_id": ALEX,
+            "display_name": "Chris Alexander",
+            "campaign_suspended_on": "2026-10-06",
+        }
+    ]
+    # He stays named: his own row, his win card and the pool are unchanged in shape.
+    assert [c["candidate_id"] for c in e["candidates"]] == [CHOW, BRAD, ALEX]
+    assert set(feed["candidate_win"]) == {CHOW, BRAD, ALEX}
+    assert "includes" not in pool and pool["label"] == "Other candidates"
+
+
+def test_suspended_campaign_record_reports_the_kept_fraction_and_the_allocation() -> None:
+    campaign = _exited_campaign()
+    rng = np.random.default_rng(0)
+    n, dates = 400, 4  # latent dates 60, 50, 40 (polls), 20 (exit) and 0
+    contrasts = rng.normal(0, 0.3, size=(n, dates + 1, 2))
+    allocation = rng.dirichlet([2.0, 2.0], size=n)
+    keep = np.exp(rng.normal(-1.8, 0.7, size=n)).clip(max=1.0)
+    draws = {
+        "toronto-2026/contrasts": contrasts,
+        "toronto-2026/allocation_0": allocation,
+        "toronto-2026/keep_fraction_0": keep,
+    }
+    (record,) = suspended_campaigns_record(campaign, draws)
+    assert record["candidate_id"] == ALEX and record["campaign_suspended_on"] == "2026-10-06"
+    mu, sigma = kept_fraction_prior(load_cases())
+    k = record["kept_fraction"]
+    assert k["distribution"] == "log_normal"
+    assert k["log_mean"] == pytest.approx(mu, abs=1e-6)
+    assert k["log_sd"] == pytest.approx(sigma, abs=1e-6)
+    assert k["median"] == pytest.approx(float(np.median(keep)), abs=1e-6)
+    assert k["lower"] == pytest.approx(float(np.quantile(keep, 0.1)), abs=1e-6)
+    assert k["upper"] == pytest.approx(float(np.quantile(keep, 0.9)), abs=1e-6)
+    a = record["allocation"]
+    assert a["prior_concentration"] == 4
+    assert [row["candidate_id"] for row in a["by_candidate"]] == [CHOW, BRAD]
+    # The prior mean is the proportional split of the latent support at the exit node.
+    s = np.exp(contrasts[:, 3] @ helmert_basis(3).T)
+    s = s / s.sum(axis=1, keepdims=True)
+    split = s[:, :2] / s[:, :2].sum(axis=1, keepdims=True)
+    for i, row in enumerate(a["by_candidate"]):
+        assert row["prior_mean"] == pytest.approx(float(split[:, i].mean()), abs=1e-6)
+        assert row["median"] == pytest.approx(float(np.median(allocation[:, i])), abs=1e-6)
+    assert sum(r["prior_mean"] for r in a["by_candidate"]) == pytest.approx(1.0, abs=1e-5)
+    assert suspended_campaigns_record(_campaign(), {}) == []
+
+
+def test_kept_fraction_cases_list_the_ten_cases_once() -> None:
+    cases = kept_fraction_cases_record(load_cases())
+    assert len(cases) == 10
+    assert set(cases[0]) == {
+        "case_id",
+        "city",
+        "election_cycle_id",
+        "candidate_name",
+        "kept_fraction",
+        "used",
+    }
+    assert sum(c["used"] for c in cases) == 7
+    assert all((c["kept_fraction"] is None) == (not c["used"]) for c in cases)
+    thomson = next(c for c in cases if c["case_id"] == "toronto-2010-thomson")
+    assert thomson["kept_fraction"] == pytest.approx(0.2313 / 7, abs=1e-6)
+
+
+def test_end_to_end_feed_after_a_suspended_campaign(tmp_path: Path) -> None:
+    fast = FitSettings(warmup=150, draws=150, chains=1, seed=5, target_accept=0.9)
+    common = {
+        "settings": fast,
+        "sensitivity_settings": fast,
+        "qualification": None,
+        "fit_workers": 1,
+    }
+    before = _fixture_root(tmp_path / "before")
+    unchanged = build_compact_mayoral_forecast_feed(
+        before, LIVE, polls_dir=before / "polls", analysis_cutoff=CUTOFF, **common
+    )
+    root = _with_suspended_campaign(_fixture_root(tmp_path / "after"))
+    cutoff = datetime(2026, 10, 7, 12, 0, tzinfo=ZoneInfo("America/Toronto"))
+    feed = build_compact_mayoral_forecast_feed(
+        root, LIVE, polls_dir=root / "polls", analysis_cutoff=cutoff, **common
+    )
+    assert feed["schema_version"] == 5
+    # The Post-Suspension sample counts as a Final Ballot sample.
+    assert feed["final_field_samples"][-1] == "forum-2026-10-06"
+    readings = {r["poll_sample_id"]: r for r in feed["model"]["current_readings"]}
+    forum = readings["forum-2026-10-06"]
+    # The full field beats the head-to-head despite its worse denominator.
+    assert forum["poll_reading_id"] == "forum_1006_all"
+    assert forum["post_suspension"] is True and forum["set_aside"] == []
+    assert readings["mainstreet-2026-09-14"]["post_suspension"] is False
+    other = feed["election_day"]["other_candidates"]
+    pool = feed["election_day"]["residual_pool"]
+    assert [i["candidate_id"] for i in other["includes"]] == [ALEX]
+    for bound in ("lower", "median", "upper"):
+        assert other[bound] >= pool[bound]
+    suspended = feed["model"]["suspended_campaigns"]
+    assert [(s["candidate_id"], s["campaign_suspended_on"]) for s in suspended] == [
+        (i["candidate_id"], i["campaign_suspended_on"]) for i in other["includes"]
+    ]
+    assert [r["candidate_id"] for r in suspended[0]["allocation"]["by_candidate"]] == [CHOW, BRAD]
+    # Alexander stays named.
+    assert set(feed["candidate_win"]) == {CHOW, BRAD, ALEX}
+    assert feed["publication_policy"] == "margin-first-joint-draws-v1"
+    # History: one point per publication date; the points before the exit are the
+    # same fits as before the Suspended Campaign, draw for draw.
+    history = feed["history"]
+    assert [h["date"] for h in history] == ["2026-08-25", "2026-09-09", "2026-09-18", "2026-10-07"]
+    assert history[:3] == unchanged["history"]
+
+
+def test_a_later_exits_prior_centre_follows_the_earlier_exit() -> None:
+    # Two exits in date order: the second exit's proportional split is taken after the
+    # first has moved its freed share (the model's order; exits.exit_transform).
+    from backend.model.compact_mayoral.exits import exit_transform
+
+    polls = tuple(
+        Poll(f"p{i}", f"p{i}", "A", 60 - 10 * i, 900.0, (0, 1, 2, 3), (0.4, 0.3, 0.2, 0.1))
+        for i in range(3)
+    )
+    campaign = CampaignPolls(
+        "toronto-2026",
+        ("a", "b", "c", "d"),
+        ("A", "B", "C", "D"),
+        date(2026, 10, 26),
+        polls,
+        None,
+        None,
+        (0, 1),
+        (
+            Exit(3, date(2026, 10, 1), 25, -1.8, 0.7),
+            Exit(2, date(2026, 10, 11), 15, -1.8, 0.7),
+        ),
+    )
+    rng = np.random.default_rng(1)
+    n = 50  # latent dates 60, 50, 40, 25, 15, 0
+    contrasts = rng.normal(0, 0.3, size=(n, 6, 3))
+    draws = {
+        "toronto-2026/contrasts": contrasts,
+        "toronto-2026/allocation_0": rng.dirichlet([2.0, 2.0, 2.0], size=n),
+        "toronto-2026/keep_fraction_0": rng.uniform(0.05, 0.4, size=n),
+        "toronto-2026/allocation_1": rng.dirichlet([2.0, 2.0], size=n),
+        "toronto-2026/keep_fraction_1": rng.uniform(0.05, 0.4, size=n),
+    }
+    first, second = suspended_campaigns_record(campaign, draws)
+    assert [r["candidate_id"] for r in first["allocation"]["by_candidate"]] == ["a", "b", "c"]
+    assert [r["candidate_id"] for r in second["allocation"]["by_candidate"]] == ["a", "b"]
+    basis = helmert_basis(4)
+    expected = []
+    for d in range(n):
+        s = np.exp(contrasts[d] @ basis.T)
+        s = s / s.sum(axis=1, keepdims=True)
+        post = np.array([60, 50, 40, 25, 15, 0]) <= 25
+        s = np.asarray(
+            exit_transform(
+                s,
+                post,
+                3,
+                [0, 1, 2],
+                draws["toronto-2026/keep_fraction_0"][d],
+                draws["toronto-2026/allocation_0"][d],
+            )
+        )
+        expected.append(s[4, :2] / s[4, :2].sum())
+    expected = np.mean(expected, axis=0)
+    for row, value in zip(second["allocation"]["by_candidate"], expected, strict=True):
+        assert row["prior_mean"] == pytest.approx(float(value), abs=1e-6)

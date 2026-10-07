@@ -1,4 +1,4 @@
-"""Build the schema-4 mayoral forecast feed from the compact joint model (ADR 0054).
+"""Build the schema-5 mayoral forecast feed from the compact joint model (ADR 0054).
 
 Publication policy ``margin-first-joint-draws-v1``: every public number comes
 from one set of joint election-day draws. The feed carries full-ballot
@@ -9,6 +9,14 @@ record, two prespecified sensitivity refits as audit metadata, and where the
 uncertainty comes from (ADR 0056): the leader margin under each source of doubt on
 its own (poll noise, campaign movement, election-day error) and under all three
 together, which is the published margin.
+
+Schema 5 (backend issues 46 and 49) adds the Suspended Campaign: the forecast models
+each one with C2, a learned exit allocation (``compact_mayoral/exits.py``), in the
+main fit, both sensitivity refits and every history point dated on or after it.
+``election_day.other_candidates`` is the residual pool plus each suspended candidate's
+full-ballot share, summed draw by draw; ``model.suspended_campaigns`` records the kept
+fraction and the allocation; ``model.kept_fraction_cases`` lists the ten-case record.
+The suspended candidates stay named in ``election_day.candidates`` and ``candidate_win``.
 """
 
 from __future__ import annotations
@@ -24,12 +32,15 @@ import subprocess
 import time
 from concurrent.futures import ProcessPoolExecutor
 from dataclasses import dataclass
-from datetime import datetime
+from datetime import date, datetime
 from pathlib import Path
+from zoneinfo import ZoneInfo
 
 import numpy as np
 
+from backend.model.compact_mayoral.exits import ALLOCATION_CONCENTRATION, kept_fraction, load_cases
 from backend.model.compact_mayoral.hyperpriors import population_hyperpriors
+from backend.model.compact_mayoral.model import prepare
 from backend.model.compact_mayoral.qualification import QualificationError, qualify
 from backend.model.compact_mayoral.readings import (
     CURRENT_FIELD,
@@ -50,7 +61,7 @@ from backend.model.compact_mayoral.sampling import (
     fit_joint,
 )
 
-MAYORAL_FORECAST_FEED_SCHEMA_VERSION = 4
+MAYORAL_FORECAST_FEED_SCHEMA_VERSION = 5
 PUBLICATION_POLICY = "margin-first-joint-draws-v1"
 TIER = "Compact joint model — certified field"
 INTERVAL_MASS = 0.8
@@ -62,9 +73,11 @@ CLOSE_THRESHOLD_POINTS = 2.0
 SPECIFICATION = {
     "discrepancy": "dirichlet",
     "innovations": "gaussian",
-    "polls": "certified_field_only",
+    "polls": "certified_field_with_post_suspension",
     "hyperpriors": "population_joint_refit",
+    "exits": "learned_allocation",
 }
+TORONTO = ZoneInfo("America/Toronto")
 REASON = "Joint election-day draws from the compact model over seven past campaigns and 2026."
 
 
@@ -117,6 +130,99 @@ def _card(candidate_id: str, probability: float) -> dict:
         "probability": _r(probability),
         "reason": REASON,
     }
+
+
+def _other_candidates(campaign: CampaignPolls, full: np.ndarray, tail: np.ndarray) -> dict:
+    """The residual pool plus each suspended candidate's full-ballot share, per draw.
+
+    A display grouping, not a candidate: it has no win probability, and with no
+    Suspended Campaign it is exactly the residual pool.
+    """
+    other = tail
+    for e in campaign.exits:
+        other = other + full[:, e.candidate]
+    return {
+        "label": "Other candidates",
+        **_quantiles(other),
+        "includes": [
+            {
+                "candidate_id": campaign.candidates[e.candidate],
+                "display_name": campaign.names[e.candidate],
+                "campaign_suspended_on": e.suspended_on.isoformat(),
+            }
+            for e in campaign.exits
+        ],
+    }
+
+
+def suspended_campaigns_record(campaign: CampaignPolls, draws: dict[str, np.ndarray]) -> list:
+    """Each exit's kept fraction and allocation (posterior draws) for ``model``.
+
+    ``prior_mean`` is the allocation's prior centre, the remaining candidates'
+    proportional split of the latent support at the exit node, averaged over draws.
+    """
+    if not campaign.exits:
+        return []
+    prefix = campaign.key + "/"
+    P = prepare(campaign)
+    support = np.exp(np.asarray(draws[prefix + "contrasts"]) @ P.basis.T)
+    support = support / support.sum(axis=-1, keepdims=True)  # (draws, T, K)
+    records, departed = [], []
+    for j, e in enumerate(P.exits):
+        node = int(np.flatnonzero(P.dates == e.day)[0])
+        s = support[:, node, :].copy()
+        for i, earlier in enumerate(P.exits[:j]):  # earlier exits already apply here
+            kept = np.asarray(draws[prefix + f"keep_fraction_{i}"])
+            rest = [r for r in range(P.count) if r != earlier.candidate and r not in departed[:i]]
+            freed = (1.0 - kept) * s[:, earlier.candidate]
+            s[:, rest] += freed[:, None] * np.asarray(draws[prefix + f"allocation_{i}"])
+            s[:, earlier.candidate] *= kept
+        remaining = [r for r in range(P.count) if r != e.candidate and r not in departed]
+        split = s[:, remaining] / s[:, remaining].sum(axis=1, keepdims=True)
+        allocation = np.asarray(draws[prefix + f"allocation_{j}"])
+        records.append(
+            {
+                "candidate_id": campaign.candidates[e.candidate],
+                "campaign_suspended_on": e.suspended_on.isoformat(),
+                "kept_fraction": {
+                    "distribution": "log_normal",
+                    "log_mean": _r(e.keep_mu),
+                    "log_sd": _r(e.keep_sigma),
+                    **_quantiles(np.asarray(draws[prefix + f"keep_fraction_{j}"])),
+                },
+                "allocation": {
+                    "prior_concentration": int(ALLOCATION_CONCENTRATION),
+                    "by_candidate": [
+                        {
+                            "candidate_id": campaign.candidates[r],
+                            "prior_mean": _r(split[:, k].mean()),
+                            **_quantiles(allocation[:, k]),
+                        }
+                        for k, r in enumerate(remaining)
+                    ],
+                },
+            }
+        )
+        departed.append(e.candidate)
+    return records
+
+
+def kept_fraction_cases_record(rows: list[dict]) -> list[dict]:
+    """The ten-case record behind the kept-fraction prior; ``used`` when it has a ratio."""
+    out = []
+    for row in rows:
+        k = kept_fraction(row)
+        out.append(
+            {
+                "case_id": row["case_id"],
+                "city": row["city"],
+                "election_cycle_id": row["election_cycle_id"],
+                "candidate_name": row["candidate_name"],
+                "kept_fraction": None if k is None else _r(k),
+                "used": k is not None,
+            }
+        )
+    return out
 
 
 def assemble_forecast_feed(
@@ -210,6 +316,7 @@ def assemble_forecast_feed(
                 "named_in_polls": residual_named,
                 "note": "Many minor candidates, modelled as one pool; not one candidate.",
             },
+            "other_candidates": _other_candidates(campaign, full, tail),
             "pairwise_margin": {
                 "leader_candidate_id": campaign.candidates[leader],
                 "challenger_candidate_id": campaign.candidates[challenger],
@@ -292,7 +399,9 @@ def history_cutoffs(campaign: CampaignPolls, published: dict[str, str]) -> list[
 
     A poll moves the forecast only once it is published, so each cutoff holds the
     polls published on or before its date (a late release of early fieldwork
-    lands on its publication date). The last cutoff is the full campaign.
+    lands on its publication date), and the campaign's exits that started on or
+    before it: a cutoff before a Suspended Campaign is the model without an exit.
+    The last cutoff is the full campaign.
     """
     missing = sorted({p.group for p in campaign.polls} - set(published))
     if missing:
@@ -312,6 +421,7 @@ def history_cutoffs(campaign: CampaignPolls, published: dict[str, str]) -> list[
                     polls,
                     None,
                     None,
+                    tuple(e for e in campaign.exits if e.suspended_on <= date.fromisoformat(day)),
                 ),
             )
         )
@@ -492,7 +602,7 @@ def build_compact_mayoral_forecast_feed(
     fit_workers: int | None = None,
     history_cache_dir: Path | None = None,
 ) -> dict:
-    """Fit, qualify (fail closed), run the sensitivity refits, and assemble schema 4.
+    """Fit, qualify (fail closed), run the sensitivity refits, and assemble schema 5.
 
     ``qualification`` is the gate applied to the main fit's diagnostics; pass
     ``None`` only in tests that use short chains. ``fit_workers`` sets how many
@@ -506,8 +616,12 @@ def build_compact_mayoral_forecast_feed(
     polls_csv = polling / "polls.csv"
     candidates_json = root / "data/upstream/results/mayoral_candidates.json"
     election_date = datetime.fromisoformat(live_cycle["election_date"]).date()
+    # Suspended Campaigns that started on or before this date apply (C2).
+    cutoff_date = analysis_cutoff.astimezone(TORONTO).date()
     history = tuple(historical_campaigns(polling).values())
-    current = current_campaign(polling, candidates_json, election_date=election_date)
+    current = current_campaign(
+        polling, candidates_json, election_date=election_date, cutoff=cutoff_date
+    )
     hyperpriors = population_hyperpriors()
 
     published = {
@@ -516,7 +630,11 @@ def build_compact_mayoral_forecast_feed(
     }
     cutoffs = history_cutoffs(current, published)
     widened = current_campaign(
-        polling, candidates_json, election_date=election_date, require_full_field=False
+        polling,
+        candidates_json,
+        election_date=election_date,
+        cutoff=cutoff_date,
+        require_full_field=False,
     )
     qualified = qualification is not None
     earlier = cutoffs[:-1]
@@ -574,8 +692,10 @@ def build_compact_mayoral_forecast_feed(
         "name": "compact_mayoral",
         "version": _git_version(),
         # The reading chosen per 2026 sample and its own base (ADR 0057).
-        "current_readings": current_reading_selection(polling),
+        "current_readings": current_reading_selection(polling, candidates_json, cutoff=cutoff_date),
         "specification": dict(SPECIFICATION),
+        "suspended_campaigns": suspended_campaigns_record(current, result.draws),
+        "kept_fraction_cases": kept_fraction_cases_record(load_cases()),
         "draws": result.settings.draws * result.settings.chains,
         "chains": result.settings.chains,
         "warmup": result.settings.warmup,

@@ -6,6 +6,7 @@ import csv
 import json
 import re
 import unicodedata
+from datetime import date
 from pathlib import Path
 
 _MAJOR_IDS = {
@@ -49,11 +50,11 @@ def load_canonical_mayoral_candidate_ids(path: str | Path) -> tuple[str, ...]:
     with Path(path).open(encoding="utf-8") as handle:
         feed = json.load(handle)
     schema_version = feed.get("schema_version")
-    if schema_version not in {2, 3, 4, 5}:
+    if schema_version not in {2, 3, 4, 5, 6}:
         raise ValueError("unsupported Results mayoral candidate feed schema")
     if not feed.get("ballot_certified"):
         raise ValueError("Results mayoral field is not certified")
-    if schema_version in {3, 4, 5}:
+    if schema_version in {3, 4, 5, 6}:
         coverage = feed.get("coverage", {})
         if (
             coverage.get("policy") != "full_verified_canadian_electoral_career"
@@ -67,3 +68,35 @@ def load_canonical_mayoral_candidate_ids(path: str | Path) -> tuple[str, ...]:
     if len(ids) != len(set(ids)):
         raise ValueError("Results mayoral field contains duplicate canonical candidate IDs")
     return ids
+
+
+SUSPENSION_SCHEMA_VERSION = 6
+_ISO_DATE = re.compile(r"^\d{4}-\d{2}-\d{2}$")
+
+
+def load_campaign_suspensions(path: str | Path) -> dict[str, date]:
+    """Suspended Campaign start dates by canonical candidate id, from the Results feed.
+
+    The forecast needs schema 6, where every candidate carries ``campaign_suspended_on``
+    (an ISO date, or null when the campaign was never suspended); an older feed fails
+    closed rather than silently reading as "nobody suspended".
+    """
+    with Path(path).open(encoding="utf-8") as handle:
+        feed = json.load(handle)
+    if feed.get("schema_version") != SUSPENSION_SCHEMA_VERSION:
+        raise ValueError(
+            "the forecast needs the Results mayoral candidate feed at schema 6 "
+            f"(campaign_suspended_on); got {feed.get('schema_version')!r}"
+        )
+    out: dict[str, date] = {}
+    for candidate in feed["candidates"]:
+        cid = candidate.get("person_id") or candidate["candidacy_id"]
+        if "campaign_suspended_on" not in candidate:
+            raise ValueError(f"Results candidate {cid} lacks campaign_suspended_on")
+        value = candidate["campaign_suspended_on"]
+        if value is None:
+            continue
+        if not isinstance(value, str) or not _ISO_DATE.match(value):
+            raise ValueError(f"Results candidate {cid} has an invalid campaign_suspended_on")
+        out[cid] = date.fromisoformat(value)
+    return out

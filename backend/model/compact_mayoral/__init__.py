@@ -8,9 +8,9 @@ replaces the observation-layer machinery of the research "integrated" model with
 one canonical reading per sample and reproduces that model's 2026 forecast in
 seconds; see ``docs/research/compact-mayoral-model-2026-09-21.md``.
 
-Modules: ``readings`` (inputs), ``model`` (NumPyro model), ``hyperpriors``
-(shared-scale priors), ``sampling`` (NUTS fit and diagnostics), ``qualification``
-(fail-closed gate). The feed builder lives in ``backend.model.compact_mayoral_feed``.
+Modules: ``readings`` (inputs), ``model`` (NumPyro model), ``exits`` (C2, the
+Suspended Campaign's learned exit allocation), ``hyperpriors`` (shared-scale priors),
+``sampling`` (NUTS fit and diagnostics), ``qualification`` (fail-closed gate). The feed builder lives in ``backend.model.compact_mayoral_feed``.
 """
 
 import os
