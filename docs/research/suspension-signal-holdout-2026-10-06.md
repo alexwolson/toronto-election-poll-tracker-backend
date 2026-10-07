@@ -340,3 +340,23 @@ model is known to get that share wrong, because it keeps Alexander near his pre-
   logs have an sd of about 0.18.
 - S2's mean absolute log error is about 0.5, against about 1.8 for the current model, which misses
   every case.
+
+**Target check results (appended after the run; OBSERVED).** S2's log-normal is estimated from the
+other six cases each time.
+
+| Held-out case | Kept fraction | S2 median (80%) | Covered | Log error: S2 / current model |
+|---|---|---|---|---|
+| Toronto 2010, Thomson | 0.033 | 0.207 (0.163–0.262) | no | 1.83 / 3.41 |
+| Toronto 2010, Rossi | 0.154 | 0.160 (0.059–0.435) | yes | 0.04 / 1.87 |
+| Calgary 2010, Hawkesworth | 0.225 | 0.150 (0.056–0.399) | yes | 0.40 / 1.49 |
+| Calgary 2010, Stewart | 0.213 | 0.152 (0.057–0.406) | yes | 0.34 / 1.54 |
+| Calgary 2010, Burrows | 0.234 | 0.149 (0.056–0.395) | yes | 0.45 / 1.45 |
+| London 2014, Caranci | 0.179 | 0.156 (0.057–0.423) | yes | 0.14 / 1.72 |
+| Montreal 2017, Fortier | 0.252 | 0.147 (0.056–0.385) | yes | 0.54 / 1.38 |
+
+- **Coverage:** S2 covers 6 of 7.
+- **Error:** S2's mean absolute log error is 0.53, against 1.84 for the current model's implied
+  retention of 1, which overshoots every case by a factor of 4 to 30.
+- **The miss:** Thomson kept less than any other case. With her included, as in production use,
+  the band widens to sd 0.71 in logs, and Alexander's election-day share is 1.0% (0.2–3.3).
+- **The expectation recorded beforehand held.**
