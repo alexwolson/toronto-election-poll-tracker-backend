@@ -107,6 +107,24 @@ def parse_args(argv=None):
         help="with --suspension-signal joint: leave this suspension-table case_id out of the "
         "kept-fraction prior (repeatable; leave-one-case-out target check, issue 45 follow-up)",
     )
+    parser.add_argument(
+        "--current-rule",
+        choices=("production", "decided", "uniform"),
+        default="production",
+        help="2026 treatment of Alexander's Suspended Campaign (issue 48; uniform_rule.py)",
+    )
+    parser.add_argument(
+        "--drop-current-poll",
+        action="append",
+        default=[],
+        help="2026 polls.csv poll_id to leave out (repeatable; issue 48 arms without Forum Oct 6)",
+    )
+    parser.add_argument(
+        "--fold-held-out-suspensions",
+        action="store_true",
+        help="fold the held-out campaign's candidates suspended on or before the cutoff into "
+        "the pool, in its readings and its target (issue 48 uniform arm)",
+    )
     parser.add_argument("--min-offered", type=int, default=2)
     parser.add_argument(
         "--denominator-rank", choices=("decided_first", "all_first"), default="decided_first"
@@ -174,13 +192,24 @@ def main(argv=None):
             and key not in set(filter(None, args.exclude_campaigns.split(",")))
         )
     if args.campaigns in {"all", "2026"}:
-        campaigns.append(
-            current_campaign(
-                election_date=ELECTION_2026,
-                require_full_field=not args.include_pre_certification,
-                extra_named=EXTRA_2026 if args.name_minor_candidates else (),
+        if args.current_rule == "production" and not args.drop_current_poll:
+            campaigns.append(
+                current_campaign(
+                    election_date=ELECTION_2026,
+                    require_full_field=not args.include_pre_certification,
+                    extra_named=EXTRA_2026 if args.name_minor_candidates else (),
+                )
             )
-        )
+        else:
+            from .uniform_rule import current_campaign_under
+
+            campaigns.append(
+                current_campaign_under(
+                    args.current_rule,
+                    election_date=ELECTION_2026,
+                    drop_polls=tuple(args.drop_current_poll),
+                )
+            )
     for spec in filter(None, args.drop_candidates.split(",")):
         key, _, names = spec.partition(":")
         campaigns = [
@@ -189,7 +218,7 @@ def main(argv=None):
             else c
             for c in campaigns
         ]
-    actual = {}
+    actual, baseline_target = {}, {}
     if args.holdout:
         keys = [c.key for c in campaigns]
         if args.holdout not in keys:
@@ -197,6 +226,13 @@ def main(argv=None):
         held = campaigns[keys.index(args.holdout)]
         if args.horizon_days is not None:
             held = with_horizon(held, args.horizon_days)
+        if args.fold_held_out_suspensions:
+            from .uniform_rule import fold_held_out_suspensions
+
+            cutoff = held.election_date - timedelta(days=args.horizon_days or 0)
+            unfolded = dict(zip(held.names, held.outcome_shares))
+            held, folded_names = fold_held_out_suspensions(held, load_suspensions(), cutoff)
+            baseline_target[held.key] = {"folded": list(folded_names), "named_shares": unfolded}
         actual[held.key] = {
             "names": list(held.names),
             "named_shares": list(held.outcome_shares),
@@ -356,6 +392,11 @@ def main(argv=None):
                     "actual_winner": c.names[int(truth.argmax())],
                     "p_actual_winner": float((winners == int(truth.argmax())).mean()),
                 }
+                if c.key in baseline_target:
+                    unfolded = baseline_target[c.key]["named_shares"]
+                    base_margin = unfolded[c.names[lead]] - unfolded[c.names[second]]
+                    record["holdout"]["folded_suspensions"] = baseline_target[c.key]["folded"]
+                    record["holdout"]["baseline_target_margin"] = float(base_margin)
         return record
 
     summary = {

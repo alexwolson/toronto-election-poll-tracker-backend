@@ -75,6 +75,82 @@ The question being answered: how far Forum's Oct 6 poll pulls each rule, against
 - The verdict goes to [Decide whether every 2026 poll treats Alexander the same way](https://github.com/alexwolson/toronto-election-poll-tracker-backend/issues/49), the grilling ticket this blocks.
 
 
-## Results
+## Results (appended after the runs, 2026-10-07)
 
-(appended after the runs)
+Runs: `research-runs/uniform-rule-2026-10-07/` (workspace root, outside every repo). Code (research,
+uncommitted at run time): `uniform_rule.py`, `test_uniform_rule.py` (7 tests), `uniform_rule_compare.py`, and
+three flags in `fit.py` (`--current-rule`, `--drop-current-poll`, `--fold-held-out-suspensions`). Output:
+`compare.txt`, `uniform_rule_evaluation.json`. Wall time 11:43-12:59 UTC.
+
+**Setup checks (OBSERVED).**
+- Harness: seed 20260922's stored 14-day 2010 baseline fold, re-run on its own pinned inputs, came out
+  bit-identical to the stored run (all 124 draw arrays equal).
+- Inputs: `polls.csv` from Polling branch `poll/forum-2026-10-06` (commit d21d06f = c7c965e plus the Forum
+  ingestion; the historical corpus and election tables are unchanged). It has 30 archive rows; the only
+  difference from the seed-replicate pins is the Forum Oct 6 row. `mayoral_candidates.json` from
+  `results-2026-09-30.2` is byte-identical to the earlier pin.
+- Reading choice: for all 14 production samples, the archive row the research harness reads is the reading
+  production's selection picks. Bases differ (the harness uses recruited sample size, production the
+  weighted base); this is the harness's long-standing simplification and is the same in every arm.
+- The rebuilt held-out baseline is bit-identical to the seed-replicate test's 65 baseline fits: the
+  production rule drops Forum Oct 6, so its inputs did not change.
+
+### Current inputs (report only)
+
+Production settings: 4 chains x (1,000 + 4,000), target acceptance 0.95, seed 20260921, all seven past
+campaigns plus 2026. A0 is P's own fit with S2 applied (identical inputs). Shares are full-ballot medians
+with central 80% intervals; the two-way share is Chow / (Chow + Bradford) on election day.
+
+| Arm | Polls | Win: Chow / Bradford / Alexander | Chow two-way | Chow | Bradford | Alexander | Pool | 2026 weekly movement (x100) | Divergences / worst R-hat |
+|---|---|---|---|---|---|---|---|---|---|
+| P | 14 | 75.5 / 24.3 / 0.2 | 57.0 (43.1-70.0) | 48.5 (34.9-61.0) | 36.6 (24.6-49.3) | 6.6 (1.9-13.6) | 5.6 (2.1-14.0) | 5.10 (2.48-8.73) | 1 / 1.0009 |
+| A0 | 14 | 75.6 / 24.4 / 0.0 | 57.0 (43.1-70.0) | 52.0 (37.9-64.7) | 39.2 (26.4-52.7) | 1.0 (0.2-3.4) | 5.6 (2.1-14.0) | 5.10 (2.48-8.73) | 1 / 1.0009 |
+| A1 | 15 | 70.4 / 29.6 / 0.0 | 55.5 (41.3-68.8) | 50.6 (36.5-63.5) | 40.5 (27.4-54.1) | 1.0 (0.2-3.4) | 5.6 (2.2-13.9) | 5.42 (2.80-8.97) | 0 / 1.0008 |
+| U0 | 14 | 75.4 / 24.6 | 56.9 (43.3-69.7) | 52.7 (38.9-65.5) | 39.9 (27.2-53.1) | (in pool) | 5.6 (2.2-13.8) | 5.09 (2.27-9.38) | 2 / 1.0014 |
+| U1 | 15 | 71.1 / 28.9 | 55.6 (41.9-68.3) | 51.5 (37.6-64.0) | 41.2 (28.6-54.5) | (in pool) | 5.6 (2.2-13.9) | 5.36 (2.53-9.54) | 1 / 1.0008 |
+
+- Forum Oct 6 (two-way 52.3%) pulls Chow's two-way median by 1.5 points under the decided treatment (57.0 to
+  55.5) and 1.3 under the uniform rule (56.9 to 55.6), about 30% of the way to the poll. Chow's win
+  probability falls 5.2 points (A) and 4.3 (U). The 2026 movement-scale median rises about 6% (A) and 5% (U);
+  the shared `m_move` is unchanged (0.083 to 0.084).
+- Without Forum the two rules agree (A0 75.6 against U0 75.4). The pool is 5.6 in every arm: under the uniform
+  rule the 2026 tail is drawn from the historical tail distribution, which polls do not inform, so Alexander's
+  residual support is not added to it.
+- Production's qualification needs zero divergences and would retry at target acceptance 0.99 with seed + 1;
+  P, U0 and U1 have 1-2 divergences. No retry was run (report only).
+
+### Held-out do-no-harm (binding)
+
+Leader-margin CRPS in points, mean over seeds 20260921-25; covered = folds whose 80% band holds the result in
+at least 3 of 5 seeds.
+
+| Fold | 20 d baseline | 20 d uniform | 14 d baseline | 14 d uniform |
+|---|---|---|---|---|
+| 2003 | 23.96 | 24.06 | 23.97 | 23.79 |
+| 2006 | 27.42 | 27.39 | 11.69 | 11.80 |
+| 2010 (Thomson folded in the uniform arm) | 3.95 | 4.54 | 3.65 | 3.88 |
+| 2014 | 5.15 | 5.13 | 5.15 | 5.13 |
+| 2018 | 6.81 | 6.85 | 6.71 | 6.73 |
+| 2022 | (no 20-day poll) | | 6.62 | 6.46 |
+| 2023 | 5.93 | 6.01 | 6.97 | 7.10 |
+| **Mean** | **12.20** | **12.33 (+0.128)** | **9.25** | **9.27 (+0.019)** |
+| Covered folds | 4 of 6 | 4 of 6 | 6 of 7 | 6 of 7 |
+
+- Per-seed uniform-minus-baseline differences: 20 days +0.149, +0.187, +0.337, +0.007, -0.041; 14 days
+  -0.032, +0.168, +0.200, -0.208, -0.031.
+- Sampling: 4 uniform fits fail the rule (all 2023 folds: seed 20260922 14 d, 19 divergences, R-hat 1.0174;
+  20260923 14 d, R-hat 1.0295; 20260924 20 d, 5 divergences; 20260925 20 d, 97 divergences, R-hat 1.0351) against
+  1 baseline fit (20260925 14 d 2023, R-hat 1.0211). Worst sites are the held-out 2023 election-day mixing and
+  precision.
+- 2010 scored against the baseline's own target (the margin among all five named, +12.08 against +12.10 among
+  the remaining four): uniform mean CRPS 12.33 at 20 days and 9.27 at 14, the same as scored above.
+
+**Verdict as written: FAIL.** Rule 1 fails at 20 days (+0.128 against the 0.10 tolerance; it passes at 14
+days, +0.019). Rule 2 passes (4 = 4 and 6 = 6). Rule 3 fails (4 failing fits against the baseline's 1).
+
+- Most of the 20-day difference is the 2010 fold (+0.59, which alone adds +0.098 to the mean), the same
+  direction and size as S2's proportional reallocation in that fold (3.95 to 4.49). The other folds add +0.03.
+- The seed spread of the 20-day difference (sd about 0.15) is larger than the tolerance.
+
+**Target check (report only).** In every seed at both horizons, the uniform arm's 2010 pool band (about 2.0-15.8,
+median about 5.9) covers the actual pool share including Thomson (4.93%).
