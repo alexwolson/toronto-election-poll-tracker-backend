@@ -299,3 +299,44 @@ risk turned out to be 2006, missed by every arm, not 2023.
 3. **Proportional reallocation of a suspended candidate's share made the 2010 forecast worse** at
    both horizons, as in the 2026-09-22 fold-in test. Where the freed share goes is not learned from
    the record; that question belongs to the transfer-assumption view.
+
+## Correction to the basis of S2's adoption, and a target check (2026-10-07)
+
+**The issue (raised by the maintainer).** The held-out test scores the leader margin against the
+current model. The signal targets something else: the suspended candidate's own share. The current
+model is known to get that share wrong, because it keeps Alexander near his pre-suspension level
+(6.7%), while every recorded suspended candidate kept 3–25% of their last poll share. As a result:
+- **It could not see the benefit.** The test could detect collateral damage to the margin, but not
+  the improvement the signal is for. Only one of the ten recorded cases is in play in any fold:
+  Thomson in 2010.
+- **The as-written rule protected a known-wrong number.** Had both variants failed, it would have
+  kept the 6.7% because a guardrail tripped.
+- **S2 arguably never needed the test.** The map's standing rule requires a held-out test for
+  changes to the *fitted* model, and S2 leaves the fit unchanged.
+
+**What changes (maintainer decision).**
+- **S2 is adopted on the ten-case record.** That is the evidence for the quantity it fixes.
+- **The held-out comparison is its do-no-harm check on the margin.** S2 passes it: +0.09 at 20
+  days and +0.04 at 14 days, within the 0.10 tolerance.
+- **S1's verdict is unchanged.** It failed on collateral damage to the margin, which the test does
+  measure (+0.17 at 20 days, worse in every seed). On Alexander's share, S1 and S2 agree.
+- **For the ADR, the standard for later changes:** a change that targets a known failure gets two
+  checks, both written before any run:
+  1. a target check on the quantity it fixes, scored against the record that bears on it;
+  2. a do-no-harm check on the margin.
+
+**Target check (report only, not a gate; fixed before running).**
+- **Procedure:** `suspension_target_check.py`. Each of the seven cases with a kept fraction is held
+  out in turn. S2's log-normal is estimated from the other six (all cities, as production S2 uses
+  them; mean and n−1 standard deviation of log kept fractions) and scored on the held-out case:
+  median, central 80% interval, coverage, PIT, and absolute log error.
+- **The comparator:** the current model has no suspension term, so its implied kept fraction is 1.
+  Its absolute log error is |log kept fraction|.
+- **The comparison is of points only.** The current model's election-day noise is not translated
+  into an interval on the kept-fraction scale.
+
+**Expected result, recorded beforehand (INFERRED):**
+- S2 covers 6 of 7. Thomson (0.033) falls outside the narrow band built from the other six, whose
+  logs have an sd of about 0.18.
+- S2's mean absolute log error is about 0.5, against about 1.8 for the current model, which misses
+  every case.
