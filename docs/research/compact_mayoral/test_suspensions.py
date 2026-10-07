@@ -170,3 +170,17 @@ def test_current_suspension_row_names_the_current_campaign_candidate():
     assert row["candidate_name"] == "Chris Alexander"
     assert row["announcement_date"] == date(2026, 10, 6)
     assert kept_fraction({**row, "last_poll_share_pct": ""}) is None
+
+
+def test_keep_prior_can_leave_one_case_out():
+    """Leave-one-case-out target check for S1 (issue 45 follow-up, 2026-10-07)."""
+    rows = load_suspensions()
+    held = "london-2014-caranci"
+    others = [
+        np.log(kept_fraction(r))
+        for r in rows
+        if r["city"] != "Toronto" and r["case_id"] != held and kept_fraction(r)
+    ]
+    assert len(others) == 4
+    mu, sigma = keep_distribution(rows, exclude_cities=("Toronto",), exclude_cases=(held,))
+    assert np.isclose(mu, np.mean(others)) and np.isclose(sigma, np.std(others, ddof=1))

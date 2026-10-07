@@ -54,13 +54,19 @@ def kept_fraction(row: dict) -> float | None:
 
 
 def keep_distribution(
-    rows: list[dict], *, exclude_cities: tuple[str, ...] = (), exclude_cycles: tuple[str, ...] = ()
+    rows: list[dict],
+    *,
+    exclude_cities: tuple[str, ...] = (),
+    exclude_cycles: tuple[str, ...] = (),
+    exclude_cases: tuple[str, ...] = (),
 ) -> tuple[float, float]:
     """Mean and sample standard deviation of log kept fractions over the usable cases."""
     logs = [
         math.log(k)
         for row in rows
-        if row["city"] not in exclude_cities and row["election_cycle_id"] not in exclude_cycles
+        if row["city"] not in exclude_cities
+        and row["election_cycle_id"] not in exclude_cycles
+        and row["case_id"] not in exclude_cases
         for k in [kept_fraction(row)]
         if k is not None
     ]

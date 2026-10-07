@@ -62,7 +62,9 @@ def parse_args(argv=None):
     )
     parser.add_argument("--include-pre-certification", action="store_true")
     parser.add_argument(
-        "--exclude-campaigns", default="", help="comma-separated historical campaign keys to drop (width diagnostics, 2026-09-22)"
+        "--exclude-campaigns",
+        default="",
+        help="comma-separated historical campaign keys to drop (width diagnostics, 2026-09-22)",
     )
     parser.add_argument(
         "--drop-candidates",
@@ -70,10 +72,14 @@ def parse_args(argv=None):
         help='drop reference candidates: "toronto_2010:Rocco Rossi;Sarah Thomson[,key:Name;...]" (width diagnostics)',
     )
     parser.add_argument(
-        "--late-movement", action="store_true", help="final-fortnight movement multiplier late_move (width defence, 2026-09-22)"
+        "--late-movement",
+        action="store_true",
+        help="final-fortnight movement multiplier late_move (width defence, 2026-09-22)",
     )
     parser.add_argument(
-        "--fixed-election-mixing", action="store_true", help="election-day precision = phi_election (no Gamma scale mixture)"
+        "--fixed-election-mixing",
+        action="store_true",
+        help="election-day precision = phi_election (no Gamma scale mixture)",
     )
     parser.add_argument(
         "--name-minor-candidates",
@@ -94,8 +100,17 @@ def parse_args(argv=None):
         help='with --suspension-signal joint: "Name:YYYY-MM-DD" for the 2026 campaign '
         "(not used in the held-out folds; issue 43 report)",
     )
+    parser.add_argument(
+        "--keep-prior-exclude-case",
+        action="append",
+        default=[],
+        help="with --suspension-signal joint: leave this suspension-table case_id out of the "
+        "kept-fraction prior (repeatable; leave-one-case-out target check, issue 45 follow-up)",
+    )
     parser.add_argument("--min-offered", type=int, default=2)
-    parser.add_argument("--denominator-rank", choices=("decided_first", "all_first"), default="decided_first")
+    parser.add_argument(
+        "--denominator-rank", choices=("decided_first", "all_first"), default="decided_first"
+    )
     parser.add_argument("--warmup", type=int, default=1000)
     parser.add_argument("--draws", type=int, default=1000)
     parser.add_argument("--chains", type=int, default=4)
@@ -132,19 +147,19 @@ def main(argv=None):
 
     from .hyperpriors import load_hyperpriors, population_hyperpriors
     from .model import build_model
-    from .suspensions import (
-        check_no_post_suspension_offer,
-        current_suspension_row,
-        keep_distribution,
-        known_suspensions,
-        load_suspensions,
-    )
     from .readings import (
         EXTRA_2026,
         current_campaign,
         historical_campaigns,
         with_horizon,
         without_candidates,
+    )
+    from .suspensions import (
+        check_no_post_suspension_offer,
+        current_suspension_row,
+        keep_distribution,
+        known_suspensions,
+        load_suspensions,
     )
 
     started = time.monotonic()
@@ -196,7 +211,9 @@ def main(argv=None):
         # The table holds the recorded historical cases; 2026 gets no signal inside these
         # fits (its forecast there is sealed and unused by the held-out decision).
         rows = load_suspensions()
-        keep_prior = keep_distribution(rows, exclude_cities=("Toronto",))
+        keep_prior = keep_distribution(
+            rows, exclude_cities=("Toronto",), exclude_cases=tuple(args.keep_prior_exclude_case)
+        )
         if args.current_suspension:
             rows = [*rows, current_suspension_row(args.current_suspension)]
         for c in campaigns:
@@ -209,7 +226,10 @@ def main(argv=None):
                 suspensions[c.key] = found
         print(
             "suspension signal:",
-            {k: [c.names[i] for c in campaigns if c.key == k for i in v] for k, v in suspensions.items()},
+            {
+                k: [c.names[i] for c in campaigns if c.key == k for i in v]
+                for k, v in suspensions.items()
+            },
             f"keep prior log-normal({keep_prior[0]:.4f}, {keep_prior[1]:.4f})",
             flush=True,
         )

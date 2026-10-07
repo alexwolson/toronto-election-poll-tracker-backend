@@ -360,3 +360,19 @@ other six cases each time.
 - **The miss:** Thomson kept less than any other case. With her included, as in production use,
   the band widens to sd 0.71 in logs, and Alexander's election-day share is 1.0% (0.2–3.3).
 - **The expectation recorded beforehand held.**
+
+**S1 on the same benchmark (asked by the maintainer after the S2 check; report only).**
+- **S1's structure:** S1 fits one kept fraction shared by every suspension. Its prior comes from
+  the non-Toronto cases, and Toronto's cases inform it through the fit.
+- **Toronto cases (Thomson, Rossi):** S1's prediction is the kept-fraction posterior from the 2010
+  held-out folds of the replicate test, where 2010's result is hidden. That is 10 fits:
+  median 0.220, 80% 0.187–0.258.
+- **The five non-Toronto cases:** each gets an exact refit.
+  - `fit.py --suspension-signal joint --keep-prior-exclude-case <case_id>`, with every historical
+    campaign observed and no holdout.
+  - The run of record's settings and inputs; seed 20260921; no current suspension.
+  - S1's prediction is that fit's kept-fraction posterior median and central 80% interval.
+- **A reference fit** with the full five-case prior should reproduce the posterior near 0.212
+  reported above.
+- **Expected (INFERRED, from a calculation that assumed the posterior stays at the prior):** S1
+  covers 3 of 7 (Thomson, Rossi, Caranci and Fortier miss), with a mean absolute log error near 0.40.
