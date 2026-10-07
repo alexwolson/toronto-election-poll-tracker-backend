@@ -30,6 +30,12 @@ What does the **uniform rule** do to the forecast on current inputs, and does it
 1. Ingest Forum's Oct 6 poll through the double-read workflow. It goes to Polling as a data PR, because the poll is needed whichever rule wins.
 2. Build the research inputs from current `main` in Polling and Backend, including the 2010 Ipsos Reid addition, plus that PR.
 
+**Evidence window (clarified 2026-10-07, before any run).** Every arm uses the same 2026 samples: those production admits (from Forum Jul 29, the first poll naming the full Final Ballot field, onward), plus Post-Suspension samples naming Chow and Bradford. Today that means production's set plus Forum Oct 6.
+- In this data, every sample from Jul 29 to Oct 4 names all three candidates.
+- The 16 earlier samples name only Chow and Bradford, often alongside Tory and others. They stay out in every arm.
+- Within a sample, every arm picks the reading production would pick: Alexander still counts when breaking a tie in favour of the fuller field.
+- The test therefore isolates how Alexander is handled. Whether the uniform rule should also reach back to the pre-Alexander polls is a question for the grilling ticket, not this test.
+
 **Current inputs: report only, no gate.** Same model specification and settings as production, seed 20260921.
 
 | Arm | Treatment | Forum Oct 6 |
