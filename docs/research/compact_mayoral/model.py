@@ -28,7 +28,7 @@ outside the named reference. Shared scales are drawn from ``hyperpriors``.
 
 from __future__ import annotations
 
-from dataclasses import dataclass
+from dataclasses import dataclass, field
 from typing import ClassVar
 
 import jax
@@ -117,13 +117,17 @@ class Prepared:
     outcome_contrasts: np.ndarray | None  # (K-1,) Helmert contrasts of log outcome shares
     outcome_shares: np.ndarray | None  # (K,) named result, floored and renormalized
     outcome_logit_tail: float | None
+    dates: np.ndarray | None = field(default=None)  # (T,) days before election per latent date
 
 
-def prepare(campaign: CampaignPolls) -> Prepared:
+def prepare(campaign: CampaignPolls, extra_days: tuple[int, ...] = ()) -> Prepared:
+    """``extra_days`` adds latent dates (exit days, issue 51) without adding readings."""
     count = len(campaign.candidates)
     if count < 2:
         raise ValueError(f"{campaign.key}: need at least two reference candidates")
-    dates = sorted({p.days_before_election for p in campaign.polls} | {0}, reverse=True)
+    dates = sorted(
+        {p.days_before_election for p in campaign.polls} | {0} | set(extra_days), reverse=True
+    )
     position = {day: i for i, day in enumerate(dates)}
     firms = sorted({p.firm for p in campaign.polls})
     firm_index = {firm: i for i, firm in enumerate(firms)}
@@ -160,7 +164,10 @@ def prepare(campaign: CampaignPolls) -> Prepared:
         basis=basis,
         gaps=-np.diff(np.asarray(dates, dtype=float)),
         late_days=np.asarray(
-            [max(0.0, min(float(d0), LATE_DAYS) - float(d1)) for d0, d1 in zip(dates[:-1], dates[1:])]
+            [
+                max(0.0, min(float(d0), LATE_DAYS) - float(d1))
+                for d0, d1 in zip(dates[:-1], dates[1:])
+            ]
         ),
         poll_time=poll_time,
         poll_firm=poll_firm,
@@ -173,7 +180,42 @@ def prepare(campaign: CampaignPolls) -> Prepared:
         outcome_contrasts=outcome,
         outcome_shares=outcome_shares,
         outcome_logit_tail=tail,
+        dates=np.asarray(dates, dtype=int),
     )
+
+
+def reactive_support(prefix, P, contrasts, exits, allocation_concentration, shift_scale):
+    """Latent support with each exit applied on and after its date (issue 51; reactive.py)."""
+    from .reactive import exit_transform
+
+    s = jax.nn.softmax(contrasts @ jnp.asarray(P.basis).T, axis=-1)
+    departed: list[int] = []
+    for j, e in enumerate(exits):
+        node = int(np.flatnonzero(P.dates == e.day)[0])
+        post = P.dates <= e.day
+        remaining = [i for i in range(P.count) if i != e.candidate and i not in departed]
+        rem = jnp.asarray(remaining)
+        centre = s[node, rem] / s[node, rem].sum()
+        allocation = numpyro.sample(
+            prefix + f"allocation_{j}", dist.Dirichlet(allocation_concentration * centre)
+        )
+        log_keep = numpyro.sample(prefix + f"log_keep_{j}", dist.Normal(e.keep_mu, e.keep_sigma))
+        keep = numpyro.deterministic(
+            prefix + f"keep_fraction_{j}", jnp.minimum(jnp.exp(log_keep), 1.0)
+        )
+        shift = None
+        if shift_scale is not None and len(remaining) > 1:
+            sigma = numpyro.sample(prefix + f"shift_sigma_{j}", dist.HalfNormal(shift_scale))
+            z = numpyro.sample(
+                prefix + f"shift_z_{j}",
+                dist.Normal(0.0, 1.0).expand((len(remaining) - 1,)).to_event(1),
+            )
+            shift = numpyro.deterministic(
+                prefix + f"shift_{j}", jnp.asarray(helmert_basis(len(remaining))) @ (sigma * z)
+            )
+        s = exit_transform(s, post, e.candidate, rem, keep, allocation, shift)
+        departed.append(e.candidate)
+    return numpyro.deterministic(prefix + "post_exit_support", s)
 
 
 def build_model(
@@ -187,6 +229,9 @@ def build_model(
     late_movement: bool = False,
     suspensions: dict[str, tuple[int, ...]] | None = None,
     keep_prior: tuple[float, float] | None = None,
+    reactive: dict[str, tuple] | None = None,
+    allocation_concentration: float = 4.0,
+    shift_scale: float | None = None,
 ):
     """``suspensions`` maps a campaign key to the named candidates whose Suspended
     Campaign is known at that campaign's cutoff; their election-day support is
@@ -204,7 +249,14 @@ def build_model(
     heavy_tailed = innovations == "student_t"
     if len({c.key for c in campaigns}) != len(campaigns):
         raise ValueError("campaign keys must be unique")
-    prepared = tuple(prepare(c) for c in campaigns)
+    reactive = {k: tuple(v) for k, v in (reactive or {}).items() if v}
+    if reactive and variant != "dirichlet":
+        raise ValueError("reactive allocation is implemented for the dirichlet variant")
+    if reactive and suspensions:
+        raise ValueError("reactive allocation and the S1 signal are alternatives")
+    prepared = tuple(
+        prepare(c, extra_days=tuple(e.day for e in reactive.get(c.key, ()))) for c in campaigns
+    )
     specs = hyperpriors["sites"]
 
     def shared(name, spec_name=None):
@@ -286,7 +338,17 @@ def build_model(
                 firm_scale = firm_scale * jnp.sqrt(firm_mixing)[:, None]
             firm = numpyro.deterministic(prefix + "firm", firm_z * firm_scale)
 
-            logits = (contrasts[P.poll_time] + firm[P.poll_firm]) @ basis.T
+            exits = reactive.get(P.key, ())
+            if exits:
+                latent = reactive_support(
+                    prefix, P, contrasts, exits, allocation_concentration, shift_scale
+                )
+                logits = (
+                    jnp.log(jnp.clip(latent, 1e-12, None))[P.poll_time]
+                    + (firm @ basis.T)[P.poll_firm]
+                )
+            else:
+                logits = (contrasts[P.poll_time] + firm[P.poll_firm]) @ basis.T
             mask = jnp.asarray(P.mask)
             probabilities = jax.nn.softmax(jnp.where(mask, logits, -jnp.inf), axis=1)
             phi = 1.0 / (kappa / jnp.asarray(P.n_eff) + tau_reference**2 / 4.0)
@@ -297,7 +359,10 @@ def build_model(
             )
 
             numpyro.deterministic(
-                prefix + "current", jax.nn.softmax(contrasts[P.current_time] @ basis.T)
+                prefix + "current",
+                latent[P.current_time]
+                if exits
+                else jax.nn.softmax(contrasts[P.current_time] @ basis.T),
             )
 
             # Election-day discrepancy: per-candidate log-share shocks with a shared
@@ -305,7 +370,8 @@ def build_model(
             # reproduce the heavy model's per-contrast variance tau^2 / 2.
             # Latent named support at election day, before the discrepancy is applied.
             support = numpyro.deterministic(
-                prefix + "election_support", jax.nn.softmax(contrasts[-1] @ basis.T)
+                prefix + "election_support",
+                latent[-1] if exits else jax.nn.softmax(contrasts[-1] @ basis.T),
             )
             if P.key in suspensions:
                 support = numpyro.deterministic(

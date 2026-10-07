@@ -126,6 +126,13 @@ def parse_args(argv=None):
         "the pool, in its readings and its target (issue 48 uniform arm)",
     )
     parser.add_argument(
+        "--reactive",
+        choices=("none", "c2", "c3"),
+        default="none",
+        help="issue 51: model the exit inside the fit for the forecast-target campaigns "
+        "(held-out and 2026); c3 adds a one-time shift at the exit (reactive.py)",
+    )
+    parser.add_argument(
         "--save-sampler-stats",
         action="store_true",
         help="also write sampler.npz (diverging, accept_prob, num_steps by chain; issue 50)",
@@ -155,6 +162,38 @@ def quantiles(x, probs=(0.05, 0.1, 0.5, 0.9, 0.95)):
     }
 
 
+def reactive_summary(reactive_exits, campaigns, flat) -> dict:
+    """Exit specs and allocation / keep / shift posteriors per target campaign (issue 51)."""
+    out = {}
+    names = {c.key: c.names for c in campaigns}
+    for key, exits in reactive_exits.items():
+        departed, rows = [], []
+        for j, e in enumerate(exits):
+            remaining = [
+                n for i, n in enumerate(names[key]) if i != e.candidate and i not in departed
+            ]
+            row = {
+                "name": e.name,
+                "day": e.day,
+                "keep_prior_log_normal": [e.keep_mu, e.keep_sigma],
+                "remaining": remaining,
+                "keep_fraction": quantiles(flat[f"{key}/keep_fraction_{j}"]),
+                "allocation": {
+                    n: quantiles(flat[f"{key}/allocation_{j}"][:, i])
+                    for i, n in enumerate(remaining)
+                },
+            }
+            if f"{key}/shift_{j}" in flat:
+                row["shift_sigma"] = quantiles(flat[f"{key}/shift_sigma_{j}"])
+                row["shift"] = {
+                    n: quantiles(flat[f"{key}/shift_{j}"][:, i]) for i, n in enumerate(remaining)
+                }
+            rows.append(row)
+            departed.append(e.candidate)
+        out[key] = rows
+    return out
+
+
 def main(argv=None):
     args = parse_args(argv)
     # Parallel chains on CPU need the host device count set before JAX initializes.
@@ -170,6 +209,7 @@ def main(argv=None):
 
     from .hyperpriors import load_hyperpriors, population_hyperpriors
     from .model import build_model
+    from .reactive import ALLOCATION_CONCENTRATION, SHIFT_SCALE
     from .readings import (
         EXTRA_2026,
         current_campaign,
@@ -197,7 +237,13 @@ def main(argv=None):
             and key not in set(filter(None, args.exclude_campaigns.split(",")))
         )
     if args.campaigns in {"all", "2026"}:
-        if args.current_rule == "production" and not args.drop_current_poll:
+        if args.reactive != "none" and args.current_rule == "uniform":
+            sys.exit("--reactive keeps Alexander named; it cannot combine with the uniform rule")
+        if (
+            args.current_rule == "production"
+            and not args.drop_current_poll
+            and args.reactive == "none"
+        ):
             campaigns.append(
                 current_campaign(
                     election_date=ELECTION_2026,
@@ -210,7 +256,7 @@ def main(argv=None):
 
             campaigns.append(
                 current_campaign_under(
-                    args.current_rule,
+                    "decided" if args.reactive != "none" else args.current_rule,
                     election_date=ELECTION_2026,
                     drop_polls=tuple(args.drop_current_poll),
                 )
@@ -245,6 +291,36 @@ def main(argv=None):
         }
         campaigns[keys.index(args.holdout)] = dataclasses.replace(
             held, outcome_shares=None, outcome_tail=None
+        )
+    reactive_exits = {}
+    if args.reactive != "none":
+        from .reactive import set_aside_after_exits, target_exits
+        from .readings import CURRENT_KEY
+
+        rows = load_suspensions()
+        current_rows = [*rows, current_suspension_row("Chris Alexander:2026-10-06")]
+        assembled = []
+        for c in campaigns:
+            exits = ()
+            if c.key == CURRENT_KEY:
+                exits = target_exits(c, current_rows, ELECTION_2026, keep_distribution(rows))
+            elif c.key == args.holdout:
+                cutoff = c.election_date - timedelta(days=args.horizon_days or 0)
+                prior = keep_distribution(rows, exclude_cycles=(c.key,))
+                exits = target_exits(c, rows, cutoff, prior)
+            if exits:
+                c = set_aside_after_exits(c, exits)
+                reactive_exits[c.key] = exits
+            assembled.append(c)
+        campaigns = assembled
+        print(
+            "reactive:",
+            args.reactive,
+            {
+                k: [(e.name, e.day, round(e.keep_mu, 4), round(e.keep_sigma, 4)) for e in v]
+                for k, v in reactive_exits.items()
+            },
+            flush=True,
         )
     campaigns = tuple(campaigns)
     suspensions, keep_prior = {}, None
@@ -288,6 +364,9 @@ def main(argv=None):
         late_movement=args.late_movement,
         suspensions=suspensions,
         keep_prior=keep_prior,
+        reactive=reactive_exits,
+        allocation_concentration=ALLOCATION_CONCENTRATION,
+        shift_scale=SHIFT_SCALE if args.reactive == "c3" else None,
     )
 
     args.out.mkdir(parents=True, exist_ok=False)
@@ -451,6 +530,7 @@ def main(argv=None):
             if name in flat
         },
         "campaigns": {c.key: campaign_summary(c) for c in campaigns},
+        "reactive": reactive_summary(reactive_exits, campaigns, flat),
     }
     (args.out / "summary.json").write_text(json.dumps(summary, indent=2) + "\n", encoding="utf-8")
     d = summary["diagnostics"]
