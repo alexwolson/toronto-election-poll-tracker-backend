@@ -2,6 +2,14 @@
 
 Date: 2026-09-23. Status: accepted.
 
+**Amended by ADR 0061.** For Post-Suspension Readings only: a reading qualifies
+when it covers the remaining named candidates (Chow and Bradford), and any share
+it reports for the suspended candidate is set aside. The full-field question
+beats a Head-to-Head Reading in the same poll, whatever its denominator rank; a
+Head-to-Head Reading counts only when it is the poll's only general
+vote-intention reading. Each entry in the feed's `model.current_readings` also
+records `post_suspension` and `set_aside`.
+
 ## Context
 
 Until this decision the 2026 campaign entered the compact model through the
