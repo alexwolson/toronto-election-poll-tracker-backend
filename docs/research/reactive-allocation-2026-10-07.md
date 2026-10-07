@@ -174,3 +174,93 @@ Runs: `research-runs/reactive-allocation-2026-10-07/` (workspace root). Inputs: 
 | **Total** | about 285 (about 385 with C1) | **about 2.6 hours (3.5 hours)** |
 
 Both totals are under the 4-hour budget.
+
+## Results (appended after the runs, 2026-10-07)
+
+- **Code:** pre-registration and code at `9a1ddef`. No fit code changed after it. Analysis only:
+  `reactive_compare.py`, `reactive_report.py`.
+- **Runs:** `research-runs/reactive-allocation-2026-10-07/` (`runs/`, `retries/`, `current/`,
+  `reactive_evaluation.json`, `compare_full.txt`, `binding.txt`).
+- **Fits:** 273 queued plus 3 retries, 14:26-17:07 UTC, none failed to run.
+- **P at 20 and 14 days** is the seed-replicate test's stored fits. P, U and C at 7 days are new.
+
+### Binding do-no-harm (rules as approved; OBSERVED)
+
+| | C2 | C3 | P |
+|---|---|---|---|
+| Mean CRPS, 20 d (difference from P) | 12.26 (+0.057) | 12.37 (**+0.163**) | 12.20 |
+| Mean CRPS, 14 d (difference from P) | 9.26 (+0.010) | 9.30 (+0.045) | 9.25 |
+| Covered folds, 20 d / 14 d | 4 / 6 | 4 / 6 | 4 / 6 |
+| Research-bar failures before retry | 2 (2006 14 d seed 21, R-hat 1.0325; 2003 14 d seed 22, R-hat 1.0205) | 0 | 1 (2023 14 d seed 25, R-hat 1.0211) |
+| After production's retry | 0 (R-hat 1.0037, 1.0037) | 0 | 0 (R-hat 1.0164) |
+| **Verdict as written** | **PASS** (rules 1, 2, 3) | **FAIL** (rule 1 at 20 days; rules 2 and 3 pass) | |
+
+- **Per-seed CRPS differences from P:**
+  - C2 at 20 d: -0.042, -0.075, +0.182, +0.214, +0.008. At 14 d: -0.145, +0.229, +0.015, -0.024, -0.024.
+  - C3 at 20 d: +0.085, +0.078, +0.425, +0.257, -0.029. At 14 d: +0.010, +0.064, +0.202, -0.083, +0.029.
+- **Retry substitution:** substituting the retried fits for the failed ones in rules 1 and 2 changes no
+  verdict (C2 at 14 d becomes -0.006).
+- **The 2010 fold drives both differences:**
+  - at 20 days: C2 4.41 and C3 5.00, against P's 3.95;
+  - at 14 days: C2 3.77 and C3 4.06, against 3.65.
+  - Every other fold is within about 0.25 of P.
+
+### 2010 target check (report only)
+
+Mean over 5 seeds; change against P split into centre and width.
+
+| | 14 d median (80%) | 14 d CRPS (change: centre + width) | 7 d median (80%) | 7 d CRPS (change: centre + width) |
+|---|---|---|---|---|
+| P | +11.3 (-10.2..+30.8) | 3.65 | +5.1 (-13.5..+23.2) | 4.67 |
+| A | +12.3 (-11.0..+33.1) | 3.92 (+0.27: -0.01 + 0.28) | +6.0 (-15.5..+26.9) | 4.72 (+0.06: -0.32 + 0.37) |
+| U | +12.3 (-11.1..+33.2) | 3.88 (+0.23: -0.02 + 0.25) | +6.1 (-14.4..+26.6) | 4.59 (-0.07: -0.37 + 0.25) |
+| C2 | +11.9 (-10.0..+32.4) | 3.77 (+0.12: -0.02 + 0.14) | +5.9 (-13.9..+25.7) | **4.52** (-0.15: -0.28 + 0.13) |
+| C3 | +9.4 (-13.0..+30.5) | 4.06 (+0.41: +0.16 + 0.25) | +5.3 (-14.5..+24.8) | 4.71 (+0.05: -0.08 + 0.13) |
+
+The actual result was +12.1 (U +12.2 among its remaining named candidates).
+
+### 7-day report (all folds, 5 seeds, no retries; report only)
+
+| | Mean CRPS | Covered | Research-bar failures | 2003 | 2006 | 2010 | 2014 | 2018 | 2022 | 2023 |
+|---|---|---|---|---|---|---|---|---|---|---|
+| P | 6.36 | 7/7 | 1 | 3.44 | 10.41 | 4.67 | 5.58 | 6.71 | 6.62 | 7.07 |
+| A | 6.37 | 7/7 | 1 (P's) | 3.44 | 10.41 | 4.72 | 5.58 | 6.71 | 6.62 | 7.07 |
+| C2 | **6.30** | 7/7 | 1 | 3.34 | 10.37 | 4.52 | 5.71 | 6.70 | 6.46 | 7.03 |
+| C3 | 6.33 | 7/7 | 1 | 3.41 | 10.28 | 4.71 | 5.65 | 6.73 | 6.58 | 6.97 |
+| U | 6.33 | 7/7 | 1 | 3.39 | 10.27 | 4.59 | 5.68 | 6.78 | 6.46 | 7.12 |
+
+Research-bar failures at 7 days, none retried:
+
+| Arm | Fold and seed | Divergences | R-hat |
+|---|---|---|---|
+| P | 2014, seed 21 | 160 | 1.0557 |
+| C2 | 2023, seed 21 | 5 | |
+| C3 | 2023, seed 22 | 8 | |
+| U | 2023, seed 25 | | 1.0234 |
+
+### Current inputs (production settings, seed 20260921; report only)
+
+| | C2 without Forum | C2 with Forum | C3 without Forum | C3 with Forum |
+|---|---|---|---|---|
+| Win: Chow / Bradford | 75.3 / 24.7 | 70.1 / 29.9 | 71.5 / 28.5 | 63.4 / 36.6 |
+| Chow two-way (80%) | 56.8 (43.6-69.7) | 55.2 (41.9-68.1) | 56.7 (40.3-72.4) | 53.4 (40.0-66.8) |
+| Alexander, full ballot | 0.5 (0.0-4.3) | 0.5 (0.0-4.2) | 0.6 (0.0-4.3) | 0.5 (0.0-4.2) |
+| Allocation to Chow | 0.579 (0.25-0.86): prior | 0.450 (0.19-0.76) | 0.580: prior | 0.513 (0.22-0.82) |
+| Keep fraction | 0.160 | 0.161 | 0.160 | 0.160 |
+| Shift sigma | | | 0.152 (0.03-0.38): prior | 0.129 (0.03-0.32) |
+| Shift, Chow two-way | | | 0 | about -1.8 pts |
+| Divergences / worst R-hat | 0 / 1.0011 | 0 / 1.0009 | 2 / 1.0014 | 3 / 1.0014 |
+
+The 2026 movement-scale median is 5.1-5.4 (x100) in every arm. For comparison, P is at 75.5 and the two-way at
+57.0, without Forum.
+
+### Anomalies
+
+- **C3 moves the 14-day 2010 centre the wrong way** (median +9.4 against P's +11.3 and the actual +12.1).
+  INFERRED: the one post-exit poll (Ipsos Oct 8, Smitherman 31-30) is read as a shift at Thomson's exit.
+- **C3 lowers Chow's odds with no post-exit poll at all:** 71.5 against C2's 75.3 without Forum. The shift's
+  prior widens the two-way band (40.3-72.4 against 43.6-69.7). Forum then moves C3 by 8.1 points and C2 by 5.2.
+- **P's 7-day 2014 fit (seed 21) is a bad fit** (160 divergences, R-hat 1.0557). It is in P's and A's 7-day
+  2014 means, and was not retried because the 7-day horizon is report only.
+- **Alexander's election-day share is about 0.5%** under C, as decided: the kept fraction sits inside the
+  latent support.
