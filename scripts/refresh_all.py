@@ -31,6 +31,11 @@ def main() -> None:
     parser.add_argument("--polling-bundle", type=Path, default=DEFAULT_POLLING)
     parser.add_argument("--results-release", required=True)
     parser.add_argument("--polling-release", required=True)
+    parser.add_argument(
+        "--release-tag",
+        required=True,
+        help="the Backend tag this bundle will be published as (recorded with the draws)",
+    )
     parser.add_argument("--output", type=Path, default=ROOT / "dist")
     parser.add_argument("--skip-tests", action="store_true")
     parser.add_argument("--dry-run", action="store_true")
@@ -113,6 +118,8 @@ def main() -> None:
             args.results_release,
             "--polling-release",
             args.polling_release,
+            "--release-tag",
+            args.release_tag,
             "--output",
             str(args.output),
         ],

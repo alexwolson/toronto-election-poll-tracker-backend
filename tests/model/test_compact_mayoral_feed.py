@@ -19,7 +19,9 @@ from backend.model.compact_mayoral_feed import (
     MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
     PUBLICATION_POLICY,
     assemble_forecast_feed,
+    build_compact_mayoral_forecast,
     build_compact_mayoral_forecast_feed,
+    forecast_draws,
     history_cutoffs,
     kept_fraction_cases_record,
     margin_bins,
@@ -386,10 +388,22 @@ def _with_suspended_campaign(root: Path) -> Path:
     return root
 
 
+def test_forecast_draws_are_the_named_full_ballot_shares_and_the_pool() -> None:
+    draws = _draws(n=500)
+    arrays = forecast_draws(_campaign(), draws)
+    assert arrays["candidate_ids"].tolist() == [CHOW, BRAD, ALEX]
+    assert arrays["full_ballot"].shape == (500, 3)
+    np.testing.assert_array_equal(arrays["full_ballot"], draws["toronto-2026/full_ballot"])
+    np.testing.assert_array_equal(arrays["residual_pool"], draws["toronto-2026/tail"])
+    np.testing.assert_allclose(
+        arrays["full_ballot"].sum(axis=1) + arrays["residual_pool"], 1.0, atol=1e-12
+    )
+
+
 def test_end_to_end_feed_from_the_joint_fit_on_fixture_inputs(tmp_path: Path) -> None:
     root = _fixture_root(tmp_path)
     fast = FitSettings(warmup=150, draws=150, chains=1, seed=5, target_accept=0.9)
-    feed = build_compact_mayoral_forecast_feed(
+    feed, draws = build_compact_mayoral_forecast(
         root,
         LIVE,
         polls_dir=root / "polls",
@@ -414,6 +428,12 @@ def test_end_to_end_feed_from_the_joint_fit_on_fixture_inputs(tmp_path: Path) ->
         "with-pre-certification-polls",
     }
     assert feed["model"]["draws"] == 150 and feed["model"]["qualification_passed"] is None
+    # The main fit's draws travel beside the feed (the release's draws asset), unchanged.
+    named = [c["candidate_id"] for c in feed["election_day"]["candidates"]]
+    assert draws["candidate_ids"].tolist() == named
+    assert draws["full_ballot"].shape == (150, len(named))
+    assert draws["residual_pool"].shape == (150,)
+    assert "draws" not in feed and "candidate_ids" not in feed["election_day"]
     assert feed["model"]["specification"] == {
         "discrepancy": "dirichlet",
         "innovations": "gaussian",

@@ -17,6 +17,10 @@ main fit, both sensitivity refits and every history point dated on or after it.
 full-ballot share, summed draw by draw; ``model.suspended_campaigns`` records the kept
 fraction and the allocation; ``model.kept_fraction_cases`` lists the ten-case record.
 The suspended candidates stay named in ``election_day.candidates`` and ``candidate_win``.
+
+The main fit's named-share Election Outcome Draws travel beside the feed, never in it:
+:func:`build_compact_mayoral_forecast` returns them and the Backend release carries them
+as an asset (``backend/release_bundle.py``).
 """
 
 from __future__ import annotations
@@ -590,7 +594,33 @@ def _history_point(cutoff: HistoryCutoff, result: FitResult) -> dict:
     }
 
 
-def build_compact_mayoral_forecast_feed(
+def forecast_draws(campaign: CampaignPolls, draws: dict[str, np.ndarray]) -> dict[str, np.ndarray]:
+    """The campaign's Election Outcome Draws as the release asset holds them.
+
+    ``candidate_ids`` (the named candidates, in column order), ``full_ballot`` (draws x
+    named candidates, shares of valid votes) and ``residual_pool`` (per draw, every
+    other candidate on the ballot); each draw sums to 1. Same arrays as the held-out
+    draws written by ``scripts/run_holdout_forecasts.py``.
+    """
+    prefix = campaign.key + "/"
+    return {
+        "candidate_ids": np.asarray(campaign.candidates),
+        "full_ballot": np.asarray(draws[prefix + "full_ballot"], dtype=float),
+        "residual_pool": np.asarray(draws[prefix + "tail"], dtype=float).ravel(),
+    }
+
+
+def write_forecast_draws(path: str | Path, arrays: dict[str, np.ndarray]) -> None:
+    np.savez_compressed(Path(path), **arrays)
+
+
+def build_compact_mayoral_forecast_feed(*args, **kwargs) -> dict:
+    """The schema-5 feed alone; see :func:`build_compact_mayoral_forecast`."""
+    feed, _ = build_compact_mayoral_forecast(*args, **kwargs)
+    return feed
+
+
+def build_compact_mayoral_forecast(
     root: str | Path,
     live_cycle: dict,
     *,
@@ -601,8 +631,10 @@ def build_compact_mayoral_forecast_feed(
     qualification=qualify,
     fit_workers: int | None = None,
     history_cache_dir: Path | None = None,
-) -> dict:
+) -> tuple[dict, dict[str, np.ndarray]]:
     """Fit, qualify (fail closed), run the sensitivity refits, and assemble schema 5.
+
+    Returns the feed and the main fit's draws (:func:`forecast_draws`).
 
     ``qualification`` is the gate applied to the main fit's diagnostics; pass
     ``None`` only in tests that use short chains. ``fit_workers`` sets how many
@@ -718,7 +750,7 @@ def build_compact_mayoral_forecast_feed(
         residual_candidate_count=len(certified) - len(CURRENT_FIELD),
     )
     feed["history"] = forecast_history
-    return feed
+    return feed, forecast_draws(current, result.draws)
 
 
 def write_feed(path: str | Path, feed: dict) -> None:
