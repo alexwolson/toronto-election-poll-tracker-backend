@@ -1,4 +1,10 @@
-"""Package derived model feeds and pin their exact upstream releases."""
+"""Package derived model feeds and pin their exact upstream releases.
+
+A release also carries the final Mayoral Forecast's named-share Election Outcome
+Draws (``mayoral_forecast_draws.npz``) and their record
+(``mayoral_forecast_draws.json``: release tag, draw count, candidates, the npz's
+and the forecast feed's sha256), so one tag pins the forecast and its draws.
+"""
 
 from __future__ import annotations
 
@@ -12,6 +18,8 @@ from collections.abc import Callable
 from datetime import UTC, datetime
 from pathlib import Path
 
+import numpy as np
+
 from backend.release_inputs import sha256_file, validate_release_chain
 
 REPOSITORY = "alexwolson/toronto-election-poll-tracker-backend"
@@ -20,6 +28,15 @@ POLLING_REPOSITORY = "alexwolson/toronto-election-poll-tracker-data"
 BACKEND_TAG_PATTERN = re.compile(r"^backend-\d{4}-\d{2}-\d{2}\.\d+$")
 GIT_COMMIT_PATTERN = re.compile(r"^[0-9a-f]{40}$")
 SHA256_PATTERN = re.compile(r"^[0-9a-f]{64}$")
+FORECAST_FEED = "mayoral_forecast.json"
+FORECAST_DRAWS_ASSET = "mayoral_forecast_draws.npz"
+FORECAST_DRAWS_RECORD = "mayoral_forecast_draws.json"
+DRAWS_ARRAYS = {
+    "candidate_ids": "the named candidates, in column order",
+    "full_ballot": "draws x named candidates: each one's share of valid votes",
+    "residual_pool": "per draw, the share of every other candidate on the ballot; "
+    "full_ballot plus residual_pool sums to 1",
+}
 
 
 def _git(
@@ -29,6 +46,87 @@ def _git(
 ) -> str:
     result = runner(["git", *args], cwd=cwd, check=True, capture_output=True, text=True)
     return result.stdout.strip()
+
+
+def _validate_tag(tag: str) -> None:
+    if not BACKEND_TAG_PATTERN.fullmatch(tag):
+        raise ValueError(f"backend release tag must match backend-YYYY-MM-DD.N; received {tag!r}")
+
+
+def _named_ids(feed: dict) -> list[str]:
+    return [c["candidate_id"] for c in feed["election_day"]["candidates"]]
+
+
+def _check_draws(npz: Path, feed: dict) -> None:
+    """Fail unless the npz holds the feed's ``model.draws`` coherent draws for its candidates."""
+    named, draws = _named_ids(feed), feed["model"]["draws"]
+    with np.load(npz, allow_pickle=False) as arrays:
+        if set(arrays.files) != set(DRAWS_ARRAYS):
+            raise ValueError(f"forecast draws hold arrays {sorted(arrays.files)}")
+        ids, full, pool = (
+            arrays[name] for name in ("candidate_ids", "full_ballot", "residual_pool")
+        )
+    if ids.tolist() != named:
+        raise ValueError(f"forecast draws candidate ids {ids.tolist()} != feed's {named}")
+    if full.shape != (draws, len(named)) or pool.shape != (draws,):
+        raise ValueError(
+            f"forecast draws have shapes {full.shape} and {pool.shape}; expected {draws} draws"
+        )
+    if not (np.isfinite(full).all() and np.isfinite(pool).all()):
+        raise ValueError("forecast draws are not all finite")
+    if not np.allclose(full.sum(axis=1) + pool, 1.0, atol=1e-9):
+        raise ValueError("forecast draws do not sum to 1")
+
+
+def verify_forecast_draws(directory: str | Path, *, tag: str) -> dict:
+    """Check a bundle's draws against their record and the forecast feed; return the record.
+
+    Catches a record for another tag, a truncated or corrupt npz (sha256, shapes,
+    draw count) and draws whose candidates are not the feed's named candidates.
+    """
+    directory = Path(directory)
+    record = json.loads((directory / FORECAST_DRAWS_RECORD).read_text(encoding="utf-8"))
+    if record.get("release_tag") != tag:
+        raise ValueError(
+            f"forecast draws record release tag {record.get('release_tag')!r} != {tag!r}"
+        )
+    npz = directory / str(record.get("npz"))
+    if record.get("npz") != FORECAST_DRAWS_ASSET or not npz.is_file():
+        raise ValueError(f"forecast draws record does not name {FORECAST_DRAWS_ASSET}")
+    if sha256_file(npz) != record.get("npz_sha256"):
+        raise ValueError("forecast draws npz sha256 does not match its record")
+    feed_path = directory / FORECAST_FEED
+    if sha256_file(feed_path) != record.get("forecast_sha256"):
+        raise ValueError("forecast feed sha256 does not match the draws record")
+    feed = json.loads(feed_path.read_text(encoding="utf-8"))
+    if record.get("draws") != feed["model"]["draws"]:
+        raise ValueError(
+            f"forecast draws record has {record.get('draws')} draws; the feed has "
+            f"{feed['model']['draws']}"
+        )
+    _check_draws(npz, feed)
+    if [c["candidate_id"] for c in record["candidates"]] != _named_ids(feed):
+        raise ValueError("forecast draws record candidate ids differ from the feed")
+    return record
+
+
+def _draws_record(stage: Path, tag: str) -> dict:
+    feed = json.loads((stage / FORECAST_FEED).read_text(encoding="utf-8"))
+    _check_draws(stage / FORECAST_DRAWS_ASSET, feed)
+    return {
+        "release_tag": tag,
+        "election_cycle_id": feed["election_cycle_id"],
+        "forecast": FORECAST_FEED,
+        "forecast_sha256": sha256_file(stage / FORECAST_FEED),
+        "candidates": [
+            {"candidate_id": c["candidate_id"], "name": c["display_name"]}
+            for c in feed["election_day"]["candidates"]
+        ],
+        "draws": feed["model"]["draws"],
+        "npz": FORECAST_DRAWS_ASSET,
+        "npz_sha256": sha256_file(stage / FORECAST_DRAWS_ASSET),
+        "arrays": DRAWS_ARRAYS,
+    }
 
 
 def build_backend_release_bundle(
@@ -41,8 +139,10 @@ def build_backend_release_bundle(
     polling_release: str,
     source_commit: str,
     dirty: bool,
+    release_tag: str,
     generated_at: str | None = None,
 ) -> Path:
+    _validate_tag(release_tag)
     processed = Path(processed_dir)
     results = Path(results_bundle)
     polling = Path(polling_bundle)
@@ -50,15 +150,20 @@ def build_backend_release_bundle(
     results_manifest, polling_manifest = validate_release_chain(
         results, polling, results_release=results_release
     )
-    names = ("mayoral_forecast.json", "council_race_cards.json", "trustee_race_cards.json")
-    for name in names:
+    names = (FORECAST_FEED, "council_race_cards.json", "trustee_race_cards.json")
+    copied = (*names, FORECAST_DRAWS_ASSET)
+    for name in copied:
         if not (processed / name).is_file():
             raise FileNotFoundError(f"missing backend release feed: {processed / name}")
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f".{target.name}.stage-", dir=target.parent) as tmp:
         stage = Path(tmp)
-        for name in names:
+        for name in copied:
             shutil.copy2(processed / name, stage / name)
+        (stage / FORECAST_DRAWS_RECORD).write_text(
+            json.dumps(_draws_record(stage, release_tag), ensure_ascii=False, indent=2) + "\n",
+            encoding="utf-8",
+        )
         manifest = {
             "schema_version": 1,
             "repository": REPOSITORY,
@@ -84,6 +189,7 @@ def build_backend_release_bundle(
                 "council_race_cards": "council_race_cards.json",
                 "trustee_race_cards": "trustee_race_cards.json",
             },
+            "forecast_draws": {"record": FORECAST_DRAWS_RECORD, "draws": FORECAST_DRAWS_ASSET},
             "assets": [
                 {
                     "filename": path.name,
@@ -205,6 +311,7 @@ def _verify_published_release(
         if manifest_path.read_bytes() != local_manifest_path.read_bytes():
             raise RuntimeError("published release manifest bytes differ from the uploaded bundle")
         _verify_manifest_assets(downloaded, manifest)
+        verify_forecast_draws(downloaded, tag=tag)
 
 
 def publish_backend_release(
@@ -214,8 +321,7 @@ def publish_backend_release(
     root: str | Path,
     runner: Callable[..., subprocess.CompletedProcess[str]] = subprocess.run,
 ) -> None:
-    if not BACKEND_TAG_PATTERN.fullmatch(tag):
-        raise ValueError(f"backend release tag must match backend-YYYY-MM-DD.N; received {tag!r}")
+    _validate_tag(tag)
     project = Path(root)
     if _git("status", "--porcelain", cwd=project, runner=runner):
         raise RuntimeError("refusing to publish a backend release from a dirty working tree")
@@ -232,6 +338,7 @@ def publish_backend_release(
         "polling": _validate_dependency_pin(manifest, "polling", POLLING_REPOSITORY),
     }
     _verify_manifest_assets(bundle_path, manifest)
+    verify_forecast_draws(bundle_path, tag=tag)
 
     remote_main = _git("ls-remote", "origin", "refs/heads/main", cwd=project, runner=runner).split()
     if not remote_main or not GIT_COMMIT_PATTERN.fullmatch(remote_main[0]):
@@ -298,6 +405,7 @@ def main() -> None:
     build.add_argument("--results-release", required=True)
     build.add_argument("--polling-release", required=True)
     build.add_argument("--output", type=Path, default=Path("dist"))
+    build.add_argument("--release-tag", required=True, help="the tag this bundle is published as")
     publish = subparsers.add_parser("publish")
     publish.add_argument("tag")
     publish.add_argument("--bundle", type=Path, default=Path("dist"))
@@ -313,6 +421,7 @@ def main() -> None:
             polling_release=args.polling_release,
             source_commit=_git("rev-parse", "HEAD", cwd=root),
             dirty=bool(_git("status", "--porcelain", cwd=root)),
+            release_tag=args.release_tag,
         )
         print(f"backend release bundle written to {output}")
     else:

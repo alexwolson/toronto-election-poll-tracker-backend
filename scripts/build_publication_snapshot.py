@@ -5,6 +5,7 @@ Emits the typed data feeds the frontend ingests into an explicit output director
   - mayoral_forecast.json  schema 5: joint election-day distributions from the
                            compact model (ADR 0054); the fit must pass the
                            numerical qualification gate or this build fails
+  - mayoral_forecast_draws.npz  the same fit's named-share Election Outcome Draws
   - manifest.json          model index + live-cycle Final-Ballot state
 The council feed (council_race_cards.json) is produced by build_council_snapshot.py.
 
@@ -25,8 +26,9 @@ sys.path.insert(0, str(ROOT))
 
 from backend.model.compact_mayoral_feed import (
     MAYORAL_FORECAST_FEED_SCHEMA_VERSION,
-    build_compact_mayoral_forecast_feed,
+    build_compact_mayoral_forecast,
     history_cache_dir_from_env,
+    write_forecast_draws,
 )
 from backend.model.council_snapshot import COUNCIL_RACE_CARD_SCHEMA_VERSION
 from backend.model.publication_manifest import (
@@ -34,6 +36,7 @@ from backend.model.publication_manifest import (
     load_live_cycle,
 )
 from backend.model.trustee_race_card import TRUSTEE_RACE_CARD_SCHEMA_VERSION
+from backend.release_bundle import FORECAST_DRAWS_ASSET
 from backend.release_inputs import load_release_input_paths
 
 
@@ -83,7 +86,7 @@ def main() -> None:
     # The compact model reads the release's descriptive polls.csv for the current
     # campaign (hydrated into the polling bundle dir) and the backend-tracked audited
     # corpus for history; it fits, qualifies (fail closed) and assembles schema 5.
-    forecast = build_compact_mayoral_forecast_feed(
+    forecast, draws = build_compact_mayoral_forecast(
         ROOT,
         live_cycle,
         polls_dir=inputs.polling_dir,
@@ -91,6 +94,8 @@ def main() -> None:
         history_cache_dir=history_cache_dir_from_env(),
     )
     _write(args.output_dir, "mayoral_forecast.json", forecast)
+    write_forecast_draws(args.output_dir / FORECAST_DRAWS_ASSET, draws)
+    print(f"  wrote {FORECAST_DRAWS_ASSET} ({draws['full_ballot'].shape[0]} draws)")
 
     manifest = build_publication_manifest(
         as_of=as_of,

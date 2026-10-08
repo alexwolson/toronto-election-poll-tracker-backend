@@ -52,8 +52,9 @@ from backend.model.compact_mayoral.readings import (
     with_horizon,
 )
 from backend.model.compact_mayoral.sampling import PRODUCTION, FitResult
-from backend.model.compact_mayoral_feed import TORONTO, _qualified_fit
+from backend.model.compact_mayoral_feed import TORONTO, _qualified_fit, forecast_draws
 from backend.model.publication_manifest import load_live_cycle
+from backend.release_bundle import DRAWS_ARRAYS
 from backend.release_inputs import ReleaseInputPaths, load_release_input_paths, sha256_file
 
 
@@ -145,16 +146,9 @@ def write_draws(out_dir: Path, held: CampaignPolls, result: FitResult, provenanc
     for path in (npz, record_path):
         if path.exists():
             raise FileExistsError(f"refusing to overwrite {path}")
-    prefix = held.key + "/"
-    full = np.asarray(result.draws[prefix + "full_ballot"], dtype=float)
-    pool = np.asarray(result.draws[prefix + "tail"], dtype=float).ravel()
+    arrays = forecast_draws(held, result.draws)
     with npz.open("xb") as handle:
-        np.savez_compressed(
-            handle,
-            candidate_ids=np.asarray(held.candidates),
-            full_ballot=full,
-            residual_pool=pool,
-        )
+        np.savez_compressed(handle, **arrays)
     settings = result.settings
     record = {
         "campaign": held.key,
@@ -164,15 +158,10 @@ def write_draws(out_dir: Path, held: CampaignPolls, result: FitResult, provenanc
             {"candidate_id": cid, "name": name}
             for cid, name in zip(held.candidates, held.names, strict=True)
         ],
-        "draws": int(full.shape[0]),
+        "draws": int(arrays["full_ballot"].shape[0]),
         "npz": npz.name,
         "npz_sha256": hashlib.sha256(npz.read_bytes()).hexdigest(),
-        "arrays": {
-            "candidate_ids": "the named candidates, in column order",
-            "full_ballot": "draws x named candidates: each one's share of valid votes",
-            "residual_pool": "per draw, the share of every other candidate on the ballot; "
-            "full_ballot plus residual_pool sums to 1",
-        },
+        "arrays": DRAWS_ARRAYS,
         "polls_used": len(held.polls),
         "latest_poll_days_before_election": min(p.days_before_election for p in held.polls),
         "fit": {
