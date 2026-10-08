@@ -53,9 +53,13 @@ def _validate_tag(tag: str) -> None:
         raise ValueError(f"backend release tag must match backend-YYYY-MM-DD.N; received {tag!r}")
 
 
-def _check_draws(npz: Path, feed: dict, draws: int) -> None:
-    """Fail unless the npz holds exactly ``draws`` coherent draws for the feed's candidates."""
-    named = [c["candidate_id"] for c in feed["election_day"]["candidates"]]
+def _named_ids(feed: dict) -> list[str]:
+    return [c["candidate_id"] for c in feed["election_day"]["candidates"]]
+
+
+def _check_draws(npz: Path, feed: dict) -> None:
+    """Fail unless the npz holds the feed's ``model.draws`` coherent draws for its candidates."""
+    named, draws = _named_ids(feed), feed["model"]["draws"]
     with np.load(npz, allow_pickle=False) as arrays:
         if set(arrays.files) != set(DRAWS_ARRAYS):
             raise ValueError(f"forecast draws hold arrays {sorted(arrays.files)}")
@@ -70,7 +74,7 @@ def _check_draws(npz: Path, feed: dict, draws: int) -> None:
         )
     if not (np.isfinite(full).all() and np.isfinite(pool).all()):
         raise ValueError("forecast draws are not all finite")
-    if not np.allclose(full.sum(axis=1) + pool, 1.0, atol=1e-6):
+    if not np.allclose(full.sum(axis=1) + pool, 1.0, atol=1e-9):
         raise ValueError("forecast draws do not sum to 1")
 
 
@@ -100,18 +104,15 @@ def verify_forecast_draws(directory: str | Path, *, tag: str) -> dict:
             f"forecast draws record has {record.get('draws')} draws; the feed has "
             f"{feed['model']['draws']}"
         )
-    _check_draws(npz, feed, record["draws"])
-    if [c["candidate_id"] for c in record["candidates"]] != [
-        c["candidate_id"] for c in feed["election_day"]["candidates"]
-    ]:
+    _check_draws(npz, feed)
+    if [c["candidate_id"] for c in record["candidates"]] != _named_ids(feed):
         raise ValueError("forecast draws record candidate ids differ from the feed")
     return record
 
 
 def _draws_record(stage: Path, tag: str) -> dict:
     feed = json.loads((stage / FORECAST_FEED).read_text(encoding="utf-8"))
-    draws = feed["model"]["draws"]
-    _check_draws(stage / FORECAST_DRAWS_ASSET, feed, draws)
+    _check_draws(stage / FORECAST_DRAWS_ASSET, feed)
     return {
         "release_tag": tag,
         "election_cycle_id": feed["election_cycle_id"],
@@ -121,7 +122,7 @@ def _draws_record(stage: Path, tag: str) -> dict:
             {"candidate_id": c["candidate_id"], "name": c["display_name"]}
             for c in feed["election_day"]["candidates"]
         ],
-        "draws": draws,
+        "draws": feed["model"]["draws"],
         "npz": FORECAST_DRAWS_ASSET,
         "npz_sha256": sha256_file(stage / FORECAST_DRAWS_ASSET),
         "arrays": DRAWS_ARRAYS,
@@ -150,13 +151,14 @@ def build_backend_release_bundle(
         results, polling, results_release=results_release
     )
     names = (FORECAST_FEED, "council_race_cards.json", "trustee_race_cards.json")
-    for name in (*names, FORECAST_DRAWS_ASSET):
+    copied = (*names, FORECAST_DRAWS_ASSET)
+    for name in copied:
         if not (processed / name).is_file():
             raise FileNotFoundError(f"missing backend release feed: {processed / name}")
     target.parent.mkdir(parents=True, exist_ok=True)
     with tempfile.TemporaryDirectory(prefix=f".{target.name}.stage-", dir=target.parent) as tmp:
         stage = Path(tmp)
-        for name in (*names, FORECAST_DRAWS_ASSET):
+        for name in copied:
             shutil.copy2(processed / name, stage / name)
         (stage / FORECAST_DRAWS_RECORD).write_text(
             json.dumps(_draws_record(stage, release_tag), ensure_ascii=False, indent=2) + "\n",

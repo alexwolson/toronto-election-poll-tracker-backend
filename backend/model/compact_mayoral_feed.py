@@ -614,12 +614,6 @@ def write_forecast_draws(path: str | Path, arrays: dict[str, np.ndarray]) -> Non
     np.savez_compressed(Path(path), **arrays)
 
 
-def build_compact_mayoral_forecast_feed(*args, **kwargs) -> dict:
-    """The schema-5 feed alone; see :func:`build_compact_mayoral_forecast`."""
-    feed, _ = build_compact_mayoral_forecast(*args, **kwargs)
-    return feed
-
-
 def build_compact_mayoral_forecast(
     root: str | Path,
     live_cycle: dict,

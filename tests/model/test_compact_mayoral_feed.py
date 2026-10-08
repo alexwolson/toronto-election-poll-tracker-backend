@@ -20,7 +20,6 @@ from backend.model.compact_mayoral_feed import (
     PUBLICATION_POLICY,
     assemble_forecast_feed,
     build_compact_mayoral_forecast,
-    build_compact_mayoral_forecast_feed,
     forecast_draws,
     history_cutoffs,
     kept_fraction_cases_record,
@@ -520,9 +519,9 @@ def test_concurrent_fits_build_the_same_feed_as_sequential_fits(tmp_path: Path, 
         "sensitivity_settings": fast,
         "qualification": None,
     }
-    sequential = build_compact_mayoral_forecast_feed(root, LIVE, fit_workers=1, **common)
+    sequential, _ = build_compact_mayoral_forecast(root, LIVE, fit_workers=1, **common)
     capsys.readouterr()
-    concurrent = build_compact_mayoral_forecast_feed(root, LIVE, fit_workers=3, **common)
+    concurrent, _ = build_compact_mayoral_forecast(root, LIVE, fit_workers=3, **common)
     log = capsys.readouterr().out
     assert _without_timings(concurrent) == _without_timings(sequential)
     # one timing line per fit: main, two earlier history points, two sensitivity refits
@@ -554,11 +553,11 @@ def test_history_points_are_reused_from_the_cache_and_match_a_fresh_fit(
         "fit_workers": 1,
     }
     cache = tmp_path / "history-cache"
-    fresh = build_compact_mayoral_forecast_feed(root, LIVE, **common)
+    fresh, _ = build_compact_mayoral_forecast(root, LIVE, **common)
     capsys.readouterr()
-    first = build_compact_mayoral_forecast_feed(root, LIVE, history_cache_dir=cache, **common)
+    first, _ = build_compact_mayoral_forecast(root, LIVE, history_cache_dir=cache, **common)
     first_log = capsys.readouterr().out
-    second = build_compact_mayoral_forecast_feed(root, LIVE, history_cache_dir=cache, **common)
+    second, _ = build_compact_mayoral_forecast(root, LIVE, history_cache_dir=cache, **common)
     second_log = capsys.readouterr().out
     assert len(list(cache.glob("*.json"))) == 2  # the two earlier history points
     assert first_log.count(": cached") == 0 and first_log.count("[compact fit]") == 5
@@ -719,12 +718,12 @@ def test_end_to_end_feed_after_a_suspended_campaign(tmp_path: Path) -> None:
         "fit_workers": 1,
     }
     before = _fixture_root(tmp_path / "before")
-    unchanged = build_compact_mayoral_forecast_feed(
+    unchanged, _ = build_compact_mayoral_forecast(
         before, LIVE, polls_dir=before / "polls", analysis_cutoff=CUTOFF, **common
     )
     root = _with_suspended_campaign(_fixture_root(tmp_path / "after"))
     cutoff = datetime(2026, 10, 7, 12, 0, tzinfo=ZoneInfo("America/Toronto"))
-    feed = build_compact_mayoral_forecast_feed(
+    feed, _ = build_compact_mayoral_forecast(
         root, LIVE, polls_dir=root / "polls", analysis_cutoff=cutoff, **common
     )
     assert feed["schema_version"] == 5
