@@ -26,6 +26,9 @@ Post-Suspension Reading: a composition over the remaining named candidates, with
 any share it reports for the suspended candidate set aside, and in its sample the
 full field beats a head-to-head (Polling's ``reading_classification.csv``; backend
 issue 31). Earlier readings still need all three named candidates.
+
+A sample listed in Polling's ``model_exclusions.csv`` is never modelled: the
+maintainer kept it out of the fit, and it stays in the record (ADR 0062).
 """
 
 from __future__ import annotations
@@ -333,6 +336,9 @@ def certified_candidates(candidates_json: Path) -> list[tuple[str, str, str]]:
 # poll tables; an explicit head-to-head is an ``alternative_ballot`` reading.
 READING_CLASSIFICATION = "reading_classification.csv"
 ALTERNATIVE_BALLOT = "alternative_ballot"
+# Polling's model exclusions: samples the maintainer kept out of the fit. They stay
+# in the record and the archive; no reading of theirs is modelled (ADR 0062).
+MODEL_EXCLUSIONS = "model_exclusions.csv"
 
 
 def _current_field(candidates_json: Path, extra_named: tuple[tuple[str, str], ...]):
@@ -384,6 +390,7 @@ def _select_current_readings(
     vote-intention reading, whatever its denominator (backend issue 31).
     """
     polling_dir = Path(polling_dir)
+    excluded = {r["poll_sample_id"] for r in _read_csv(polling_dir / MODEL_EXCLUSIONS)}
     classes = {
         r["poll_reading_id"]: r["measurement_class"]
         for r in _read_csv(polling_dir / READING_CLASSIFICATION)
@@ -394,6 +401,7 @@ def _select_current_readings(
         if s["election_cycle_id"] == CURRENT_KEY
         and s["geography_type"] == "citywide"
         and s["extraction_status"] == "extracted"
+        and s["poll_sample_id"] not in excluded
     ]
     readings = defaultdict(list)
     for r in _read_csv(polling_dir / "poll_readings.csv"):
