@@ -28,6 +28,10 @@ _Avoid_: Retained share, kept share
 How a Suspended Campaign's support beyond its Kept Fraction divides among the remaining named candidates. It starts from a split in proportion to their support and is learned from Post-Suspension Readings.
 _Avoid_: Transfer, redistribution assumption
 
+**Excluded Poll**:
+A 2026 poll the maintainer decided not to use in the forecast, for a recorded reason about its method or the pollster's record (ADR 0062). It stays in the poll record and the public archive, marked as unused with its explanation. Exclusion is never decided from a poll's numbers.
+_Avoid_: Rejected poll, discarded poll, outlier
+
 **Internal Outcome Distribution**:
 The forecast's complete probability distribution over election-day valid-vote shares before any Publication Gates determine which summaries may be shown publicly.
 _Avoid_: Published forecast, public odds

@@ -275,6 +275,10 @@ def _bundle_inputs(tmp_path: Path) -> tuple[Path, Path]:
             for rid in ids
         ],
     )
+    # Polling's model exclusions: none unless a test adds one (ADR 0062).
+    (polling / "model_exclusions.csv").write_text(
+        "poll_sample_id,decided_on,reasons,explanation,notes\n", encoding="utf-8"
+    )
     return polling, candidates
 
 
@@ -575,6 +579,43 @@ def test_post_suspension_selection_is_published_for_the_feed(tmp_path: Path) -> 
     assert chosen["mainstreet-2026-10-08"]["named_share"] == pytest.approx(0.90)
     assert chosen["pallas-2026-10-09"]["poll_reading_id"] == "pallas_1009_all"
     assert "liaison-2026-10-05" not in chosen
+
+
+def test_an_excluded_sample_never_enters_the_fit(tmp_path: Path) -> None:
+    polling, candidates = _post_exit_inputs(tmp_path)
+    before = {
+        p.group
+        for p in current_campaign(
+            polling, candidates, election_date=ELECTION_2026, cutoff=CUTOFF_2026
+        ).polls
+    }
+    _append(
+        polling,
+        "model_exclusions.csv",
+        [
+            {
+                "poll_sample_id": "forum-2026-10-06",
+                "decided_on": "2026-10-08",
+                "reasons": "methodology_confidence",
+                "explanation": "Listed for the record only.",
+            }
+        ],
+    )
+    c = current_campaign(polling, candidates, election_date=ELECTION_2026, cutoff=CUTOFF_2026)
+    assert {p.group for p in c.polls} == before - {"forum-2026-10-06"}
+    chosen = {
+        row["poll_sample_id"]
+        for row in current_reading_selection(polling, candidates, cutoff=CUTOFF_2026)
+    }
+    assert "forum-2026-10-06" not in chosen
+    assert c.exits  # the exit itself does not depend on any one poll
+
+
+def test_the_forecast_requires_the_model_exclusions_table(tmp_path: Path) -> None:
+    polling, candidates = _bundle_inputs(tmp_path)
+    (polling / "model_exclusions.csv").unlink()
+    with pytest.raises(FileNotFoundError):
+        current_campaign(polling, candidates, election_date=ELECTION_2026, cutoff=CUTOFF_2026)
 
 
 def test_a_suspended_campaign_after_the_cutoff_is_not_applied(tmp_path: Path) -> None:

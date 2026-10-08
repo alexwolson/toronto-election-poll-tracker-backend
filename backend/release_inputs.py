@@ -92,6 +92,8 @@ HISTORICAL_CORPUS_ASSETS = tuple(
 # The 2026 reading classification (Polling ``data/raw/polls/reading_classification.csv``):
 # the forecast reads it for the full-field-beats-head-to-head rule (backend issue 31).
 READING_CLASSIFICATION_ASSET = "reading_classification.csv"
+# The samples the maintainer kept out of the forecast fit (ADR 0062).
+MODEL_EXCLUSIONS_ASSET = "model_exclusions.csv"
 
 
 def validate_release_chain(
@@ -119,6 +121,8 @@ def validate_release_chain(
         raise ValueError(
             f"Polling release lacks the 2026 reading classification: {READING_CLASSIFICATION_ASSET}"
         )
+    if not (polling / MODEL_EXCLUSIONS_ASSET).is_file():
+        raise ValueError(f"Polling release lacks the model exclusions: {MODEL_EXCLUSIONS_ASSET}")
     return results_manifest, polling_manifest
 
 
