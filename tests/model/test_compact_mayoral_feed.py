@@ -358,6 +358,9 @@ def _classify(polls: Path, alternative: tuple[str, ...] = ()) -> None:
             for rid in ids
         )
     )
+    (polls / "model_exclusions.csv").write_text(
+        "poll_sample_id,decided_on,reasons,explanation,notes\n"
+    )
 
 
 def _with_suspended_campaign(root: Path) -> Path:

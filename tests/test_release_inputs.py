@@ -39,6 +39,10 @@ def _write_historical_tables(polling: Path) -> None:
     (polling / "reading_classification.csv").write_text(
         "poll_reading_id,scope,measurement_class\n", encoding="utf-8"
     )
+    # The model exclusions ship beside it (ADR 0062).
+    (polling / "model_exclusions.csv").write_text(
+        "poll_sample_id,decided_on,reasons,explanation,notes\n", encoding="utf-8"
+    )
 
 
 def test_hydration_is_isolated_and_returns_explicit_model_paths(tmp_path: Path) -> None:
@@ -191,5 +195,41 @@ def test_hydration_refuses_a_polling_release_without_the_2026_reading_classifica
     _write_historical_tables(polling)
     (polling / "reading_classification.csv").unlink()
     with pytest.raises(ValueError, match="reading classification"):
+        hydrate_release_inputs(project, results, polling, results_release="results-test")
+    assert not (project / "data" / "upstream").exists()
+
+
+def test_hydration_refuses_a_polling_release_without_the_model_exclusions(
+    tmp_path: Path,
+) -> None:
+    # The forecast skips the samples Polling excludes (ADR 0062); no table, no forecast.
+    project = tmp_path / "backend"
+    project.mkdir()
+    results = tmp_path / "results"
+    polling = tmp_path / "polling"
+    results.mkdir()
+    polling.mkdir()
+    _write_json(
+        results / "release_manifest.json",
+        {"repository": "alexwolson/toronto-election-results", "source_commit": "c"},
+    )
+    sha = hashlib.sha256((results / "release_manifest.json").read_bytes()).hexdigest()
+    _write_json(
+        polling / "release_manifest.json",
+        {
+            "repository": "alexwolson/toronto-election-poll-tracker-data",
+            "dependencies": {
+                "results": {
+                    "repository": "alexwolson/toronto-election-results",
+                    "release": "results-test",
+                    "source_commit": "c",
+                    "manifest_sha256": sha,
+                }
+            },
+        },
+    )
+    _write_historical_tables(polling)
+    (polling / "model_exclusions.csv").unlink()
+    with pytest.raises(ValueError, match="model exclusions"):
         hydrate_release_inputs(project, results, polling, results_release="results-test")
     assert not (project / "data" / "upstream").exists()
