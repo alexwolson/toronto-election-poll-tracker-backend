@@ -16,7 +16,11 @@ from backend.release_bundle import (
     publish_backend_release,
     verify_forecast_draws,
 )
-from backend.release_inputs import HISTORICAL_CORPUS_ASSETS, READING_CLASSIFICATION_ASSET
+from backend.release_inputs import (
+    HISTORICAL_CORPUS_ASSETS,
+    MODEL_EXCLUSIONS_ASSET,
+    READING_CLASSIFICATION_ASSET,
+)
 
 
 def _write_json(path: Path, payload: dict) -> None:
@@ -50,7 +54,7 @@ def _upstream_bundles(tmp_path: Path) -> tuple[Path, Path]:
         },
     )
     # Every Polling release carries the historical corpus (ADR 0060).
-    for name in (*HISTORICAL_CORPUS_ASSETS, READING_CLASSIFICATION_ASSET):
+    for name in (*HISTORICAL_CORPUS_ASSETS, READING_CLASSIFICATION_ASSET, MODEL_EXCLUSIONS_ASSET):
         (polling / name).write_text("id\n", encoding="utf-8")
     return results, polling
 
