@@ -1,11 +1,11 @@
 # Show a council incumbent's Suspended Campaign on the race card
 
-Status: accepted
+Status: proposed — contingent on a confirmed Suspended Campaign; the report may not hold
 
 ## Context
 
 On October 9, 2026, CityNews reported that Frances Nunziata, the Ward 5 incumbent, was going to
-end her campaign. After the August 21 withdrawal deadline she would stay on the Final Ballot.
+end her campaign; it was not confirmed. After the August 21 withdrawal deadline she would stay on the Final Ballot.
 Results ADR 0010 publishes councillor Suspended Campaign dates in
 `council_campaign_suspensions.json`. The council race card (ADR 0043) is descriptive. It has no
 forecast to adjust, but it labels each ward's attention level and lists its ward polls.
