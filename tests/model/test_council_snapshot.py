@@ -49,8 +49,8 @@ def test_snapshot_covers_all_wards_and_serializes_cleanly() -> None:
     json.dumps(snap, allow_nan=False)  # no Decimal / NaN leaks
 
 
-def test_schema_bumped_to_v10_for_historical_poll_context() -> None:
-    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 10
+def test_schema_bumped_to_v11_for_council_suspended_campaigns() -> None:
+    assert COUNCIL_RACE_CARD_SCHEMA_VERSION == 11
 
 
 def test_map_matches_attention_order_and_ward_facts(tmp_path: Path) -> None:
@@ -281,3 +281,87 @@ def test_candidates_carry_their_endorsements_and_everyone_else_an_empty_list() -
     endorsed = [c for c in everyone if c["endorsements"]]
     assert [c["candidacy_id"] for c in endorsed] == [target["candidacy_id"]]
     assert endorsed[0]["endorsements"] == [record]
+
+
+def _suspended_ward_5_snapshot(geometry_path: Path | None = None) -> dict:
+    # The tracked fixture predates the 2026 field, so give the incumbent a candidacy id.
+    field = load_registered_field(FIELD)
+    field["5"] = [
+        {**entry, "candidacy_id": "can_fixture_nunziata"}
+        if entry["last_name"] == "Nunziata"
+        else entry
+        for entry in field["5"]
+    ]
+    return build_council_snapshot(
+        load_ward_incumbency(INCUMBENCY),
+        field,
+        load_council_results(RESULTS),
+        load_ward_poll_readings(WARD_POLLS),
+        ward_names=load_ward_names(WARD_NAMES),
+        geometry_path=geometry_path,
+        campaign_suspensions={"can_fixture_nunziata": "2026-10-09"},
+    )
+
+
+def test_incumbent_suspended_campaign_keeps_the_seat_contested_and_labels_it() -> None:
+    w = _suspended_ward_5_snapshot()["wards"]["5"]
+    assert w["is_open_seat"] is False
+    assert w["incumbent_campaign_suspended_on"] == "2026-10-09"
+    assert w["attention"]["level"] == "suspended"
+    suspended = {
+        c["display_name"]: c["campaign_suspended_on"]
+        for c in w["candidates"]
+        if c["campaign_suspended_on"] is not None
+    }
+    assert suspended == {"Frances Nunziata": "2026-10-09"}
+    assert w["ward_polls"]
+    assert all(p["before_incumbent_suspension"] is True for p in w["ward_polls"])
+
+
+def test_without_suspensions_every_card_is_unchanged() -> None:
+    snap = _snapshot()
+    for card in snap["wards"].values():
+        assert card["incumbent_campaign_suspended_on"] is None
+        assert card["attention"]["level"] != "suspended"
+        assert all(c["campaign_suspended_on"] is None for c in card["candidates"])
+        assert all(p["before_incumbent_suspension"] is False for p in card["ward_polls"])
+
+
+def test_suspended_attention_ranks_with_open_seats() -> None:
+    card = {
+        "is_open_seat": False,
+        "incumbent_campaign_suspended_on": "2026-10-09",
+        "incumbent": {"exposure_triggers": [], "defeatability_score": 10},
+    }
+    assert _attention_level(card) == "suspended"
+    assert _attention_score(card) == 4000
+
+
+def test_map_labels_a_suspended_incumbent_and_adds_its_legend_entry(tmp_path: Path) -> None:
+    path = tmp_path / "districts.parquet"
+    rows = [
+        {
+            "represented_body": "toronto_city_council",
+            "boundary_regime": "toronto_council_25_wards",
+            "official_district_id": f"ward-{ward}",
+            "district_display_name": f"Ward {ward}",
+            "geographic_name": f"Area {ward}",
+            "geometry_status": "available",
+            "geometry": box(
+                (ward - 1) % 5, (ward - 1) // 5, (ward - 1) % 5 + 1, (ward - 1) // 5 + 1
+            ),
+        }
+        for ward in range(1, 26)
+    ]
+    gpd.GeoDataFrame(rows, geometry="geometry", crs="EPSG:26917").to_parquet(path)
+
+    race_map = _suspended_ward_5_snapshot(path)["map"]
+    ward_5 = next(feature for feature in race_map["features"] if feature["ward_id"] == "5")
+
+    assert ward_5["signal_key"] == "suspended"
+    assert ward_5["panel"]["status"] == "Incumbent suspended campaign"
+    assert ward_5["panel"]["incumbent_summary"] == (
+        "Incumbent: Frances Nunziata (campaign suspended Oct. 9)"
+    )
+    assert {"key": "suspended", "label": "Incumbent suspended campaign"} in race_map["legend"]
+    assert all(entry["key"] != "suspended" for entry in _snapshot(path)["map"]["legend"])

@@ -8,6 +8,7 @@ frontend. No model, no forecast — a descriptive race card per ward.
 from __future__ import annotations
 
 import csv
+from datetime import date
 from pathlib import Path
 
 from backend.model.council_biography import (
@@ -46,15 +47,18 @@ from backend.model.council_race_card import (
 )
 from backend.model.race_map import build_race_map
 
-COUNCIL_RACE_CARD_SCHEMA_VERSION = 10
+COUNCIL_RACE_CARD_SCHEMA_VERSION = 11
 
 _ATTENTION_LABELS = {
     "open": "Open seat",
+    "suspended": "Incumbent suspended campaign",
     "high": "High attention",
     "elevated": "Elevated attention",
     "quiet": "Lower attention",
 }
-_ATTENTION_BASE = {"open": 4000, "high": 3000, "elevated": 2000, "quiet": 1000}
+# A Suspended Campaign keeps the incumbent on the ballot (Results ADR 0010), so the
+# ward is not an open seat, but it ranks with them.
+_ATTENTION_BASE = {"open": 4000, "suspended": 4000, "high": 3000, "elevated": 2000, "quiet": 1000}
 
 
 def _race_candidate_hints(
@@ -225,6 +229,7 @@ def _candidate_card(
     hints: tuple[FiredHint, ...] = (),
     past_elections: tuple[PastElection, ...] = (),
     endorsements: list[dict] | None = None,
+    campaign_suspended_on: str | None = None,
 ) -> dict:
     bio = candidate.biography
     return {
@@ -241,6 +246,7 @@ def _candidate_card(
         "past_elections": [past_election_to_dict(e) for e in past_elections],
         # Observed facts from the Results release (ADR 0058); open-world, never a model input.
         "endorsements": list(endorsements or []),
+        "campaign_suspended_on": campaign_suspended_on,
     }
 
 
@@ -260,7 +266,7 @@ def _prior_card(prior: PriorResult | None) -> dict | None:
     }
 
 
-def _poll_card(reading: WardPollReading) -> dict:
+def _poll_card(reading: WardPollReading, incumbent_suspended_on: str | None) -> dict:
     return {
         "poll_id": reading.poll_id,
         "firm": reading.firm,
@@ -272,6 +278,9 @@ def _poll_card(reading: WardPollReading) -> dict:
         "denominator": reading.denominator,
         "ballot_status": reading.ballot_status,
         "undecided_share": reading.undecided_share,
+        "before_incumbent_suspension": (
+            incumbent_suspended_on is not None and reading.date_conducted < incumbent_suspended_on
+        ),
         "candidates": [
             {
                 "candidate_id": c.candidate_id,
@@ -294,10 +303,23 @@ def _race_card(
     candidate_hints: dict[str, tuple[FiredHint, ...]],
     candidate_offices: dict[str, tuple[PastElection, ...]],
     endorsements: dict[str, list[dict]] | None = None,
+    campaign_suspensions: dict[str, str] | None = None,
 ) -> dict:
     facts = derive_competitiveness_facts(race, prior)
     endorsements = endorsements or {}
+    suspensions = campaign_suspensions or {}
     triggers = race_exposure_triggers(race)
+    incumbent_id = race.incumbent.biography.candidate_id if race.incumbent.biography else None
+    incumbent_suspended_on = next(
+        (
+            suspensions[c.candidacy_id]
+            for c in race.candidates
+            if c.candidacy_id in suspensions
+            and incumbent_id is not None
+            and c.candidate_id == incumbent_id
+        ),
+        None,
+    )
     return {
         "ward": race.ward,
         "ward_name": ward_name,
@@ -305,12 +327,14 @@ def _race_card(
         "incumbent_in_field": race.incumbent_in_field,
         "incumbency_flag_disagrees": race.incumbency_flag_disagrees,
         "incumbent": _incumbent_card(race.incumbent, triggers),
+        "incumbent_campaign_suspended_on": incumbent_suspended_on,
         "candidates": [
             _candidate_card(
                 c,
                 candidate_hints.get(c.display_name, ()),
                 candidate_offices.get(c.display_name, ()),
                 endorsements.get(c.candidacy_id or "", []),
+                suspensions.get(c.candidacy_id or ""),
             )
             for c in race.candidates
         ],
@@ -322,13 +346,15 @@ def _race_card(
             "prior_margin_votes": facts.prior_margin_votes,
             "prior_margin_share": facts.prior_margin_share,
         },
-        "ward_polls": [_poll_card(r) for r in ward_polls],
+        "ward_polls": [_poll_card(r, incumbent_suspended_on) for r in ward_polls],
     }
 
 
 def _attention_level(card: dict) -> str:
     if card["is_open_seat"]:
         return "open"
+    if card["incumbent_campaign_suspended_on"] is not None:
+        return "suspended"
     trigger_count = len(card["incumbent"]["exposure_triggers"])
     score = card["incumbent"]["defeatability_score"] or 0
     if trigger_count >= 2 or score >= 60:
@@ -340,11 +366,22 @@ def _attention_level(card: dict) -> str:
 
 def _attention_score(card: dict) -> int:
     level = _attention_level(card)
-    if level == "open":
+    if level in {"open", "suspended"}:
         return _ATTENTION_BASE[level]
     trigger_count = len(card["incumbent"]["exposure_triggers"])
     score = card["incumbent"]["defeatability_score"] or 0
     return _ATTENTION_BASE[level] + min(trigger_count * 100 + score, 999)
+
+
+def _incumbent_summary(card: dict) -> str:
+    if card["is_open_seat"]:
+        return "No incumbent is running"
+    summary = f"Incumbent: {card['incumbent']['name']}"
+    suspended_on = card["incumbent_campaign_suspended_on"]
+    if suspended_on is None:
+        return summary
+    day = date.fromisoformat(suspended_on)
+    return f"{summary} (campaign suspended {day.strftime('%b')}. {day.day})"
 
 
 def _council_map(wards: dict[str, dict], geometry_path: str | Path | None) -> dict | None:
@@ -368,11 +405,7 @@ def _council_map(wards: dict[str, dict], geometry_path: str | Path | None) -> di
                 "heading": f"Ward {ward} — {name}",
                 "status": _ATTENTION_LABELS[level],
                 "candidate_count": len(card["candidates"]),
-                "incumbent_summary": (
-                    "No incumbent is running"
-                    if card["is_open_seat"]
-                    else f"Incumbent: {card['incumbent']['name']}"
-                ),
+                "incumbent_summary": _incumbent_summary(card),
                 "href": f"/wards/{ward}",
             },
         }
@@ -386,6 +419,11 @@ def _council_map(wards: dict[str, dict], geometry_path: str | Path | None) -> di
         palette="council_attention",
         legend=[
             {"key": "open", "label": "Open seat"},
+            *(
+                [{"key": "suspended", "label": _ATTENTION_LABELS["suspended"]}]
+                if any(_attention_level(card) == "suspended" for card in wards.values())
+                else []
+            ),
             {"key": "high", "label": "High attention"},
             {"key": "elevated", "label": "Elevated attention"},
             {"key": "quiet", "label": "Lower attention"},
@@ -407,6 +445,7 @@ def build_council_snapshot(
     endorsements: dict[str, list[dict]] | None = None,
     poll_context: dict[str, dict] | None = None,
     poll_benchmark: dict | None = None,
+    campaign_suspensions: dict[str, str] | None = None,
 ) -> dict:
     biographies = build_all_biographies(results)
     races = build_council_races(incumbency, field, biographies)
@@ -434,6 +473,7 @@ def build_council_snapshot(
             ward_hints(race),
             ward_offices(race),
             endorsements,
+            campaign_suspensions,
         )
         for ward, race in races.items()
     }
