@@ -17,7 +17,7 @@ The official set of candidates eligible to receive votes after registration, wit
 _Avoid_: Current field, target field, expected field
 
 **Suspended Campaign**:
-A Final Ballot candidate's campaign that the candidate publicly ended after the withdrawal deadline. The candidate stays on the Final Ballot and can still receive votes; Toronto cases are Thomson and Rossi (2010), Davis and Mammoliti (2023 by-election) and Alexander (2026).
+A Final Ballot candidate's campaign that the candidate publicly ended after the withdrawal deadline. The candidate stays on the Final Ballot and can still receive votes; Toronto cases are Thomson and Rossi (2010), Davis and Mammoliti (2023 by-election) and Alexander (2026). A council incumbent's Suspended Campaign keeps the ward from being an Open Seat; its race card says "Incumbent suspended campaign" (ADR 0063).
 _Avoid_: Withdrawn candidate, dropped out, exited candidate
 
 **Kept Fraction**:

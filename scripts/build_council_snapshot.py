@@ -27,6 +27,10 @@ from backend.model.council_hints import (
 from backend.model.council_race import load_registered_field, load_ward_incumbency
 from backend.model.council_race_card import load_ward_poll_readings
 from backend.model.council_snapshot import build_council_snapshot, load_ward_names
+from backend.model.council_suspensions import (
+    COUNCIL_CAMPAIGN_SUSPENSIONS_FILENAME,
+    load_council_campaign_suspensions,
+)
 from backend.model.ward_poll_context import historical_benchmark, poll_contexts
 from backend.release_inputs import load_release_input_paths
 
@@ -74,6 +78,9 @@ def main() -> None:
         endorsements=load_endorsements(inputs.results_dir),
         poll_context=context,
         poll_benchmark=benchmark,
+        campaign_suspensions=load_council_campaign_suspensions(
+            inputs.results_dir / COUNCIL_CAMPAIGN_SUSPENSIONS_FILENAME
+        ),
     )
     args.output.parent.mkdir(parents=True, exist_ok=True)
     with args.output.open("w", encoding="utf-8") as handle:
@@ -83,10 +90,12 @@ def main() -> None:
     open_seats = [w for w, c in wards.items() if c["is_open_seat"]]
     polled = [w for w, c in wards.items() if c["ward_polls"]]
     disagree = [w for w, c in wards.items() if c["incumbency_flag_disagrees"]]
+    suspended = [w for w, c in wards.items() if c["incumbent_campaign_suspended_on"]]
     print(f"Council race cards written to {args.output}")
     print(
         f"  {len(wards)} wards | open seats: {sorted(open_seats, key=int)} "
-        f"| with ward polls: {sorted(polled, key=int)}"
+        f"| with ward polls: {sorted(polled, key=int)} "
+        f"| incumbent suspended campaign: {sorted(suspended, key=int)}"
     )
     if disagree:
         # Field membership contradicts the CDI is_running flag: a departed/moved
