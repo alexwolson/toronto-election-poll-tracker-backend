@@ -545,25 +545,14 @@ def current_campaign(
     return _campaign_polls(CURRENT_KEY, ids, names, election_date, polls, None, None, exits)
 
 
-def _certified_field_rows(polls_csv: Path, columns: list[str], require_full_field: bool):
-    """Archive rows (polls.csv) reporting the certified field; used for the minor-candidate
-    listing only. The model itself reads the bundle tables (``current_campaign``)."""
-    base_count = len(CURRENT_FIELD)
-    for row in _read_csv(polls_csv):
-        present = [i for i, column in enumerate(columns) if row.get(column, "") not in ("", None)]
-        base_present = [i for i in present if i < base_count]
-        if len(base_present) < (base_count if require_full_field else 2):
-            continue
-        base = _first_number(row["sample_size"])
-        if base is None:
-            continue
-        yield row, present, base
+def minor_candidates_reported(
+    polling_dir: Path, candidates_json: Path, *, cutoff: date
+) -> list[dict]:
+    """Certified candidates outside the modelled three that a modelled reading reported.
 
-
-def minor_candidates_reported(polls_csv: Path, candidates_json: Path) -> list[dict]:
-    """Certified candidates outside the modelled three that a certified-field poll reported.
-
-    Returns the latest reported share per candidate, newest poll first.
+    Reads the readings the fit itself uses (``_select_current_readings``), so a
+    Post-Suspension Reading counts and an Excluded Poll never does. Returns the latest
+    reported share per candidate, newest poll first.
     """
     base_slugs = {slug for slug, _ in CURRENT_FIELD}
     minors = {
@@ -571,19 +560,19 @@ def minor_candidates_reported(polls_csv: Path, candidates_json: Path) -> list[di
         for cid, name, slug in certified_candidates(candidates_json)
         if slug not in base_slugs
     }
-    columns = [slug for slug, _ in CURRENT_FIELD]
+    columns, _, ids = _current_field(candidates_json, ())
+    suspended = _suspended(candidates_json, ids, cutoff)
     latest: dict[str, dict] = {}
-    for row, _, _ in _certified_field_rows(polls_csv, columns, True):
+    for s, _, shares, _, _, _ in _select_current_readings(polling_dir, columns, True, suspended):
         for slug, (cid, name) in minors.items():
-            value = row.get(slug, "")
-            if value in ("", None):
+            if slug not in shares:
                 continue
             record = {
                 "candidate_id": cid,
                 "display_name": name,
-                "latest_polled_share": float(value),
-                "poll_id": row["poll_id"],
-                "date_conducted": row["date_conducted"],
+                "latest_polled_share": shares[slug],
+                "poll_id": s["poll_sample_id"],
+                "date_conducted": s["fieldwork_end"],
             }
             if cid not in latest or record["date_conducted"] > latest[cid]["date_conducted"]:
                 latest[cid] = record

@@ -639,7 +639,6 @@ def build_compact_mayoral_forecast(
     """
     root = Path(root)
     polling = Path(polls_dir)
-    polls_csv = polling / "polls.csv"
     candidates_json = root / "data/upstream/results/mayoral_candidates.json"
     election_date = datetime.fromisoformat(live_cycle["election_date"]).date()
     # Suspended Campaigns that started on or before this date apply (C2).
@@ -740,7 +739,7 @@ def build_compact_mayoral_forecast(
         analysis_cutoff=analysis_cutoff,
         model_record=model_record,
         sensitivity=sensitivity,
-        residual_named=minor_candidates_reported(polls_csv, candidates_json),
+        residual_named=minor_candidates_reported(polling, candidates_json, cutoff=cutoff_date),
         residual_candidate_count=len(certified) - len(CURRENT_FIELD),
     )
     feed["history"] = forecast_history

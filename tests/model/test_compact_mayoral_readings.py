@@ -16,6 +16,7 @@ from backend.model.compact_mayoral.readings import (
     current_campaign,
     current_reading_selection,
     historical_campaigns,
+    minor_candidates_reported,
     with_horizon,
 )
 
@@ -307,7 +308,12 @@ def _add_sample(polling, sid, end, readings, *, firm="Forum Research", start=Non
             }
         ],
     )
-    slugs = {"chow": CHOW, "bradford": BRAD, "alexander": ALEX}
+    slugs = {
+        "chow": CHOW,
+        "bradford": BRAD,
+        "alexander": ALEX,
+        "sarah-mcvie": "per_mcvie000000000000000000000000",
+    }
     for rid, semantics, base, measurement, shares in readings:
         _append(
             polling,
@@ -660,3 +666,88 @@ def test_with_horizon_truncates_and_recomputes_leaders() -> None:
     assert [p.days_before_election for p in with_horizon(c, 39).polls] == [60, 40]
     with pytest.raises(ValueError):
         with_horizon(c, 61)
+
+
+def _mcvie(polling: Path, candidates: Path) -> dict:
+    (row,) = minor_candidates_reported(polling, candidates, cutoff=CUTOFF_2026)
+    assert row["display_name"] == "Sarah McVie"
+    return row
+
+
+def test_minor_candidates_come_from_the_modelled_readings(tmp_path: Path) -> None:
+    polling, candidates = _bundle_inputs(tmp_path)
+    row = _mcvie(polling, candidates)
+    assert row["candidate_id"] == "per_mcvie000000000000000000000000"
+    assert (row["poll_id"], row["date_conducted"]) == ("mainstreet-2026-09-14", "2026-09-17")
+    assert row["latest_polled_share"] == 0.025
+
+
+def test_a_post_suspension_reading_updates_a_minor_candidate(tmp_path: Path) -> None:
+    # Alexander is not offered after his exit, yet the reading still reports McVie.
+    polling, candidates = _post_exit_inputs(tmp_path)
+    _add_sample(
+        polling,
+        "mainstreet-2026-10-07",
+        "2026-10-07",
+        [
+            (
+                "mainstreet_1007_dl",
+                "decided_plus_leaners",
+                "865",
+                FULL,
+                {"chow": 0.472, "bradford": 0.443, "sarah-mcvie": 0.025},
+            )
+        ],
+        firm="Mainstreet Research",
+    )
+    row = _mcvie(polling, candidates)
+    assert (row["poll_id"], row["latest_polled_share"]) == ("mainstreet-2026-10-07", 0.025)
+
+
+def test_minor_candidates_skip_excluded_and_unmodelled_samples(tmp_path: Path) -> None:
+    polling, candidates = _post_exit_inputs(tmp_path)
+    # Pre-exit and missing Alexander: not a modelled reading, so it is not listed.
+    _add_sample(
+        polling,
+        "pallas-2026-10-04",
+        "2026-10-04",
+        [
+            (
+                "pallas_1004_dl",
+                "decided_plus_leaners",
+                "800",
+                FULL,
+                {"chow": 0.5, "bradford": 0.4, "sarah-mcvie": 0.04},
+            )
+        ],
+        firm="Pallas Data",
+    )
+    # Post-exit but an Excluded Poll: never listed either.
+    _add_sample(
+        polling,
+        "scope-2026-10-07",
+        "2026-10-07",
+        [
+            (
+                "scope_1007_all",
+                "all_respondents",
+                "3100",
+                FULL,
+                {"chow": 0.44, "bradford": 0.41, "sarah-mcvie": 0.05},
+            )
+        ],
+        firm="Scope Research",
+    )
+    _append(
+        polling,
+        "model_exclusions.csv",
+        [
+            {
+                "poll_sample_id": "scope-2026-10-07",
+                "decided_on": "2026-10-08",
+                "reasons": "methodology_confidence",
+                "explanation": "Listed for the record only.",
+            }
+        ],
+    )
+    assert _mcvie(polling, candidates)["poll_id"] == "mainstreet-2026-09-14"
