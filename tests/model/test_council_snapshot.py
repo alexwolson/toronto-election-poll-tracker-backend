@@ -9,12 +9,19 @@ from backend.model.council_hints import (
     load_officeholding_history,
     load_supported_hints,
 )
-from backend.model.council_race import load_registered_field, load_ward_incumbency
+from backend.model.council_race import (
+    CouncilRace,
+    RaceCandidate,
+    WardIncumbent,
+    load_registered_field,
+    load_ward_incumbency,
+)
 from backend.model.council_race_card import load_ward_poll_readings
 from backend.model.council_snapshot import (
     COUNCIL_RACE_CARD_SCHEMA_VERSION,
     _attention_level,
     _attention_score,
+    _incumbent_candidacy_id,
     build_council_snapshot,
     load_ward_names,
 )
@@ -283,19 +290,61 @@ def test_candidates_carry_their_endorsements_and_everyone_else_an_empty_list() -
     assert endorsed[0]["endorsements"] == [record]
 
 
-def test_the_running_incumbent_is_named_by_candidacy_id() -> None:
+def _race(*candidates: RaceCandidate, open_seat: bool = False) -> CouncilRace:
+    incumbent = WardIncumbent(
+        ward="9",
+        name="Ana Bailey",
+        is_running=not open_seat,
+        is_byelection_incumbent=False,
+        defeatability_score=None,
+        vote_share=None,
+        notes="",
+        biography=None,
+    )
+    return CouncilRace(
+        ward="9",
+        incumbent=incumbent,
+        is_open_seat=open_seat,
+        incumbent_in_field=not open_seat,
+        incumbency_flag_disagrees=False,
+        candidates=candidates,
+    )
+
+
+def _candidate(candidacy_id: str, name: str, person_id: str | None) -> RaceCandidate:
+    return RaceCandidate(candidacy_id, name, "Active", person_id, None, None)
+
+
+# The incumbent's name resolves to per_bailey; a candidate is theirs by person_id.
+VARIANTS = {"per_bailey": {frozenset({"ana", "bailey"})}, "per_cho": {frozenset({"min", "cho"})}}
+
+
+def test_the_running_incumbent_is_named_by_their_candidacy() -> None:
+    race = _race(
+        _candidate("can_cho", "Min Cho", "per_cho"),
+        _candidate("can_bailey", "Ana Bailey", "per_bailey"),
+    )
+    assert _incumbent_candidacy_id(race, VARIANTS) == "can_bailey"
+
+
+def test_a_candidate_without_a_person_link_is_matched_as_the_hints_match_them() -> None:
+    race = _race(_candidate("can_bailey", "Ana Bailey", None))
+    assert _incumbent_candidacy_id(race, VARIANTS) == "can_bailey"
+
+
+def test_an_open_seat_or_an_incumbent_no_candidate_resolves_to_names_no_one() -> None:
+    bailey = _candidate("can_bailey", "Ana Bailey", "per_bailey")
+    assert _incumbent_candidacy_id(_race(bailey, open_seat=True), VARIANTS) is None
+    assert (
+        _incumbent_candidacy_id(_race(_candidate("can_cho", "Min Cho", "per_cho")), VARIANTS)
+        is None
+    )
+    assert _incumbent_candidacy_id(_race(bailey), {}) is None
+
+
+def test_every_card_carries_the_incumbent_candidacy_field() -> None:
     wards = _snapshot()["wards"]
-    crisanti = next(c for c in wards["1"]["candidates"] if c["display_name"] == "Vincent Crisanti")
-    assert wards["1"]["incumbent_candidacy_id"] == crisanti["candidacy_id"]
-    # Open seats name no one, including Ward 14, where Ward 11's incumbent Saxe now runs.
-    assert wards["11"]["incumbent_candidacy_id"] is None
-    assert wards["14"]["incumbent_candidacy_id"] is None
-
-
-def test_every_ward_with_its_incumbent_running_names_one_of_its_candidates() -> None:
-    for ward, card in _snapshot()["wards"].items():
-        ids = {c["candidacy_id"] for c in card["candidates"]}
-        if card["is_open_seat"]:
-            assert card["incumbent_candidacy_id"] is None, ward
-        else:
-            assert card["incumbent_candidacy_id"] in ids, ward
+    assert all("incumbent_candidacy_id" in card for card in wards.values())
+    assert all(
+        card["incumbent_candidacy_id"] is None for card in wards.values() if card["is_open_seat"]
+    )
