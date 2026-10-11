@@ -105,6 +105,29 @@ def _race_candidate_hints(
     return fired
 
 
+def _incumbent_candidacy_id(
+    race: CouncilRace, name_variants: dict[str, set[frozenset[str]]]
+) -> str | None:
+    """The candidacy of the sitting incumbent, when they run in this ward again.
+
+    Resolved as the hints resolve it: the candidate whose person_id equals the ward
+    incumbent's. None for an open seat, or when no candidate resolves to them, so the
+    election-night page never has to match names itself.
+    """
+    if race.is_open_seat:
+        return None
+    incumbent_pid = resolve_person_id(race.incumbent.name, "", name_variants)
+    if incumbent_pid is None:
+        return None
+    for candidate in race.candidates:
+        person_id = candidate.candidate_id or resolve_person_id(
+            candidate.display_name, "", name_variants
+        )
+        if person_id == incumbent_pid:
+            return candidate.candidacy_id
+    return None
+
+
 def _race_candidate_offices(
     race: CouncilRace,
     history_by_person: dict[str, list[CandidacyRecord]],
@@ -294,6 +317,7 @@ def _race_card(
     candidate_hints: dict[str, tuple[FiredHint, ...]],
     candidate_offices: dict[str, tuple[PastElection, ...]],
     endorsements: dict[str, list[dict]] | None = None,
+    incumbent_candidacy_id: str | None = None,
 ) -> dict:
     facts = derive_competitiveness_facts(race, prior)
     endorsements = endorsements or {}
@@ -305,6 +329,7 @@ def _race_card(
         "incumbent_in_field": race.incumbent_in_field,
         "incumbency_flag_disagrees": race.incumbency_flag_disagrees,
         "incumbent": _incumbent_card(race.incumbent, triggers),
+        "incumbent_candidacy_id": incumbent_candidacy_id,
         "candidates": [
             _candidate_card(
                 c,
@@ -434,6 +459,7 @@ def build_council_snapshot(
             ward_hints(race),
             ward_offices(race),
             endorsements,
+            _incumbent_candidacy_id(race, name_variants),
         )
         for ward, race in races.items()
     }

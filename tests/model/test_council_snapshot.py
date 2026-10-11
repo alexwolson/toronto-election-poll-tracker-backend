@@ -281,3 +281,21 @@ def test_candidates_carry_their_endorsements_and_everyone_else_an_empty_list() -
     endorsed = [c for c in everyone if c["endorsements"]]
     assert [c["candidacy_id"] for c in endorsed] == [target["candidacy_id"]]
     assert endorsed[0]["endorsements"] == [record]
+
+
+def test_the_running_incumbent_is_named_by_candidacy_id() -> None:
+    wards = _snapshot()["wards"]
+    crisanti = next(c for c in wards["1"]["candidates"] if c["display_name"] == "Vincent Crisanti")
+    assert wards["1"]["incumbent_candidacy_id"] == crisanti["candidacy_id"]
+    # Open seats name no one, including Ward 14, where Ward 11's incumbent Saxe now runs.
+    assert wards["11"]["incumbent_candidacy_id"] is None
+    assert wards["14"]["incumbent_candidacy_id"] is None
+
+
+def test_every_ward_with_its_incumbent_running_names_one_of_its_candidates() -> None:
+    for ward, card in _snapshot()["wards"].items():
+        ids = {c["candidacy_id"] for c in card["candidates"]}
+        if card["is_open_seat"]:
+            assert card["incumbent_candidacy_id"] is None, ward
+        else:
+            assert card["incumbent_candidacy_id"] in ids, ward
