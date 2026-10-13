@@ -92,3 +92,35 @@ machine.
 - **Scored P set:**
   - every stored P fit, except the box P fits for 7 d 2003, 2018, 2022 and 2023 at seed 20260921;
   - those four come from the Mac's re-runs.
+
+## Results (2026-10-13 15:14, scored once by `score_online.py` at 7733c31; 28 O fits, 0 failed runs)
+
+**Verdict: PASS.** All three do-no-harm checks pass at 14 d and at 7 d. O goes to the maintainer for
+adoption.
+
+| | 14 d P | 14 d O | 7 d P | 7 d O |
+|---|---|---|---|---|
+| Mean leader-margin CRPS over the scored set (pts) | 7.99 | 7.06 | 6.59 | 5.88 |
+| Folds covered | 6/7 | 6/7 | 7/7 | 7/7 |
+| Sampling failures after retry (retries) | 0 (1) | 0 (0) | 0 (1) | 0 (1) |
+
+The means are weighted by the scored set (changed folds × 3 seeds, unchanged × 1), so they are not
+comparable with the repeat-firm test's means.
+
+**Per fold, change in CRPS (O − P):**
+
+| Fold | 14 d | 7 d |
+|---|---|---|
+| 2006 | −4.26 | −2.44 |
+| 2010 | −0.18 | −0.40 |
+| 2014 | −0.19 | −0.23 |
+| 2023 | −0.13 | unchanged fold |
+
+Unchanged folds moved between −0.09 and +0.14.
+
+**Critique, recorded with the result:**
+- **Most of the gain is 2006.** Decima's lone online poll overstated Miller's margin by 19.5 points
+  against the field. The same afternoon's mode check had already shown it as the largest outlier, so the
+  size of that gain is not independent evidence for the rule.
+- **The binding claim is no harm, and it holds.** The modest gains on 2010, 2014 and 2023 are consistent in
+  sign but are within seed noise of zero.
