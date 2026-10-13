@@ -289,7 +289,7 @@ def build_model(
                 firm_scale = firm_scale * jnp.sqrt(firm_mixing)[:, None]
             firm = firm_z * firm_scale
             if house_anchor == "repeat_firms" and P.repeat_firms.sum() >= 2:
-                firm = firm - firm[jnp.asarray(P.repeat_firms)].mean(axis=0)
+                firm = firm - firm[np.flatnonzero(P.repeat_firms)].mean(axis=0)
             firm = numpyro.deterministic(prefix + "firm", firm)
 
             if P.exits:

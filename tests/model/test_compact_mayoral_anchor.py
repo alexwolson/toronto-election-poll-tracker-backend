@@ -77,3 +77,17 @@ def test_default_anchor_is_the_published_prior_frame() -> None:
 def test_unknown_anchor_is_rejected() -> None:
     with pytest.raises(ValueError, match="house_anchor"):
         build_model((campaign(THREE_FIRMS),), population_hyperpriors(), house_anchor="median")
+
+
+def test_repeat_firm_anchor_compiles_and_samples() -> None:
+    from backend.model.compact_mayoral.sampling import FitSettings, fit_joint
+
+    fast = FitSettings(warmup=20, draws=20, chains=1, seed=1, target_accept=0.9)
+    result = fit_joint(
+        (campaign(THREE_FIRMS),),
+        population_hyperpriors(),
+        settings=fast,
+        house_anchor="repeat_firms",
+    )
+    firm = np.asarray(result.draws["k/firm"])
+    np.testing.assert_allclose(firm[:, :2].sum(axis=1), 0.0, atol=1e-9)
