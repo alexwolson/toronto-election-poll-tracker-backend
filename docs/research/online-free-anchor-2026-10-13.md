@@ -70,3 +70,18 @@ preview, go). If any fails, O is not adopted on this evidence, and the maintaine
 - runs in `research-runs/online-free-anchor-2026-10-13/` (never in git);
 - scorer `docs/research/compact_mayoral/score_online.py`, committed with this note;
 - results appended below, without editing anything above.
+
+---
+
+## Run record (appended; nothing above this line is edited)
+
+**Machine assignment (fixed before any O fit).** Each P fit is compared with an O fit from the same
+machine.
+- **Box (Linux):** the seed-20260921 P fits are on the box, so it runs O for 14 d (all seven folds) and for
+  7 d 2003, 2006, 2010 and 2014: 11 fits.
+- **Mac:**
+  - it holds the seed 20260922/3 P fits, so it runs O for the changed folds at those seeds: 14 fits;
+  - to balance the load, it also re-runs P and O for the three unchanged 7 d folds at seed 20260921 (2018,
+    2022, 2023). Those three box P fits are set aside and not scored.
+- **Identity check, run first on the Mac:** P at 14 d, 2006, seed 20260922 (stored by the Mac) must match
+  in every recorded field.
