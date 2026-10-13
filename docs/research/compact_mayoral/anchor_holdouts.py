@@ -26,6 +26,7 @@ import numpy as np
 
 import backend.model.compact_mayoral  # noqa: F401  (host device count)
 from backend.model.compact_mayoral.hyperpriors import population_hyperpriors
+from backend.model.compact_mayoral.model import prepare
 from backend.model.compact_mayoral.readings import (
     current_campaign,
     historical_campaigns,
@@ -63,7 +64,9 @@ def campaigns_for(holdout: str, horizon: int):
 
 
 def fit(campaigns, arm: str, seed: int):
-    kwargs = {"house_anchor": "repeat_firms"} if arm == "V" else {}
+    kwargs = {"V": {"house_anchor": "repeat_firms"}, "O": {"house_anchor": "non_online"}}.get(
+        arm, {}
+    )
     settings = dataclasses.replace(PRODUCTION, seed=seed)
     result = fit_joint(campaigns, population_hyperpriors(), settings=settings, **kwargs)
     d = result.diagnostics
@@ -75,7 +78,7 @@ def fit(campaigns, arm: str, seed: int):
 
 def main() -> None:
     parser = argparse.ArgumentParser()
-    parser.add_argument("--arm", choices=("P", "V"), required=True)
+    parser.add_argument("--arm", choices=("P", "V", "O"), required=True)
     parser.add_argument("--holdout", required=True)
     parser.add_argument("--horizon", type=int, required=True)
     parser.add_argument("--seed", type=int, required=True)
@@ -98,6 +101,7 @@ def main() -> None:
     firms = sorted({p.firm for p in held.polls})
     counts = {f: sum(p.firm == f for p in held.polls) for f in firms}
     repeat = [f for f in firms if counts[f] >= 2]
+    online = prepare(held).online_firms
     record = {
         "arm": args.arm,
         "holdout": held.key,
@@ -108,7 +112,12 @@ def main() -> None:
         "leaders": [held.names[lead], held.names[second]],
         "repeat_firms": repeat,
         "single_poll_firms": [f for f in firms if counts[f] == 1],
-        "rule_changes_fold": len(repeat) >= 2 and len(repeat) < len(firms),
+        "rule_changes_fold": (
+            bool(online.any() and not online.all())
+            if args.arm == "O"
+            else len(repeat) >= 2 and len(repeat) < len(firms)
+        ),
+        "online_firms": [f for f, o in zip(firms, online) if o],
         "actual_margin": actual,
         "q10": q10,
         "q50": q50,

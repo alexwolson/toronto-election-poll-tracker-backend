@@ -14,9 +14,18 @@ from backend.model.compact_mayoral.readings import CampaignPolls, Poll
 jax.config.update("jax_enable_x64", True)
 
 
-def campaign(firms, key="k"):
+def campaign(firms, key="k", online=()):
     polls = tuple(
-        Poll(f"{key}-{i}", f"{key}-{i}", firm, 60 - 5 * i, 900.0, (0, 1, 2), (0.5, 0.4, 0.1))
+        Poll(
+            f"{key}-{i}",
+            f"{key}-{i}",
+            firm,
+            60 - 5 * i,
+            900.0,
+            (0, 1, 2),
+            (0.5, 0.4, 0.1),
+            online_only=i in online,
+        )
         for i, firm in enumerate(firms)
     )
     return CampaignPolls(
@@ -91,3 +100,51 @@ def test_repeat_firm_anchor_compiles_and_samples() -> None:
     )
     firm = np.asarray(result.draws["k/firm"])
     np.testing.assert_allclose(firm[:, :2].sum(axis=1), 0.0, atol=1e-9)
+
+
+# Firms sort as A, B, C. B's only poll is online; C has one online and one telephone poll.
+MIXED_MODES = ("A", "B", "A", "C", "C")
+ONLINE_POLLS = (1, 3)
+
+
+def test_prepare_marks_firms_whose_polls_are_all_online_only() -> None:
+    c = campaign(MIXED_MODES, online=ONLINE_POLLS)
+    assert prepare(c).online_firms.tolist() == [False, True, False]
+    assert prepare(campaign(MIXED_MODES)).online_firms.tolist() == [False, False, False]
+
+
+def test_non_online_anchor_centres_house_effects_on_firms_that_are_not_online_only() -> None:
+    model = build_model(
+        (campaign(MIXED_MODES, online=ONLINE_POLLS),),
+        population_hyperpriors(),
+        house_anchor="non_online",
+    )
+    tr = traced(model, {"k/firm_z": FIRM_Z})
+    raw = FIRM_Z * float(tr["tau_firm"]["value"]) / np.sqrt(2.0)
+    firm = np.asarray(tr["k/firm"]["value"])
+    np.testing.assert_allclose(firm, raw - raw[[0, 2]].mean(axis=0))
+    np.testing.assert_allclose(firm[[0, 2]].sum(axis=0), 0.0, atol=1e-12)
+
+
+@pytest.mark.parametrize("online", [(), (0, 1, 2, 3, 4)])
+def test_non_online_anchor_changes_nothing_without_both_kinds_of_firm(online) -> None:
+    c = campaign(MIXED_MODES, online=online)
+    anchored = traced(
+        build_model((c,), population_hyperpriors(), house_anchor="non_online"), {"k/firm_z": FIRM_Z}
+    )
+    prior = traced(build_model((c,), population_hyperpriors()), {"k/firm_z": FIRM_Z})
+    np.testing.assert_array_equal(anchored["k/firm"]["value"], prior["k/firm"]["value"])
+
+
+def test_non_online_anchor_compiles_and_samples() -> None:
+    from backend.model.compact_mayoral.sampling import FitSettings, fit_joint
+
+    fast = FitSettings(warmup=20, draws=20, chains=1, seed=1, target_accept=0.9)
+    result = fit_joint(
+        (campaign(MIXED_MODES, online=ONLINE_POLLS),),
+        population_hyperpriors(),
+        settings=fast,
+        house_anchor="non_online",
+    )
+    firm = np.asarray(result.draws["k/firm"])
+    np.testing.assert_allclose(firm[:, [0, 2]].sum(axis=1), 0.0, atol=1e-9)

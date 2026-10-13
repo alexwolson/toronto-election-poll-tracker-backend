@@ -34,7 +34,11 @@ support. A campaign without exits is modelled exactly as before.
   prior's (the published specification).
 * ``repeat_firms``: in a campaign with at least two firms polling two or more times,
   every firm's effect is centred on those repeat firms' mean, so they define the frame;
-  single-poll firms keep a free effect in it. Otherwise as ``prior``.
+  single-poll firms keep a free effect in it. Otherwise as ``prior``. (Research option;
+  not adopted, 2026-10-13.)
+* ``non_online``: in a campaign with both online-only firms (every poll online-only) and
+  other firms, every firm's effect is centred on the other firms' mean, so online-only
+  firms keep a free effect but do not define the frame. Otherwise as ``prior``.
 """
 
 from __future__ import annotations
@@ -116,6 +120,7 @@ class Prepared:
     dates: np.ndarray  # (T,) days before election day of each latent date
     exits: tuple[Exit, ...]  # in date order
     repeat_firms: np.ndarray  # (F,) bool: firm has two or more polls in the campaign
+    online_firms: np.ndarray  # (F,) bool: every poll of the firm is online-only
 
 
 def prepare(campaign: CampaignPolls) -> Prepared:
@@ -147,6 +152,10 @@ def prepare(campaign: CampaignPolls) -> Prepared:
         poll_time[i] = position[poll.days_before_election]
         poll_firm[i] = firm_index[poll.firm]
     repeat_firms = np.bincount(poll_firm, minlength=len(firms)) >= 2
+    not_online = np.zeros(len(firms), dtype=bool)
+    for i, poll in enumerate(campaign.polls):
+        not_online[poll_firm[i]] |= not poll.online_only
+    online_firms = ~not_online
     basis = helmert_basis(count)
     is_leader = np.zeros(count, dtype=bool)
     is_leader[list(campaign.leaders)] = True
@@ -178,6 +187,7 @@ def prepare(campaign: CampaignPolls) -> Prepared:
         dates=np.asarray(dates, dtype=int),
         exits=exits,
         repeat_firms=repeat_firms,
+        online_firms=online_firms,
     )
 
 
@@ -212,8 +222,8 @@ def build_model(
     innovations: str = "gaussian",
     house_anchor: str = "prior",
 ):
-    if house_anchor not in {"prior", "repeat_firms"}:
-        raise ValueError("house_anchor must be 'prior' or 'repeat_firms'")
+    if house_anchor not in {"prior", "repeat_firms", "non_online"}:
+        raise ValueError("house_anchor must be 'prior', 'repeat_firms' or 'non_online'")
     if variant not in {"isotropic", "leaders", "dirichlet"}:
         raise ValueError("variant must be 'isotropic', 'leaders' or 'dirichlet'")
     if innovations not in {"gaussian", "student_t"}:
@@ -290,6 +300,8 @@ def build_model(
             firm = firm_z * firm_scale
             if house_anchor == "repeat_firms" and P.repeat_firms.sum() >= 2:
                 firm = firm - firm[np.flatnonzero(P.repeat_firms)].mean(axis=0)
+            if house_anchor == "non_online" and P.online_firms.any() and not P.online_firms.all():
+                firm = firm - firm[np.flatnonzero(~P.online_firms)].mean(axis=0)
             firm = numpyro.deterministic(prefix + "firm", firm)
 
             if P.exits:
