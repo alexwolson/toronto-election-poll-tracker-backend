@@ -152,3 +152,29 @@ V against P on current inputs:
 - Any edit to `compact_mayoral/*.py` invalidates the history cache, so the next build is about 45 minutes
   cold. Then a release, a preview and the maintainer's go.
 - The Deploy Freeze starts Oct 23, 18:00 EDT.
+
+---
+
+## Run record (appended; nothing above this line is edited)
+
+### Preflight (2026-10-13)
+
+- **Commits:**
+  - b47ba99: the harness;
+  - 2c899fd: `repeat_firms` used a boolean mask index, which fails under jit. The fix uses static
+    positions and adds a compile-and-sample test. P's code path is untouched.
+- **Identity:**
+  - P on the 2023/14-day fold, seed 20260921, matches main (b3e30c6) in every recorded field at full
+    precision;
+  - the default 2026 fit reproduces `backend-2026-10-13.1` (Chow 0.6914).
+- **Timing on the Mac:**
+  - P: 160 s per fit;
+  - V: 279 s per fit, 1 divergence, R-hat 1.001;
+  - projected 8.5 h for 5 seeds, over the 4 h stop.
+- **Scores:** the preflight fold's scores were saved and not read before the decision below.
+
+### Maintainer decision (2026-10-13)
+
+- 3 seeds per arm (20260921–20260923).
+- A fold is covered when 2 of 3 seeds cover it. Every other criterion is as written.
+- Speed-test the Linux box before splitting the run across machines.
