@@ -124,3 +124,17 @@ Unchanged folds moved between −0.09 and +0.14.
   size of that gain is not independent evidence for the rule.
 - **The binding claim is no harm, and it holds.** The modest gains on 2010, 2014 and 2023 are consistent in
   sign but are within seed noise of zero.
+
+**2026 on current inputs (report only, computed once after scoring; `polling-2026-10-13.2`, 18 polls):**
+
+| | P (`backend-2026-10-13.2`, live) | O |
+|---|---|---|
+| Chow win | 67.5% | 62.8% |
+| Election-day margin, median (80%) | +7.3 (−15.4 to +31.0) | +5.3 (−17.4 to +28.5) |
+| Current two-way margin, median (80%) | not recorded | +5.8 (+1.3 to +10.1) |
+
+- **House effects under O:**
+  - online-only firms: Ipsos +10.4, Canada Pulse +6.5;
+  - all other firms within ±1.8: Forum +1.8, Nanos +0.1, Pallas +0.6, Liaison −1.0, Mainstreet −1.6.
+- **Sampling:** 1 divergence, R-hat 1.001, min ESS 4,292. The production gate would apply its one retry
+  (target acceptance 0.99, seed + 1).
