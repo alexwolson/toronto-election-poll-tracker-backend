@@ -59,6 +59,7 @@ from backend.model.compact_mayoral.readings import (
 )
 from backend.model.compact_mayoral.sampling import (
     PRODUCTION,
+    PRODUCTION_HOUSE_ANCHOR,
     SENSITIVITY,
     FitResult,
     FitSettings,
@@ -80,6 +81,7 @@ SPECIFICATION = {
     "polls": "certified_field_with_post_suspension",
     "hyperpriors": "population_joint_refit",
     "exits": "learned_allocation",
+    "house_anchor": PRODUCTION_HOUSE_ANCHOR,
 }
 TORONTO = ZoneInfo("America/Toronto")
 REASON = "Joint election-day draws from the compact model over seven past campaigns and 2026."

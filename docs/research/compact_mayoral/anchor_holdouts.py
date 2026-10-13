@@ -10,7 +10,8 @@ keeps polls at least ``--horizon`` days out (``with_horizon``) and has its resul
 the other historical campaigns and 2026 are fitted jointly, in production order. Production
 settings, with production's one retry (target acceptance 0.99, seed + 1) when a fit has more
 than 4 divergences or worst R-hat at or above 1.02. Writes ``DIR/<arm>-<horizon>-<campaign>-<seed>.json``.
-Arm P passes no ``house_anchor``, so it also runs unchanged on a checkout without the option.
+Arm P is the published frame of 2026-10-13 morning (``house_anchor="prior"``); V and O are the
+two variants tested that day (repeat-firm and non-online anchors).
 """
 
 from __future__ import annotations
@@ -64,9 +65,12 @@ def campaigns_for(holdout: str, horizon: int):
 
 
 def fit(campaigns, arm: str, seed: int):
-    kwargs = {"V": {"house_anchor": "repeat_firms"}, "O": {"house_anchor": "non_online"}}.get(
-        arm, {}
-    )
+    # P is the pre-ADR-0064 production frame; pass it explicitly now that the default changed.
+    kwargs = {
+        "P": {"house_anchor": "prior"},
+        "V": {"house_anchor": "repeat_firms"},
+        "O": {"house_anchor": "non_online"},
+    }[arm]
     settings = dataclasses.replace(PRODUCTION, seed=seed)
     result = fit_joint(campaigns, population_hyperpriors(), settings=settings, **kwargs)
     d = result.diagnostics
