@@ -85,3 +85,10 @@ machine.
     2022, 2023). Those three box P fits are set aside and not scored.
 - **Identity check, run first on the Mac:** P at 14 d, 2006, seed 20260922 (stored by the Mac) must match
   in every recorded field.
+- **Rebalance at 15:08 (maintainer: "load balance the remaining tasks"):** the Mac finished its share first.
+  The box's queue loop was stopped while its 14 d 2022 fit was still running, and that fit completed on the
+  box. The box's last unstarted item, 7 d 2003 at seed 20260921, ran on the Mac as a P+O pair. Its box P fit
+  is set aside like the other three re-run on the Mac.
+- **Scored P set:**
+  - every stored P fit, except the box P fits for 7 d 2003, 2018, 2022 and 2023 at seed 20260921;
+  - those four come from the Mac's re-runs.
