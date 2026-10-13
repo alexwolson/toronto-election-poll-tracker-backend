@@ -89,6 +89,11 @@ POLL_META_COLUMNS = {
 }
 
 
+# Collection modes that are online only. Mixed online-and-telephone designs and
+# unreported modes are not online-only (maintainer decision, 2026-10-13).
+ONLINE_ONLY_MODES = frozenset({"online", "online_panel", "online-sms-invitation"})
+
+
 @dataclass(frozen=True)
 class Poll:
     reading_id: str
@@ -98,6 +103,7 @@ class Poll:
     n_eff: float  # respondents behind the modelled composition
     offered: tuple[int, ...]  # indices into CampaignPolls.candidates
     shares: tuple[float, ...]  # renormalized over ``offered``
+    online_only: bool = False  # the sample's collection mode is online-only (ONLINE_ONLY_MODES)
 
 
 @dataclass(frozen=True)
@@ -303,6 +309,7 @@ def historical_campaigns(
                     n_eff=base * total,
                     offered=offered,
                     shares=tuple(s / total for s in raw),
+                    online_only=sample.get("collection_mode", "") in ONLINE_ONLY_MODES,
                 )
             )
         campaigns[cycle] = _campaign_polls(
@@ -533,6 +540,7 @@ def current_campaign(
                 n_eff=base * total,
                 offered=tuple(present),
                 shares=tuple(x / total for x in raw),
+                online_only=s.get("collection_mode", "") in ONLINE_ONLY_MODES,
             )
         )
     exits = ()

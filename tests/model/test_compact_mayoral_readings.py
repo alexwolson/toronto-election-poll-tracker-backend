@@ -90,6 +90,7 @@ def _bundle_inputs(tmp_path: Path) -> tuple[Path, Path]:
             "fieldwork_end": end,
             "recruited_sample_size": n,
             "extraction_status": status,
+            "collection_mode": "",
         }
 
     def reading(
@@ -149,6 +150,7 @@ def _bundle_inputs(tmp_path: Path) -> tuple[Path, Path]:
             "fieldwork_end",
             "recruited_sample_size",
             "extraction_status",
+            "collection_mode",
         ],
         [
             sample("liaison-2026-07-26", "Liaison Strategies", "2026-07-26", "1000"),
@@ -291,7 +293,9 @@ def _append(polling: Path, name: str, rows: list[dict]) -> None:
         csv.DictWriter(handle, fieldnames=columns, restval="").writerows(rows)
 
 
-def _add_sample(polling, sid, end, readings, *, firm="Forum Research", start=None, n="1000"):
+def _add_sample(
+    polling, sid, end, readings, *, firm="Forum Research", start=None, n="1000", mode=""
+):
     """One citywide 2026 sample with its readings: (id, semantics, base, class, shares)."""
     _append(
         polling,
@@ -305,6 +309,7 @@ def _add_sample(polling, sid, end, readings, *, firm="Forum Research", start=Non
                 "fieldwork_end": end,
                 "recruited_sample_size": n,
                 "extraction_status": "extracted",
+                "collection_mode": mode,
             }
         ],
     )
@@ -751,3 +756,34 @@ def test_minor_candidates_skip_excluded_and_unmodelled_samples(tmp_path: Path) -
         ],
     )
     assert _mcvie(polling, candidates)["poll_id"] == "mainstreet-2026-09-14"
+
+
+def test_polls_record_whether_their_sample_was_online_only(tmp_path: Path) -> None:
+    c = historical_campaigns(_historical_polling(tmp_path))["toronto_2010"]
+    online = {p.firm: p.online_only for p in c.polls}
+    assert online["Angus Reid Public Opinion"] is True  # online_panel
+    assert online["Ipsos Reid"] is False  # telephone
+    assert online["Nanos Research"] is False  # live-telephone
+
+    polling, candidates = _bundle_inputs(tmp_path)
+    shares = {"chow": 0.51, "bradford": 0.34, "alexander": 0.09}
+    _add_sample(
+        polling,
+        "cp-0924",
+        "2026-09-24",
+        [("cp_dl", "decided_plus_leaners", "380", FULL, shares)],
+        firm="Canada Pulse Insights",
+        mode="online",
+    )
+    _add_sample(
+        polling,
+        "nanos-1004",
+        "2026-10-04",
+        [("nanos_dl", "decided_plus_leaners", "632", FULL, shares)],
+        firm="Nanos Research",
+        mode="mixed",
+    )
+    c = current_campaign(polling, candidates, election_date=ELECTION_2026, cutoff=CUTOFF_2026)
+    online = {p.group: p.online_only for p in c.polls}
+    assert online["cp-0924"] is True
+    assert online["nanos-1004"] is False  # mixed telephone and probability panel

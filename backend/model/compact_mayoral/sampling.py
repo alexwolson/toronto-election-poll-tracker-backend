@@ -29,6 +29,8 @@ SENSITIVITY = FitSettings(draws=1000)
 # The published election-day discrepancy (ADR 0055): a Dirichlet reading of the latent
 # support. "isotropic" is the ADR 0054 specification, kept as a sensitivity refit.
 PRODUCTION_VARIANT = "dirichlet"
+# House effects are centred on firms that are not online-only (ADR 0064).
+PRODUCTION_HOUSE_ANCHOR = "non_online"
 
 
 @dataclass(frozen=True)
@@ -75,11 +77,14 @@ def fit_joint(
     settings: FitSettings = PRODUCTION,
     variant: str = PRODUCTION_VARIANT,
     innovations: str = "gaussian",
+    house_anchor: str = PRODUCTION_HOUSE_ANCHOR,
 ) -> FitResult:
     """Fit all campaigns jointly; returns merged draws of every site plus diagnostics."""
     jax.config.update("jax_enable_x64", True)
     started = time.monotonic()
-    model = build_model(campaigns, hyperpriors, variant=variant, innovations=innovations)
+    model = build_model(
+        campaigns, hyperpriors, variant=variant, innovations=innovations, house_anchor=house_anchor
+    )
     kernel = NUTS(model, target_accept_prob=settings.target_accept, dense_mass=False)
     parallel = jax.local_device_count() >= settings.chains
     mcmc = MCMC(
