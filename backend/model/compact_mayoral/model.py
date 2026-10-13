@@ -28,6 +28,13 @@ C2, ``exits.py``) gains a latent date at each exit; its readings, today's estima
 election day read the latent support after the exit transform (``exit_support``). Under
 ``isotropic`` and ``leaders`` the election-day shock is centred on that transformed
 support. A campaign without exits is modelled exactly as before.
+
+``house_anchor`` (research option, pre-registered 2026-10-13):
+* ``prior``: each firm's house effect is drawn around zero, so the unbiased frame is the
+  prior's (the published specification).
+* ``repeat_firms``: in a campaign with at least two firms polling two or more times,
+  every firm's effect is centred on those repeat firms' mean, so they define the frame;
+  single-poll firms keep a free effect in it. Otherwise as ``prior``.
 """
 
 from __future__ import annotations
@@ -108,6 +115,7 @@ class Prepared:
     outcome_logit_tail: float | None
     dates: np.ndarray  # (T,) days before election day of each latent date
     exits: tuple[Exit, ...]  # in date order
+    repeat_firms: np.ndarray  # (F,) bool: firm has two or more polls in the campaign
 
 
 def prepare(campaign: CampaignPolls) -> Prepared:
@@ -138,6 +146,7 @@ def prepare(campaign: CampaignPolls) -> Prepared:
         n_eff[i] = poll.n_eff
         poll_time[i] = position[poll.days_before_election]
         poll_firm[i] = firm_index[poll.firm]
+    repeat_firms = np.bincount(poll_firm, minlength=len(firms)) >= 2
     basis = helmert_basis(count)
     is_leader = np.zeros(count, dtype=bool)
     is_leader[list(campaign.leaders)] = True
@@ -168,6 +177,7 @@ def prepare(campaign: CampaignPolls) -> Prepared:
         outcome_logit_tail=tail,
         dates=np.asarray(dates, dtype=int),
         exits=exits,
+        repeat_firms=repeat_firms,
     )
 
 
@@ -200,7 +210,10 @@ def build_model(
     variant: str = "isotropic",
     starting_pair_sd: float = 2.0,
     innovations: str = "gaussian",
+    house_anchor: str = "prior",
 ):
+    if house_anchor not in {"prior", "repeat_firms"}:
+        raise ValueError("house_anchor must be 'prior' or 'repeat_firms'")
     if variant not in {"isotropic", "leaders", "dirichlet"}:
         raise ValueError("variant must be 'isotropic', 'leaders' or 'dirichlet'")
     if innovations not in {"gaussian", "student_t"}:
@@ -274,7 +287,10 @@ def build_model(
                     prefix + "firm_mixing", (T_DF - 2.0) / firm_chi2
                 )
                 firm_scale = firm_scale * jnp.sqrt(firm_mixing)[:, None]
-            firm = numpyro.deterministic(prefix + "firm", firm_z * firm_scale)
+            firm = firm_z * firm_scale
+            if house_anchor == "repeat_firms" and P.repeat_firms.sum() >= 2:
+                firm = firm - firm[jnp.asarray(P.repeat_firms)].mean(axis=0)
+            firm = numpyro.deterministic(prefix + "firm", firm)
 
             if P.exits:
                 latent = exit_support(prefix, P, contrasts)

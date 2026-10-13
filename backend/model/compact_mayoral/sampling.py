@@ -75,11 +75,14 @@ def fit_joint(
     settings: FitSettings = PRODUCTION,
     variant: str = PRODUCTION_VARIANT,
     innovations: str = "gaussian",
+    house_anchor: str = "prior",
 ) -> FitResult:
     """Fit all campaigns jointly; returns merged draws of every site plus diagnostics."""
     jax.config.update("jax_enable_x64", True)
     started = time.monotonic()
-    model = build_model(campaigns, hyperpriors, variant=variant, innovations=innovations)
+    model = build_model(
+        campaigns, hyperpriors, variant=variant, innovations=innovations, house_anchor=house_anchor
+    )
     kernel = NUTS(model, target_accept_prob=settings.target_accept, dense_mass=False)
     parallel = jax.local_device_count() >= settings.chains
     mcmc = MCMC(
