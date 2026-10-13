@@ -194,3 +194,11 @@ V against P on current inputs:
   unit.
 - **Disclosure:** while checking the box's speed, its log printed that fold's P score (CRPS 7.04). No V
   score was seen, and no comparison.
+
+### Mac joins (2026-10-13, 09:35, maintainer: "go for local too")
+
+- **Split:** the box is capped at units 1–15 (`limit` = 15) and the Mac runs units 42 down to 16. Both are
+  projected to finish around 12:40.
+- **Rates:** the box measured about 16 min per unit (P 420 s, V 441 s); the Mac about 7.3 min.
+- **Mac setup:** `/private/tmp/backend-anchor`, whose code is identical to the box's 5e7d268 (later commits are
+  docs only), on AC power under `caffeinate`.
