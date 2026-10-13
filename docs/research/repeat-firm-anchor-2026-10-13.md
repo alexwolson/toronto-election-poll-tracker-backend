@@ -178,3 +178,19 @@ V against P on current inputs:
 - 3 seeds per arm (20260921–20260923).
 - A fold is covered when 2 of 3 seeds cover it. Every other criterion is as written.
 - Speed-test the Linux box before splitting the run across machines.
+
+### Run setup (2026-10-13)
+
+- **Machines:** Linux box (12 cores, CPU JAX) at commit 5e7d268, with `data/upstream` byte-identical to the
+  Mac (sha256 of the sorted file hashes matches).
+- **Speed:** P on the preflight fold took 420 s on the box against 160 s on the Mac (2.6×).
+- **Units:** a unit is P then V for one (seed, horizon, campaign), so each pair shares a machine. Draws
+  differ by CPU, so arms are never split across machines.
+- **Order:** the box runs the 42 units in seed-major order, starting with 20260921 at 14 days, folds in
+  campaign order. At the maintainer's request (heading to work) the Mac's share is held. When the Mac joins,
+  it takes the remaining units from the end, and the box's `limit` file caps its share.
+- **Fits scored:** the queue's outputs only. The Mac preflight copies of the 2023/14-day/20260921 fold are
+  not scored. The box's speed-test pair for that unit (same commit, same inputs) is adopted as the queue's
+  unit.
+- **Disclosure:** while checking the box's speed, its log printed that fold's P score (CRPS 7.04). No V
+  score was seen, and no comparison.
