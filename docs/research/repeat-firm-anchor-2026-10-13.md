@@ -205,3 +205,47 @@ V against P on current inputs:
 - **Rebalance at 11:55:** the box was running at about 20 min per unit, so its cap was lowered to 14. Unit 15
   (20260922, 14 d, 2003) runs on the Mac after the Mac's queue, P then V on the same machine. The scorer
   refuses duplicates and missing fits.
+
+## Results (2026-10-13, scored once by `score_anchor.py` at 4589246; 84 of 84 fits)
+
+**Verdict: V is not adopted. P stands.** The do-no-harm checks pass at both horizons. The binding target
+check fails at 14 days: V's anchor error on the changed folds is higher than P's.
+
+| | 14 d P | 14 d V | 7 d P | 7 d V |
+|---|---|---|---|---|
+| Mean leader-margin CRPS (pts) | 9.26 | 9.27 (within +0.10) | 6.32 | 6.42 (within +0.10) |
+| Folds covered (2 of 3 seeds) | 6/7 | 6/7 | 7/7 | 7/7 |
+| Sampling failures after retry (retries) | 0 (1) | 0 (0) | 1 (2) | 0 (0) |
+| Anchor error on changed folds (pts) | 12.92 | **13.15** (target fails) | 12.68 | 13.27 (report only) |
+
+**Per fold, changed folds only.** Anchor error is the |median latent two-way leader margin at the cutoff −
+actual two-way margin|, as the mean over 3 seeds.
+
+| Fold | P | V |
+|---|---|---|
+| 2014, 14 d | 6.99 | 7.25 |
+| 2018, 14 d | 11.37 | 11.04 |
+| 2023, 14 d | 20.40 | 21.16 |
+| 2010, 7 d | 6.54 | 8.14 |
+| 2014, 7 d | 10.99 | 11.19 |
+| 2018, 7 d | 11.43 | 11.14 |
+| 2023, 7 d | 21.77 | 22.63 |
+
+Unchanged folds agree to within seed noise (largest CRPS gap 0.05).
+
+**2026 on current inputs (report only, computed once after scoring):**
+
+| | P (`backend-2026-10-13.1`) | V |
+|---|---|---|
+| Chow win | 69.1% | 63.4% |
+| Current two-way margin, median (80%) | +9.2 (+2.2 to +16.1) | +6.0 (+1.6 to +10.2) |
+| Election-day margin, median (80%) | +8.4 (−14.6 to +32.1) | +5.5 (−17.4 to +28.7) |
+| Liaison house effect | −3.8 | −0.8 |
+| Mainstreet house effect | −4.3 | −1.3 |
+| Ipsos house effect | +7.6 | +10.8 |
+| Canada Pulse house effect | +3.8 | +6.9 |
+| Movement scale | 0.05 | 0.05 |
+| Divergences / worst R-hat / min ESS | 0 / 1.003 / 1,997 | 0 / 1.003 / 1,874 |
+
+**Not run:** the model-free record (report only) was not computed; the binding result already settles the
+decision.
