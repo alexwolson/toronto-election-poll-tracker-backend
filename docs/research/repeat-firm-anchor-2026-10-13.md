@@ -202,3 +202,6 @@ V against P on current inputs:
 - **Rates:** the box measured about 16 min per unit (P 420 s, V 441 s); the Mac about 7.3 min.
 - **Mac setup:** `/private/tmp/backend-anchor`, whose code is identical to the box's 5e7d268 (later commits are
   docs only), on AC power under `caffeinate`.
+- **Rebalance at 11:55:** the box was running at about 20 min per unit, so its cap was lowered to 14. Unit 15
+  (20260922, 14 d, 2003) runs on the Mac after the Mac's queue, P then V on the same machine. The scorer
+  refuses duplicates and missing fits.
