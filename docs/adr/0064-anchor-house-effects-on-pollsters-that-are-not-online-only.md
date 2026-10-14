@@ -1,6 +1,6 @@
 # 0064. Anchor house effects on pollsters that are not online-only
 
-Date: 2026-10-13. Status: accepted.
+Date: 2026-10-13. Status: not adopted (2026-10-13).
 
 This ADR amends ADR 0054's house-effect specification ("one firm effect per firm").
 Each firm still has its own effect. What changes is which firms define zero: firms
@@ -73,3 +73,16 @@ not adopted (`repeat-firm-anchor-2026-10-13.md`).
   No poll is excluded (ADR 0062 is unchanged).
 - **Not covered.** A future online-only firm with a long record is still kept out of the
   anchor. Revisiting this needs a new decision.
+
+## Not adopted (maintainer, 2026-10-13)
+
+The rule passed its do-no-harm test and `backend-2026-10-13.3` was built and previewed with it,
+but it was not promoted. The forecast is public and widely followed, and the change would have
+moved Chow's published chance from 67.5% to about 63% thirteen days before the election with
+no new poll behind it. Readers would reasonably take that as a change in the race. The possible
+gain in accuracy does not justify that risk this late.
+
+- `PRODUCTION_HOUSE_ANCHOR` is `"prior"` again: the ADR 0054 frame, as published before this ADR.
+- The `house_anchor="non_online"` option, its tests and the research notes stay, as the record
+  for revisiting the rule after the election.
+- `backend-2026-10-13.3` is an immutable release that is never promoted.
