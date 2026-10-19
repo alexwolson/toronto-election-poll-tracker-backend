@@ -27,6 +27,7 @@ dependencies = [
 [dependency-groups]
 dev = [
     "pytest",
+    "pytest-xdist>=3.8.0",
     "ruff>=0.16.3",
 ]
 
