@@ -1,6 +1,6 @@
 # 0064. Anchor house effects on pollsters that are not online-only
 
-Date: 2026-10-13. Status: accepted (adopted 2026-10-20; not adopted 2026-10-13).
+Date: 2026-10-13. Status: not adopted (2026-10-13; briefly re-adopted and reversed 2026-10-20, never published).
 
 This ADR amends ADR 0054's house-effect specification ("one firm effect per firm").
 Each firm still has its own effect. What changes is which firms define zero: firms
@@ -87,15 +87,17 @@ gain in accuracy does not justify that risk this late.
   for revisiting the rule after the election.
 - `backend-2026-10-13.3` is an immutable release that is never promoted.
 
-## Adopted (maintainer, 2026-10-20)
+## Re-adopted and reversed (maintainer, 2026-10-20)
 
-The maintainer reversed the October 13 decision and adopted the rule as written. It ships as
-its own release, after the release that added the October 16-19 polls (Mainstreet, Build
-Canada, Pollara), so the published change from new polls and the change from this rule are
-seen separately.
+On October 20 the maintainer adopted the rule as written (PR #64) and then reversed that the
+same day, before any release was published with it. A local check on the polls through
+October 19 put the rule's effect at about 0.9 points on Chow's current lead over Bradford
+(latent margin +5.0 under the ADR 0054 frame, +4.1 under this rule; short-chain fits, so
+approximate). Every firm's lean moved by about the same amount, because the rule only moves
+the zero. The effect is smaller than on October 13 because Build Canada, a new online-only
+firm, reads toward Bradford and roughly offsets Ipsos and Canada Pulse. A methodological
+change that needs explaining is not worth a shift that small this close to the election.
 
-- `PRODUCTION_HOUSE_ANCHOR` is `"non_online"` again; the production tests pin it.
-- The rule is unchanged, so firms new since October 13 follow it by collection mode:
-  Build Canada (`online-sms-invitation`) keeps its own effect but does not set zero;
-  Pollara (`mixed`) helps set it. No firm is chosen by its results (ADR 0030).
-- `backend-2026-10-13.3` stays unpromoted; the adopting release is a fresh build.
+- `PRODUCTION_HOUSE_ANCHOR` is `"prior"` again, as published since ADR 0054.
+- `backend-2026-10-20.3` was built locally only and never published.
+- The `house_anchor="non_online"` option, its tests and the research notes stay, as before.
