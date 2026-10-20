@@ -150,8 +150,17 @@ def test_non_online_anchor_compiles_and_samples() -> None:
     np.testing.assert_allclose(firm[:, [0, 2]].sum(axis=1), 0.0, atol=1e-9)
 
 
-def test_production_keeps_the_prior_house_anchor() -> None:
-    from backend.model.compact_mayoral.sampling import PRODUCTION_HOUSE_ANCHOR
+def test_production_fits_anchor_house_effects_on_non_online_firms() -> None:
+    from backend.model.compact_mayoral.sampling import (
+        PRODUCTION_HOUSE_ANCHOR,
+        FitSettings,
+        fit_joint,
+    )
 
-    # ADR 0064 was not adopted: the published model keeps the ADR 0054 frame.
-    assert PRODUCTION_HOUSE_ANCHOR == "prior"
+    assert PRODUCTION_HOUSE_ANCHOR == "non_online"  # ADR 0064
+    fast = FitSettings(warmup=20, draws=20, chains=1, seed=1, target_accept=0.9)
+    result = fit_joint(
+        (campaign(MIXED_MODES, online=ONLINE_POLLS),), population_hyperpriors(), settings=fast
+    )
+    firm = np.asarray(result.draws["k/firm"])
+    np.testing.assert_allclose(firm[:, [0, 2]].sum(axis=1), 0.0, atol=1e-9)

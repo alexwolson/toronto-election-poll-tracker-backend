@@ -442,7 +442,7 @@ def test_end_to_end_feed_from_the_joint_fit_on_fixture_inputs(tmp_path: Path) ->
         "polls": "certified_field_with_post_suspension",
         "hyperpriors": "population_joint_refit",
         "exits": "learned_allocation",
-        "house_anchor": "prior",
+        "house_anchor": "non_online",
     }
     assert feed["model"]["suspended_campaigns"] == []
     assert feed["election_day"]["other_candidates"]["includes"] == []
