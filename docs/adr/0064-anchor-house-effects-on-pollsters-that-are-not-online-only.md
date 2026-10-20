@@ -1,6 +1,6 @@
 # 0064. Anchor house effects on pollsters that are not online-only
 
-Date: 2026-10-13. Status: not adopted (2026-10-13).
+Date: 2026-10-13. Status: accepted (adopted 2026-10-20; not adopted 2026-10-13).
 
 This ADR amends ADR 0054's house-effect specification ("one firm effect per firm").
 Each firm still has its own effect. What changes is which firms define zero: firms
@@ -86,3 +86,16 @@ gain in accuracy does not justify that risk this late.
 - The `house_anchor="non_online"` option, its tests and the research notes stay, as the record
   for revisiting the rule after the election.
 - `backend-2026-10-13.3` is an immutable release that is never promoted.
+
+## Adopted (maintainer, 2026-10-20)
+
+The maintainer reversed the October 13 decision and adopted the rule as written. It ships as
+its own release, after the release that added the October 16-19 polls (Mainstreet, Build
+Canada, Pollara), so the published change from new polls and the change from this rule are
+seen separately.
+
+- `PRODUCTION_HOUSE_ANCHOR` is `"non_online"` again; the production tests pin it.
+- The rule is unchanged, so firms new since October 13 follow it by collection mode:
+  Build Canada (`online-sms-invitation`) keeps its own effect but does not set zero;
+  Pollara (`mixed`) helps set it. No firm is chosen by its results (ADR 0030).
+- `backend-2026-10-13.3` stays unpromoted; the adopting release is a fresh build.

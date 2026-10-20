@@ -29,8 +29,8 @@ SENSITIVITY = FitSettings(draws=1000)
 # The published election-day discrepancy (ADR 0055): a Dirichlet reading of the latent
 # support. "isotropic" is the ADR 0054 specification, kept as a sensitivity refit.
 PRODUCTION_VARIANT = "dirichlet"
-# House effects keep the ADR 0054 frame. The non-online anchor (ADR 0064) was not adopted.
-PRODUCTION_HOUSE_ANCHOR = "prior"
+# House effects are centred on firms that are not online-only (ADR 0064).
+PRODUCTION_HOUSE_ANCHOR = "non_online"
 
 
 @dataclass(frozen=True)
