@@ -146,3 +146,13 @@ def test_source_bases_and_published_shares_are_preserved_without_other_allocatio
     )
     with pytest.raises(ValueError, match="expected one audited council reading"):
         poll_contexts({"4": (replace(poll, date_conducted="2026-09-26"),)}, tmp_path, b)
+    # Only each ward's latest final-field poll is modelled; earlier final-field
+    # polls stay published toplines, and a later different-field poll is ignored.
+    earlier = replace(poll, poll_id="earlier", date_conducted="2026-09-20")
+    later_other_field = replace(
+        poll,
+        poll_id="later-other-field",
+        date_conducted="2026-10-10",
+        ballot_status="different_candidate_field",
+    )
+    assert set(poll_contexts({"4": (earlier, poll, later_other_field)}, tmp_path, b)) == {"p"}
