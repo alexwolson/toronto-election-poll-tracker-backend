@@ -174,7 +174,7 @@ def historical_benchmark(corpus: Path, results: Path) -> dict:
 def poll_contexts(
     polls: dict[str, tuple[WardPollReading, ...]], source_dir: Path, benchmark: dict
 ) -> dict[str, dict]:
-    """Attach auditable bases and joint named-set ranges to matching final-field polls."""
+    """Attach auditable bases and joint named-set ranges to each ward's latest final-field poll."""
     samples = {r["poll_sample_id"]: r for r in _rows(source_dir / "poll_samples.csv")}
     readings = _rows(source_dir / "poll_readings.csv")
     responses = _rows(source_dir / "poll_responses.csv")
@@ -187,8 +187,11 @@ def poll_contexts(
         "less_ward_heterogeneity": fit(records, tau_scale=0.5),
     }
     for ward, items in polls.items():
-        for poll in items:
-            if poll.ballot_status != "final_ballot_candidates":
+        # Model only the latest final-field poll; earlier ones stay published toplines.
+        final_field = [p for p in items if p.ballot_status == "final_ballot_candidates"]
+        latest = max((p.date_conducted for p in final_field), default=None)
+        for poll in final_field:
+            if poll.date_conducted != latest:
                 continue
             matches = []
             for reading in readings:
